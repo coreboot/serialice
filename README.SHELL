@@ -1,0 +1,116 @@
+SerialICE README
+
+ABOUT
+-----
+
+This is the SerialICE mini shell. It is a minimal shell running from a
+mainboard flash instead of the BIOS and it allows querying and poking hardware
+with minimal setup. No RAM is required to be initialized for this.
+
+The shell commands have a very compact syntax, because the shell is mostly
+meant to be used together with a SerialICE capable Qemu (See README.QEMU)
+
+GETTING STARTED
+---------------
+
+First, you have to compile the 
+
+LICENSE AND COPYRIGHT
+---------------------
+
+SerialICE mini shell is copyright (C) 2009 coresystems GmbH.
+It is released under the GNU General Public License version 2. 
+For questions contact <info@coresystems.de>
+
+PORTING THE SHELL TO NEW MAINBOARDS
+-----------------------------------
+
+The shell (obviously) needs some extremely hardware specific initialization
+code for each supported mainboard. There is one file per mainboard with this 
+initialization code in the mainboard/ directory.
+
+The purpose of the initialization code is to get the machine far enough to be
+able to talk via serial console. This usually requires setup of the Super I/O
+chip and some southbridge registers. In some cases extra work may have to be
+done, like disabling a power-on watchdog timer, enabling a fan(!), or enabling
+some devices "on the path to the Super I/O".
+
+COMMANDS OF THE SERIALICE SHELL
+-------------------------------
+
+All SerialICE commands start with an asterisk (*) followed by a two
+character command code.
+
+<addr>	32bit memory address in hex format (without leading 0x)
+<port>	16bit I/O address in hex format (without leading 0x)
+<len>	b, w, l size of access (1, 2, 4 bytes)
+<value>	1, 2, 4 byte data in hex format (without leading 0x)
+
+1. Memory Reads
+
+   Syntax:
+   *rm<addr>.<len>
+
+   Example:
+   > *rm00000000.w
+   0000
+   >
+
+2. Memory Writes
+
+  Syntax:
+  *wm<addr>.<len>=<value>
+
+  Example:
+  > *wm00000000.w=0000
+  >
+
+3. I/O Reads
+
+  Syntax:
+  *ri<port>.<len>
+
+  Example:
+  > *ri0080.b
+  23
+  >
+
+4. I/O Writes
+
+  Syntax:
+  *wi<port>.<len>=<value>
+
+  Example:
+  > *wi0080.b=23
+  >
+
+5. MSR reads
+
+  Syntax:
+  *rc<addr>
+
+  Example:
+  > *rc000000cd
+  00000000.00000933
+  >
+
+6. MSR Writes
+
+  Syntax:
+  *wc<addr>=<high>.<low>
+
+  Example:
+  > *wc00000000=00000000.00000000
+  >
+
+7. CPUID
+
+  Syntax:
+  *ci<addr>
+
+  Example:
+  > *ci00000001
+  000006f2.00020800.0000e3bd.bfebfbff
+  >
+
+

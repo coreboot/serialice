@@ -1,0 +1,69 @@
+SerialICE Qemu README
+
+If you don't have the SerialICE shell running, yet, read the document
+README.SHELL first.
+
+ABOUT
+-----
+
+SerialICE comes with a patch against Qemu that allows you to run a vendor BIOS
+image in the emulator, while all hardware accesses are forwarded to the
+SerialICE shell. While doing so, it logs all hardware accesses and their
+results.
+
+
+GETTING STARTED
+---------------
+
+The latest patch against Qemu can be found in the "patches" subdirectory of
+this source tree. To apply it and build Qemu, do:
+
+$ wget http://download.savannah.gnu.org/releases/qemu/qemu-0.10.4.tar.gz
+$ tar xvzf qemu-0.10.4.tar.gz
+$ cd qemu-0.10.4
+$ patch -p0 < ../serialice/patches/serialice-qemu-0.10.4.diff
+$ sh build.sh
+
+
+USAGE
+-----
+
+You need to prepare a bios directory with two files:
+
+ * a dummy vgabios-cirrus.bin (can be taken from Qemu distribution)
+ * the BIOS image you want to run. (Call it bios.bin)
+
+Then you can start qemu in serialice mode like this:
+
+$ i386-softmmu/qemu -M serialice -serialice \
+	/dev/ttyS0 -hda /dev/zero -L ./bios
+
+The device /dev/ttyS0 is the name of the serial device connected to your target
+machine running the SerialICE shell.
+
+For debugging hints see the file README.GDB
+
+ADAPTING THE CODE
+-----------------
+
+Sometimes it is necessary to change the SerialICE code in Qemu in order to
+proceed in the code execution. 
+
+For example, the BIOS will, at some point, initialize the serial port. If it
+does, this normally means that you bite the hand that feeds you, and you will
+no longer have a communication channel to the outside world.
+
+Because of that, I tried to make it easy to catch certain IO and memory
+accesses so they are NOT sent to the target hardware. See hw/serialice.c for
+more information.
+
+
+LICENSE AND COPYRIGHT
+---------------------
+
+SerialICE Qemu support is copyright 2009 coresystems GmbH.
+The SerialICE hardware interface is released under the BSD license. Patches to
+existing Qemu files are released under the pre-existing license of those files.
+For questions contact <info@coresystems.de>
+
+

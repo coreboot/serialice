@@ -1,0 +1,4 @@
+- do we need to implement CR0 etc accesses for caching?
+- AMD style MSRs (with an unlock key in a specific register)
+- CPUID takes ECX as input on some EAX values:
+  http://patchwork.kernel.org/patch/2346/

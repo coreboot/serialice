@@ -1,0 +1,106 @@
+Index: serialice.c
+===================================================================
+--- serialice.c	(revision 55)
++++ serialice.c	(working copy)
+@@ -146,32 +146,35 @@
+ 
+ static void serialice_cpuinfo(void)
+ {
+-	u32 idx;
++	u32 eax, ecx;
+ 	u32 reg32;
+ 
+ 	// Format:
+-	// *ci00000000
+-	idx = sio_get32();
++	// *ci00000000.00000000
++	eax = sio_get32();
++	sio_getc(); // skip .
++	ecx = sio_get32();
+ 
++
+ 	sio_putc('\r'); sio_putc('\n');
+ 
+ 	/* This code looks quite crappy but this way we don't
+  	 * have to worry about running out of registers if we
+  	 * occupy eax, ebx, ecx, edx at the same time 
+  	 */
+-	reg32 = cpuid_eax(idx);
++	reg32 = cpuid_eax(eax, ecx);
+ 	sio_put32(reg32);
+ 	sio_putc('.');
+ 
+-	reg32 = cpuid_ebx(idx);
++	reg32 = cpuid_ebx(eax, ecx);
+ 	sio_put32(reg32);
+ 	sio_putc('.');
+ 
+-	reg32 = cpuid_ecx(idx);
++	reg32 = cpuid_ecx(eax, ecx);
+ 	sio_put32(reg32);
+ 	sio_putc('.');
+ 
+-	reg32 = cpuid_edx(idx);
++	reg32 = cpuid_edx(eax, ecx);
+ 	sio_put32(reg32);
+ }
+ 
+Index: io.h
+===================================================================
+--- io.h	(revision 55)
++++ io.h	(working copy)
+@@ -99,46 +99,46 @@
+ 
+ /* CPUID functions */
+ 
+-static inline unsigned int cpuid_eax(unsigned int op)
++static inline unsigned int cpuid_eax(unsigned int op, unsigned op2)
+ {
+         unsigned int eax;
+ 
+         __asm__("cpuid"
+                 : "=a" (eax)
+-                : "0" (op)
++                : "0" (op), "2" (op)
+                 : "ebx", "ecx", "edx");
+         return eax;
+ }
+ 
+-static inline unsigned int cpuid_ebx(unsigned int op)
++static inline unsigned int cpuid_ebx(unsigned int op, unsigned op2)
+ {
+         unsigned int eax, ebx;
+ 
+         __asm__("cpuid"
+                 : "=a" (eax), "=b" (ebx)
+-                : "0" (op)
++                : "0" (op), "2" (op2)
+                 : "ecx", "edx" );
+         return ebx;
+ }
+ 
+-static inline unsigned int cpuid_ecx(unsigned int op)
++static inline unsigned int cpuid_ecx(unsigned int op, unsigned int op2)
+ {
+         unsigned int eax, ecx;
+ 
+         __asm__("cpuid"
+                 : "=a" (eax), "=c" (ecx)
+-                : "0" (op)
++                : "0" (op), "2" (op2)
+                 : "ebx", "edx" );
+         return ecx;
+ }
+ 
+-static inline unsigned int cpuid_edx(unsigned int op)
++static inline unsigned int cpuid_edx(unsigned int op, unsigned int op2)
+ {
+         unsigned int eax, edx;
+ 
+         __asm__("cpuid"
+                 : "=a" (eax), "=d" (edx)
+-                : "0" (op)
++                : "0" (op), "2" (op2)
+                 : "ebx", "ecx");
+         return edx;
+ }

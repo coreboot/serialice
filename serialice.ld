@@ -1,0 +1,52 @@
+/*
+ * SerialICE 
+ *
+ * Copyright (C) 2009 coresystems GmbH
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ */
+
+OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
+OUTPUT_ARCH(i386)
+
+_ROMSIZE = (1024 * 64);
+_ROMBASE = 0x100000000 - (_ROMSIZE);
+
+SECTIONS {
+	. = _ROMBASE;
+	.rom : {
+		_main = . ;
+		*(.rom.text);
+		*(.text);
+		*(.rom.data);
+		*(.data);
+		*(.rodata);
+		*(.rodata.*);
+	}
+
+	. = 0xffffff80;
+	.messages . : {
+		*(.messages)
+		. = 111;
+		BYTE(0x00);
+	}
+
+	. = 0xfffffff0;
+	.reset . : {
+		*(.reset)
+		. = 15;
+		BYTE(0x00);
+	}
+}
+
