@@ -23,7 +23,9 @@ HOSTCC=gcc
 HOSTCFLAGS= -O2 -Wall
 PCREFLAGS=-I/opt/local/include -L/opt/local/lib -lpcre
 
+ifneq ($(shell which i386-elf-gcc),)
 CROSS=i386-elf-
+endif
 AS=$(CROSS)as
 CC=$(CROSS)gcc
 OBJCOPY=$(CROSS)objcopy
