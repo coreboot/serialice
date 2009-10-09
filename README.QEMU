@@ -18,10 +18,10 @@ GETTING STARTED
 The latest patch against Qemu can be found in the "patches" subdirectory of
 this source tree. To apply it and build Qemu, do:
 
-$ wget http://download.savannah.gnu.org/releases/qemu/qemu-0.10.4.tar.gz
-$ tar xvzf qemu-0.10.4.tar.gz
-$ cd qemu-0.10.4
-$ patch -p0 < ../serialice/patches/serialice-qemu-0.10.4.diff
+$ wget http://download.savannah.gnu.org/releases/qemu/qemu-0.11.0.tar.gz
+$ tar xvzf qemu-0.11.0.tar.gz
+$ cd qemu-0.11.0
+$ patch -p1 < ../serialice/patches/serialice-qemu-0.11.0.diff
 $ sh build.sh
 
 
