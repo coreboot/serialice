@@ -11,6 +11,12 @@ image in the emulator, while all hardware accesses are forwarded to the
 SerialICE shell. While doing so, it logs all hardware accesses and their
 results.
 
+REQUIREMENTS
+------------
+
+* LUA 5.1.4 or newer
+* LUA bitops 2.5 or newer
+
 
 GETTING STARTED
 ---------------
@@ -46,16 +52,20 @@ For debugging hints see the file README.GDB
 ADAPTING THE CODE
 -----------------
 
-Sometimes it is necessary to change the SerialICE code in Qemu in order to
-proceed in the code execution. 
+SerialICE features a scripting engine based on LUA to be easily adaptable
+to your mainboard.
 
 For example, the BIOS will, at some point, initialize the serial port. If it
 does, this normally means that you bite the hand that feeds you, and you will
 no longer have a communication channel to the outside world.
 
 Because of that, I tried to make it easy to catch certain IO and memory
-accesses so they are NOT sent to the target hardware. See hw/serialice.c for
-more information.
+accesses so they are NOT sent to the target hardware. There are four filter
+functions in a lua script file that decide what to do with each memory and IO
+access.
+
+This interface has yet to be documented. Until then see serialice.lua for more information.
+There will also be more filter and logging functions in LUA scripts in the future.
 
 
 LICENSE AND COPYRIGHT

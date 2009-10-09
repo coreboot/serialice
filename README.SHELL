@@ -13,7 +13,11 @@ meant to be used together with a SerialICE capable Qemu (See README.QEMU)
 GETTING STARTED
 ---------------
 
-First, you have to compile the 
+First, you have to compile the SerialICE shell for your mainboard. Edit
+config.h in order to choose your mainboard. Please submit an init file for
+your mainboard if it's not there yet.
+
+Next, you need to compile Qemu with SerialICE support.
 
 LICENSE AND COPYRIGHT
 ---------------------
