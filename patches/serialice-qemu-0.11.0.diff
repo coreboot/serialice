@@ -7,18 +7,18 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 
  Makefile.target         |    6 
  build.sh                |    6 
- configure               |   32 +
+ configure               |   32 ++
  exec-all.h              |    4 
- hw/pc.c                 |   43 ++
+ hw/pc.c                 |   43 +++
  qemu-char.c             |    4 
  qemu-options.hx         |   11 
- serialice.c             |  865 ++++++++++++++++++++++++++++++++++++++++++++++++
+ serialice.c             |  686 ++++++++++++++++++++++++++++++++++++++++++++++++
  serialice.h             |   42 ++
- serialice.lua           |  293 ++++++++++++++++
- softmmu_template.h      |   27 +
- target-i386/op_helper.c |   62 +++
+ serialice.lua           |  295 ++++++++++++++++++++
+ softmmu_template.h      |   28 +
+ target-i386/op_helper.c |   62 ++++
  vl.c                    |    8 
- 13 files changed, 1401 insertions(+), 2 deletions(-)
+ 13 files changed, 1225 insertions(+), 2 deletions(-)
 
 --- qemu-0.11.0/Makefile.target
 +++ qemu-0.11.0/Makefile.target
@@ -37,7 +37,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
  obj-i386-y += fdc.o mc146818rtc.o serial.o i8259.o i8254.o pcspk.o pc.o
 --- qemu-0.11.0/serialice.c
 +++ qemu-0.11.0/serialice.c
-@@ -0,0 +1,865 @@
+@@ -0,0 +1,686 @@
 +/*
 + * QEMU PC System Emulator
 + *
@@ -83,7 +83,6 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +#include "serialice.h"
 +#include "sysemu.h"
 +
-+//define SERIALICE_TEST 1
 +#define SERIALICE_DEBUG 3
 +#define BUFFER_SIZE 1024
 +typedef struct {
@@ -132,7 +131,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	return 0;
 +}
 +
-+static int serialice_in_filter(uint32_t *data, uint16_t port, int size)
++static int serialice_io_read_filter(uint32_t *data, uint16_t port, int size)
 +{
 +    int ret, result;
 +
@@ -151,7 +150,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +    return ret;
 +} 
 +
-+static int serialice_out_filter(uint32_t data, uint16_t port, int size)
++static int serialice_io_write_filter(uint32_t data, uint16_t port, int size)
 +{
 +    int ret, result;
 +
@@ -169,6 +168,53 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +
 +    return ret;
 +} 
++
++static int serialice_memory_read_filter(uint32_t addr, int size)
++{
++    int ret, result;
++
++    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_read_filter");
++    lua_pushinteger(L, addr); // addr
++    lua_pushinteger(L, size); // datasize
++    result = lua_pcall(L, 2, 1, 0);
++    if (result) {
++        fprintf(stderr, "Failed to run function SerialICE_memory_read_filter: %s\n", lua_tostring(L, -1));
++        exit(1);
++    }
++    ret = lua_toboolean(L, -1);
++    lua_pop(L, 1);
++
++    return ret;
++} 
++
++#define WRITE_TO_QEMU		(1 << 0)
++#define WRITE_TO_SERIALICE	(1 << 1)
++
++static int serialice_memory_write_filter(uint32_t addr, int size)
++{
++    int ret = 0, result;
++    int write_to_qemu, write_to_serialice;
++
++    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_write_filter");
++    lua_pushinteger(L, addr); // address
++    lua_pushinteger(L, size); // datasize
++    result = lua_pcall(L, 2, 2, 0);
++    if (result) {
++        fprintf(stderr, "Failed to run function SerialICE_memory_write_filter: %s\n", lua_tostring(L, -1));
++        exit(1);
++    }
++    write_to_qemu = lua_toboolean(L, -1);
++    write_to_serialice = lua_toboolean(L, -2);
++    lua_pop(L, 2);
++
++    // ugly
++    if (write_to_qemu) ret |= WRITE_TO_QEMU;
++    if (write_to_serialice) ret |= WRITE_TO_SERIALICE;
++
++    return ret;
++} 
++
++
 +
 +static int serialice_read(int fd, void *buf, size_t nbyte)
 +{
@@ -241,37 +287,13 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +#endif
 +}
 +
-+#if 0
-+static int serialice_in_filter(uint32_t *data, uint16_t port, int size)
-+{
-+#if 0
-+	if (port == 0x42) {
-+		printf("WARNING: Hijacking timer port 0x42!!\n");
-+		*data = 0x80;
-+		return 1;
-+	}
-+#endif
-+
-+	/* ********************************************************** */
-+	/* Serial Port handling */
-+
-+	if (port >= 0x3f8 && port <= 0x3ff) {
-+		printf("serial I/O (filtered)\n");
-+		*data = 0;
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
 +uint8_t serialice_inb(uint16_t port)
 +{
 +	uint8_t ret;
 +	char command[16];
 +
 +	uint32_t data;
-+	if (serialice_in_filter(&data, port, 1))
++	if (serialice_io_read_filter(&data, port, 1))
 +		return data & 0xff;
 +
 +	sprintf(command, "*ri%04x.b", port);
@@ -290,7 +312,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	char command[16];
 +
 +	uint32_t data;
-+	if (serialice_in_filter(&data, port, 1))
++	if (serialice_io_read_filter(&data, port, 1))
 +		return data & 0xffff;
 +
 +	sprintf(command, "*ri%04x.w", port);
@@ -309,7 +331,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	char command[16];
 +
 +	uint32_t data;
-+	if (serialice_in_filter(&data, port, 1))
++	if (serialice_io_read_filter(&data, port, 1))
 +		return data;
 +
 +	sprintf(command, "*ri%04x.l", port);
@@ -322,115 +344,13 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	return ret;
 +}
 +
-+#if 0
-+static uint32_t serialice_pci_device = 0;
-+static uint32_t serialice_superio_4e_reg = 0;
-+static uint32_t serialice_superio_2e_reg = 0;
-+static uint32_t serialice_superio_2e_ldn = 0;
-+
-+static int serialice_out_filter(uint32_t data, uint16_t port, int size)
-+{
-+	/* ********************************************************** */
-+	/* PCI config space handling */
-+
-+	if (port == 0xcf8) {
-+		printf("PCI %x:%02x.%x R.%02x\n", (data >> 16) & 0xff,
-+				(data >> 11) & 0x1f, (data >> 8) & 7,
-+				(data & 0xff));
-+		serialice_pci_device = data;
-+	}
-+
-+	if (port == 0xcfc) {
-+		/* Phoenix BIOS reconfigures 0:1f.0 reg 0x80/0x82. This
-+		 * effectively wipes out our communication channel so
-+		 * we must not allow it.
-+		 */
-+		if (serialice_pci_device == 0x8000f880) {
-+			printf("LPC (filtered)\n");
-+			return 1;
-+		}
-+	}
-+
-+	/* Dell 1850 BMC filter */
-+	if (port == 0xe8) {
-+		switch (data) {
-+		case 0x44656c6c: printf("BMC: Dell\n"); break;
-+		case 0x50726f74: printf("BMC: Prot\n"); break;
-+		case 0x496e6974: printf("BMC: Init (filtered)\n"); return 1;
-+		}
-+	}
-+
-+	/* ********************************************************** */
-+	/* SuperIO config handling */
-+
-+	if (port == 0x4e) {
-+		// We start requiring a decent state machine
-+		serialice_superio_4e_reg = data;
-+	}
-+
-+	if (port == 0x4f) {
-+		// Don't allow that our SIO power gets disabled.
-+		if (serialice_superio_4e_reg == 0x02) {
-+			printf("SuperIO (filtered)\n");
-+			return 1;
-+		}
-+
-+		// XXX what is this? 
-+		if (serialice_superio_4e_reg == 0x24) {
-+			printf("SuperIO (filtered)\n");
-+			return 1;
-+		}
-+	}
-+
-+	if (port == 0x2e) {
-+		// We start requiring a decent state machine
-+		serialice_superio_2e_reg = data;
-+	}
-+
-+	if (port == 0x2f) {
-+		// Winbond
-+		if (serialice_superio_2e_reg == 0x06) {
-+			serialice_superio_2e_ldn = data;
-+			return 0;
-+		}
-+
-+		// Don't allow that our SIO power gets disabled.
-+		if (serialice_superio_2e_reg == 0x02) {
-+			printf("SuperIO (filtered)\n");
-+			return 1;
-+		}
-+
-+		// XXX what is this? 
-+		if (serialice_superio_2e_reg == 0x24) {
-+			printf("SuperIO (filtered)\n");
-+			return 1;
-+		}
-+	}
-+
-+	/* ********************************************************** */
-+	/* Serial Port handling */
-+
-+	if (port > 0x3f8 && port <= 0x3ff) {
-+		printf("serial I/O (filtered)\n");
-+		return 1;
-+	}
-+
-+	if (port == 0x3f8) {
-+		printf("COM1: %c\n", (uint8_t)data);
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
 +void serialice_outb(uint8_t data, uint16_t port)
 +{
 +	char command[19];
 +
 +	printf("IO:  outb %04x <= %02x\n", port, data);
 +
-+	if (serialice_out_filter(data, port, 1)) {
++	if (serialice_io_write_filter(data, port, 1)) {
 +		return;
 +	}
 +
@@ -445,7 +365,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +
 +	printf("IO:  outw %04x <= %04x\n", port, data);
 +
-+	if (serialice_out_filter(data, port, 2)) {
++	if (serialice_io_write_filter(data, port, 2)) {
 +		return;
 +	}
 +
@@ -460,7 +380,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +
 +	printf("IO:  outl %04x <= %08x\n", port, data);
 +
-+	if (serialice_out_filter(data, port, 4)) {
++	if (serialice_io_write_filter(data, port, 4)) {
 +		return;
 +	}
 +
@@ -638,73 +558,12 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 + */
 +int serialice_handle_load(uint32_t addr, uint32_t *result, unsigned int data_size)
 +{
-+	switch (data_size) {
-+	case 1: 
-+		printf("MEM: readb %08x", addr);
-+		break;
-+	case 2:
-+		printf("MEM: readw %08x", addr);
-+		break;
-+	case 4:
-+		printf("MEM: readl %08x", addr);
-+		break;
-+	}
++	int read_from_target;
 +
-+	switch (addr) {
-+	case 0xfff00000 ... 0xffffffff:
-+		/* ROM accesses go to Qemu only */
-+		return 0;
-+	case 0xf0000000 ... 0xf4000000:
-+		/* PCIe MMIO config space accesses are
-+		 * exclusively handled by the SerialICE
-+		 * target
-+		 */
++	read_from_target = serialice_memory_read_filter(addr, data_size);
++	if (read_from_target) {
 +		*result = serialice_load_wrapper(addr, data_size);
 +		return 1;
-+	case 0xfed10000 ... 0xfed1ffff:
-+		/* Intel chipset BARs are exclusively 
-+		 * handled by the SerialICE target
-+		 */
-+		*result = serialice_load_wrapper(addr, data_size);
-+		return 1;
-+	case 0xffd80000 ... 0xffdfffff:
-+		/* coreboot Cache-As-RAM is exclusively
-+		 * handled by Qemu (RAM backed)
-+		 */
-+		return 0;
-+	case 0xffbc0000 ... 0xffbfffff:
-+		/* AMI Cache-As-RAM is exclusively
-+		 * handled by Qemu (RAM backed)
-+		 */
-+		return 0;
-+	case 0xfee00000 ... 0xfeefffff:
-+		/* Local APIC.. Hm, not sure what to do here.
-+		 * We should avoid that someone wakes up cores
-+		 * on the target system that go wild.
-+		 */
-+		return 0; // Handle by Qemu for now
-+	case 0xfec00000 ... 0xfecfffff:
-+		/* IO APIC.. Hm, not sure what to do here.
-+		 */
-+		return 0; // Handle by Qemu for now
-+	case 0xfed40000 ... 0xfed45000:
-+		/* ICH7 TPM */
-+		*result = serialice_load_wrapper(addr, data_size);
-+		return 1;
-+	case 0x000c0000 ... 0x000fffff:
-+		/* Low ROM accesses go to Qemu memory */
-+		return 0;
-+	case 0x00000000 ... 0x000bffff:
-+	case 0x00100000 ... 0xd0000000:
-+		/* 3.25 GB RAM ... This is handled by SerialICE,
-+		 * but not exclusively. Writes should end up in
-+		 * Qemu memory, too.
-+		 */
-+		*result = serialice_load_wrapper(addr, data_size);
-+		return 1;
-+	default:
-+		printf("\nWARNING: undefined load operation @%08x\n", addr);
-+		/* Fall through and handle by Qemu */
 +	}
 +	return 0;
 +}
@@ -713,36 +572,30 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 + * This function is called by the softmmu engine to update the status
 + * of a load cycle
 + */
-+void serialice_finish_load(int caught, uint32_t result, unsigned int data_size)
++void serialice_log_load(int caught, uint32_t addr, uint32_t result, unsigned int data_size)
 +{
++	// TODO move to lua(?)
 +	switch (data_size) {
 +	case 1: 
-+		printf(" => %02x", (uint8_t)result);
++		printf("MEM:  readb %08x => %02x", addr, (uint8_t)result);
 +		break;
 +	case 2:
-+		printf(" => %04x", (uint16_t)result);
++		printf("MEM:  readw %08x => %04x", addr, (uint16_t)result);
 +		break;
 +	case 4:
-+		printf(" => %08x", (uint32_t)result);
++		printf("MEM:  readl %08x => %08x", addr, (uint32_t)result);
 +		break;
 +	}
 +
 +	if (caught) {
 +		printf(" *");
 +	}
++
 +	printf("\n");
 +}
 +
-+/* This function can grab Qemu store ops and forward them to the SerialICE
-+ * target
-+ *
-+ * @return 0: Qemu exclusive or shared; 1: SerialICE exclusive.
-+ */
 +
-+#define CATCH() do { printf (" *\n"); return 1; } while(0);
-+#define NOCATCH() do { printf ("\n"); return 0; } while(0);
-+
-+int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
++static void serialice_log_store(int caught, uint32_t addr, uint32_t val, unsigned int data_size)
 +{
 +	switch (data_size) {
 +	case 1: 
@@ -756,68 +609,36 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +		break;
 +	}
 +
-+	switch (addr) {
-+	case 0xfff00000 ... 0xffffffff:
-+		printf("\nWARNING: write access to ROM?\n");
-+		/* ROM accesses go to Qemu only */
-+		NOCATCH();
-+	case 0xf0000000 ... 0xf4000000:
-+		/* PCIe MMIO config space accesses are
-+		 * exclusively handled by the SerialICE
-+		 * target
-+		 */
-+		serialice_store_wrapper(addr, data_size, val);
-+		CATCH();
-+	case 0xfed10000 ... 0xfed1ffff:
-+		/* Intel chipset BARs are exclusively 
-+		 * handled by the SerialICE target
-+		 */
-+		serialice_store_wrapper(addr, data_size, val);
-+		CATCH();
-+	case 0xffd80000 ... 0xffdfffff:
-+		/* coreboot Cache-As-RAM is exclusively
-+		 * handled by Qemu (RAM backed)
-+		 */
-+		NOCATCH();
-+	case 0xffbc0000 ... 0xffbfffff:
-+		/* AMI Cache-As-RAM is exclusively
-+		 * handled by Qemu (RAM backed)
-+		 */
-+		NOCATCH();
-+	case 0xfee00000 ... 0xfeefffff:
-+		/* Local APIC.. Hm, not sure what to do here.
-+		 * We should avoid that someone wakes up cores
-+		 * on the target system that go wild.
-+		 */
-+		NOCATCH();
-+	case 0xfec00000 ... 0xfecfffff:
-+		/* IO APIC.. Hm, not sure what to do here.
-+		 */
-+		NOCATCH();
-+	case 0xfed40000 ... 0xfed45000:
-+		/* ICH7 TPM */
-+		serialice_store_wrapper(addr, data_size, val);
-+		CATCH();
-+	case 0x000c0000 ... 0x000fffff:
-+		/* Low ROM accesses go to Qemu memory */
-+		NOCATCH();
-+	case 0x00000000 ... 0x000bffff:
-+	case 0x00100000 ... 0xd0000000:
-+		/* 3.25 GB RAM ... This is handled by SerialICE,
-+		 * but not exclusively. Writes should end up in
-+		 * Qemu memory, too.
-+		 */
-+		serialice_store_wrapper(addr, data_size, val);
-+		CATCH();
-+	default:
-+		printf("\nWARNING: undefined store operation @%08x\n", addr);
-+		/* Fall through and handle by Qemu */
++	if (caught) {
++		printf(" *");
 +	}
-+	NOCATCH();
++
++	printf("\n");
++
 +}
 +
-+#undef CATCH
-+#undef NOCATCH
++/* This function can grab Qemu store ops and forward them to the SerialICE
++ * target
++ *
++ * @return 0: Qemu exclusive or shared; 1: SerialICE exclusive.
++ */
++
++int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
++{
++	int write_to_target, write_to_qemu, ret;
++
++	ret = serialice_memory_write_filter(addr, data_size);
++
++	write_to_target = ((ret & WRITE_TO_SERIALICE) != 0);
++	write_to_qemu = ((ret & WRITE_TO_QEMU) != 0);
++
++	serialice_log_store(write_to_target, addr, val, data_size);
++
++	if (write_to_target)
++		serialice_store_wrapper(addr, data_size, val);
++
++	return (write_to_qemu == 0);
++}
 +
 +void serialice_init(void)
 +{
@@ -944,7 +765,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx);
 +
 +int serialice_handle_load(uint32_t addr, uint32_t *result, unsigned int data_size);
-+void serialice_finish_load(int caught, uint32_t result, unsigned int data_size);
++void serialice_log_load(int caught, uint32_t addr, uint32_t result, unsigned int data_size);
 +int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size);
 +
 +#endif
@@ -1030,24 +851,25 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
      /* test if there is match for unaligned or IO access */
      /* XXX: could done more in memory macro in a non portable way */
      index = (addr >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
-@@ -134,6 +147,11 @@
+@@ -134,6 +147,12 @@
          tlb_fill(addr, READ_ACCESS_TYPE, mmu_idx, retaddr);
          goto redo;
      }
 +
 +#ifdef CONFIG_SERIALICE
 +leave_ld:
-+    serialice_finish_load(caught, (uint32_t)result, (unsigned int)DATA_SIZE);
++    if (serialice_active)
++        serialice_log_load(caught, addr, (uint32_t)result, (unsigned int)DATA_SIZE);
 +#endif
      return res;
  }
  
-@@ -234,6 +252,15 @@
+@@ -234,6 +253,15 @@
      void *retaddr;
      int index;
  
 +#ifdef CONFIG_SERIALICE
-+    if (serialice_handle_store((uint32_t)addr, (uint32_t)val, (unsigned int) DATA_SIZE)) {
++    if (serialice_active && serialice_handle_store((uint32_t)addr, (uint32_t)val, (unsigned int) DATA_SIZE)) {
 +	// For now, we just always keep a backup of _all_ writes in qemu's
 +	// memory. At this point we can later decide what to do, if it becomes
 +	// necessary.
@@ -1077,7 +899,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +
 --- qemu-0.11.0/serialice.lua
 +++ qemu-0.11.0/serialice.lua
-@@ -0,0 +1,293 @@
+@@ -0,0 +1,295 @@
 +---
 +--- SerialICE
 +---
@@ -1160,7 +982,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +			bit.band(0x7,bit.rshift(data, 8)),
 +			bit.band(0xff,data));
 +		SerialICE_pci_device = data;
-+		return 0
++		return false
 +	end
 +
 +	if port == 0xcfc then
@@ -1258,7 +1080,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +end
 +
 +--- returns false: Qemu exclusive or shared, true: SerialICE exclusive.
-+function SerialICE_memory_read_filter(addr, size, data)
++function SerialICE_memory_read_filter(addr, size)
 +	if	addr >= 0xfff00000 and addr <= 0xffffffff then
 +		--- ROM accesses go to Qemu only
 +		return false
@@ -1311,59 +1133,61 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	return false
 +end
 +
-+--- returns false: Qemu exclusive or shared, true: SerialICE exclusive.
-+function SerialICE_memory_write_filter(addr, size, data)
++--- returns whether writes go to Qemu exclusively or shared or exclusively to
++--- SerialICE.
++--- return <to_serialice>, <to_qemu>
++function SerialICE_memory_write_filter(addr, size)
 +	if	addr >= 0xfff00000 and addr <= 0xffffffff then
 +		io.write("\nWARNING: write access to ROM?\n")
 +		--- ROM accesses go to Qemu only
-+		return false
++		return false, true
 +	elseif	addr >= 0xf0000000 and addr <= 0xf3ffffff then
 +		--- PCIe MMIO config space accesses are
 +		--- exclusively handled by the SerialICE
 +		--- target
-+		return true
++		return true, false
 +	elseif	addr >= 0xfed10000 and addr <= 0xfed1ffff then
 +		--- Intel chipset BARs are exclusively 
 +		--- handled by the SerialICE target
-+		return true
++		return true, false
 +	elseif	addr >= 0xffd80000 and addr <= 0xffdfffff then
 +		--- coreboot Cache-As-RAM is exclusively
 +		--- handled by Qemu (RAM backed)
-+		return false
++		return false, true
 +	elseif	addr >= 0xffbc0000 and addr <= 0xffbfffff then
 +		--- AMI Cache-As-RAM is exclusively
 +		--- handled by Qemu (RAM backed)
-+		return false
++		return false, true
 +	elseif	addr >= 0xfee00000 and addr <= 0xfeefffff then
 +		--- Local APIC.. Hm, not sure what to do here.
 +		--- We should avoid that someone wakes up cores
 +		--- on the target system that go wild.
-+		return false
++		return false, true
 +	elseif	addr >= 0xfec00000 and addr <= 0xfecfffff then
 +		--- IO APIC.. Hm, not sure what to do here.
-+		return false
++		return false, true
 +	elseif	addr >= 0xfed40000 and addr <= 0xfed45000 then
 +		--- ICH7 TPM
-+		return true
++		return true, false
 +	elseif	addr >= 0x000c0000 and addr <= 0x000fffff then
 +		--- Low ROM accesses go to Qemu memory
-+		return false
++		return false, true
 +	elseif	addr >= 0x00000000 and addr <= 0x000bffff then
 +		--- RAM access. This is handled by SerialICE
 +		--- but *NOT* exclusively. Writes should end
 +		--- up in Qemu memory, too
-+		return true
++		return true, true
 +	elseif	addr >= 0x00100000 and addr <= 0xcfffffff then
 +		--- 3.25 GB RAM ... This is handled by SerialICE,
 +		--- but not exclusively. Writes should end up in
 +		--- Qemu memory, too.
-+		return true
++		return true, true
 +	else
 +		io.write("\nWARNING: undefined store operation @%08x\n", addr)
-+		--- Fall through and handle by Qemu
++		--- Fall through, send to both Qemu and SerialICE
 +	end
 +
-+	return false
++	return true, true
 +end
 +
 +--- do some random initialization
