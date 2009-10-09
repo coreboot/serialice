@@ -48,5 +48,10 @@ SECTIONS {
 		. = 15;
 		BYTE(0x00);
 	}
-}
 
+	/DISCARD/ : {
+		*(.comment)
+		*(.note.*)
+		*(.note)
+	}
+}
