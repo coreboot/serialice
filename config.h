@@ -20,7 +20,7 @@
 #define ECHO_MODE	1
 #define SIO_SPEED	115200
 #define SIO_PORT	0x3f8
-#define VIA_ROMSTRAP	1
-//#define MAINBOARD	"kontron_986lcd-m.c"
+#define VIA_ROMSTRAP	0
+#define MAINBOARD	"kontron_986lcd-m.c"
 //#define MAINBOARD	"intel_d945gclf.c"
-#define MAINBOARD	"asus_m2v-mx_se.c"
+//#define MAINBOARD	"asus_m2v-mx_se.c"

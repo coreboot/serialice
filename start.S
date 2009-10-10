@@ -113,7 +113,7 @@ reset_vector:
 	/* VIA romstrap */
 	.section ".romstrap", "a", @progbits
 
-#ifdef VIA_ROMSTRAP
+#if VIA_ROMSTRAP
 /* The pointer to above table should be at 0xffffd,
  * the table itself MUST be aligned to 128B it seems!
  */
