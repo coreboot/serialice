@@ -42,26 +42,10 @@ static void pci_write_config32(u32 addr, u32 value)
 
 /* PnP / SuperIO access functions */
 
-static inline void pnp_enter_ext_func_mode(u16 port)
-{
-        outb(0x87, port);
-        outb(0x87, port);
-}
-
-static inline void pnp_enter_ext_func_mode_alt(u16 port)
-{
-        outb(0x55, port);
-}
-
-static void pnp_exit_ext_func_mode(u16 port)
-{
-        outb(0xaa, port);
-}
-
 static inline void pnp_write_register(u16 port, u8 reg, u8 value)
 {
 	outb(reg, port);
-	outb(value, port +1);
+	outb(value, port + 1);
 }
 
 static inline void pnp_set_logical_device(u8 port, u8 device)
@@ -83,6 +67,36 @@ static inline void pnp_set_iobase0(u16 port, u16 iobase)
 static inline void pnp_set_irq0(u16 port, u8 irq)
 {
 	pnp_write_register(port, 0x70, irq);
+}
+
+static inline void pnp_enter_ext_func_mode(u16 port)
+{
+        outb(0x87, port);
+        outb(0x87, port);
+}
+
+static inline void pnp_enter_ext_func_mode_alt(u16 port)
+{
+        outb(0x55, port);
+}
+
+static inline void pnp_enter_ext_func_mode_ite(u16 port)
+{
+	outb(0x87, port);
+	outb(0x01, port);
+	outb(0x55, port);
+	outb((port == 0x2e) ? 0x55 : 0xaa, port);
+}
+
+static void pnp_exit_ext_func_mode(u16 port)
+{
+        outb(0xaa, port);
+}
+
+static void pnp_exit_ext_func_mode_ite(u16 port)
+{
+	pnp_set_logical_device(port, 0);
+	pnp_write_register(port, 0x02, 0x02);
 }
 
 #include MAINBOARD

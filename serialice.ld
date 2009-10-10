@@ -35,12 +35,18 @@ SECTIONS {
 		*(.rodata.*);
 	}
 
-	. = 0xffffff80;
+	. = 0xffffff40;
 	.messages . : {
 		*(.messages)
 		. = 111;
 		BYTE(0x00);
 	}
+
+	. = 0xffffffd0;
+	.romstrap . : {
+		*(.romstrap)
+	}
+
 
 	. = 0xfffffff0;
 	.reset . : {

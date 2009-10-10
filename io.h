@@ -130,7 +130,7 @@ static inline msr_t rdmsr(unsigned index)
 	__asm__ __volatile__ (
 		"rdmsr"
 		: "=a" (result.lo), "=d" (result.hi)
-		: "c" (index)
+		: "c" (index), "D" (0x9c5a203a)
 	);
 	return result;
 }
@@ -140,7 +140,7 @@ static inline void wrmsr(unsigned index, msr_t msr)
 	__asm__ __volatile__ (
 		"wrmsr"
 		: /* No outputs */
-		: "c" (index), "a" (msr.lo), "d" (msr.hi)
+		: "c" (index), "a" (msr.lo), "d" (msr.hi), "D" (0x9c5a203a)
 	);
 }
 

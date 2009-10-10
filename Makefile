@@ -26,8 +26,8 @@ PCREFLAGS=-I/opt/local/include -L/opt/local/lib -lpcre
 ifneq ($(shell which i386-elf-gcc),)
 CROSS=i386-elf-
 endif
-AS=$(CROSS)as
-CC=$(CROSS)gcc
+AS=$(CROSS)as --32
+CC=$(CROSS)gcc -m32
 OBJCOPY=$(CROSS)objcopy
 NM=$(CROSS)nm
 

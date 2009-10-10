@@ -162,6 +162,30 @@ int main(int argc,char **argv)
 //bswap and xchg also not affect flags.
 //dr2 must be initially 0x7f
 
+    fprintf(w,"docall:\nmovl %%eax,%%dr0 #NOSTACK\n\
+    movl %%dr2,%%eax #NOSTACK\n\
+    movzbl %%al,%%eax #NOSTACK\n\
+    leal -4(%%eax),%%eax #NOSTACK\n\
+    movb %%al,%%ah #NOSTACK\n\
+    movl %%eax,%%dr2 #NOSTACK\n\
+    leal 8(%%esp),%%eax #NOSTACK\n\
+    jmp setxmml\n\
+    dopop:\n movl %%eax,%%dr0 #NOSTACK\n\
+    movl %%dr2,%%eax #NOSTACK\n\
+    movzbl %%al,%%eax #NOSTACK\n\
+    movb %%al,%%ah #NOSTACK\n\
+    leal 4(%%eax),%%eax #NOSTACK\n\
+    movl %%eax,%%dr2 #NOSTACK\n\
+    jmp getxmml\n\
+    dopush:\n movl %%eax,%%dr3 #NOSTACK\n\
+    movl %%dr2,%%eax #NOSTACK\n\
+    movzbl %%al,%%eax #NOSTACK\n\
+    leal -4(%%eax),%%eax #NOSTACK\n\
+    movb %%al,%%ah #NOSTACK\n\
+    movl %%eax,%%dr2 #NOSTACK\n\
+    movl %%dr3,%%eax\n\
+    jmp setxmml\n");
+
     //16 bytes table xmm/12 mmx, pextrw and pinsrw consumes 5 bytes, and jmp *esp consumes 2, nop consumes 1 byte, movb consumes 2 bytes
     //Align of each,must 16 bytes, for use 1,2,4,8 escalar multiple.
     fprintf(w,"setxmm:\n");
@@ -550,6 +574,23 @@ getxmml:\n\
 
 	fprintf(w,"#%s #ORIG\n", buf);
 
+	/* handle pushl xxx(%esp) */
+        if (regexp("^pushl\\s+(\\d*)\\(\\%esp\\)",buf,len,find)) {
+            fprintf(w,"movl %%eax,%%dr0 #NOSTACK\n");
+            fprintf(w,"movl %%dr2,%%eax #NOSTACK\n");
+            fprintf(w,"movzbl %%al,%%eax #NOSTACK\n");
+            fprintf(w,"movb %%al,%%ah #NOSTACK\n");
+            fprintf(w,"leal %d(%%eax),%%eax #NOSTACK\n",256*atoi(find[1]));
+            fprintf(w,"movl %%eax,%%dr2 #NOSTACK\n");
+            fprintf(w,"movl %%dr0,%%eax #NOSTACK\n");
+            fprintf(w,"movl $.+10,%%esp\n");
+            fprintf(w,"jmp getxmml\n");
+            fprintf(w,"movl $.+10,%%esp\n");
+            fprintf(w,"jmp dopush\n");
+            fprintf(w,"movl %%dr0,%%eax #NOSTACK\n");
+            continue;
+	}
+
 	/* leal is tricky */
 	if (regexp("^leal\\s+(\\d*)\\(\\%esp\\)\\s*,\\s*(.*)$",buf,len,find))
 	{
@@ -675,27 +716,17 @@ getxmml:\n\
         if (regexp("^pushl\\s+(.*)$",buf,len,find))
         {
             fprintf(w,"movl %%eax,%%dr0 #NOSTACK\n");
-            fprintf(w,"movl %%dr2,%%eax #NOSTACK\n");
-            fprintf(w,"movzbl %%al,%%eax #NOSTACK\n");
-            fprintf(w,"leal -4(%%eax),%%eax #NOSTACK\n");
-            fprintf(w,"movb %%al,%%ah #NOSTACK\n");
-            fprintf(w,"movl %%eax,%%dr2 #NOSTACK\n");
             fprintf(w,"movl %s,%%eax\n",find[1]);
             fprintf(w,"movl $.+10,%%esp\n");
-            fprintf(w,"jmp setxmml\n");
+            fprintf(w,"jmp dopush\n");
             fprintf(w,"movl %%dr0,%%eax #NOSTACK\n");
             continue;
         }
         if (regexp("^popl\\s+(.*)$",buf,len,find))
         {
-            fprintf(w,"movl %%eax,%%dr0 #NOSTACK\n");
-            fprintf(w,"movl %%dr2,%%eax #NOSTACK\n");
-            fprintf(w,"movzbl %%al,%%eax #NOSTACK\n");
-            fprintf(w,"movb %%al,%%ah #NOSTACK\n");
-            fprintf(w,"leal 4(%%eax),%%eax #NOSTACK\n");
-            fprintf(w,"movl %%eax,%%dr2 #NOSTACK\n");
+
             fprintf(w,"movl $.+10,%%esp\n");
-            fprintf(w,"jmp getxmml\n");
+            fprintf(w,"jmp dopop\n");
             fprintf(w,"movl %%eax,%s\n",find[1]);
             if (strcmp(find[1],"%eax"))
                 fprintf(w,"movl %%dr0,%%eax #NOSTACK\n");
@@ -703,15 +734,8 @@ getxmml:\n\
         }
         if (regexp("^call\\s+(.*)$",buf,len,find))
         {
-            fprintf(w,"movl %%eax,%%dr0 #NOSTACK\n");
-            fprintf(w,"movl %%dr2,%%eax #NOSTACK\n");
-            fprintf(w,"movzbl %%al,%%eax #NOSTACK\n");
-            fprintf(w,"leal -4(%%eax),%%eax #NOSTACK\n");
-            fprintf(w,"movb %%al,%%ah #NOSTACK\n");
-            fprintf(w,"movl %%eax,%%dr2 #NOSTACK\n");
-            fprintf(w,"movl $.+23,%%eax #NOSTACK\n");
             fprintf(w,"movl $.+10,%%esp\n");
-            fprintf(w,"jmp setxmml\n");
+            fprintf(w,"jmp docall\n");
             fprintf(w,"movl %%dr0,%%eax #NOSTACK\n");
             fprintf(w,".byte 0xe9\n.long %s-4-. #NOSTACK\n",find[1]);//jmp, not works with .global??? gcc???            
             continue;

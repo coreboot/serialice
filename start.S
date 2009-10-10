@@ -17,6 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "config.h"
+
 	.code32
 
 _c_main:
@@ -108,3 +110,12 @@ reset_vector:
 	.code16
 	jmp _start
 
+	/* VIA romstrap */
+	.section ".romstrap", "a", @progbits
+
+#ifdef VIA_ROMSTRAP
+/* The pointer to above table should be at 0xffffd,
+ * the table itself MUST be aligned to 128B it seems!
+ */
+	.long via_romstrap
+#endif
