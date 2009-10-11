@@ -20,7 +20,13 @@
 #define ECHO_MODE	1
 #define SIO_SPEED	115200
 #define SIO_PORT	0x3f8
+
 #define VIA_ROMSTRAP	0
+#define HAVE_SSE	1       /* Set to 0 for CPUs without SSE. */
+
 #define MAINBOARD	"kontron_986lcd-m.c"
 //#define MAINBOARD	"intel_d945gclf.c"
 //#define MAINBOARD	"asus_m2v-mx_se.c"
+//#define MAINBOARD	"msi_ms6178.c"
+//#define MAINBOARD	"rca_rm4100.c"
+//#define MAINBOARD	"thomson_ip1000.c"

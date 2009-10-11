@@ -29,11 +29,14 @@ _c_main:
 	movl	%eax, %cr0
 	movl	%ebp, %eax
 
+#if HAVE_SSE
 	/* enable SSE */
 	movl %cr4, %eax
 	orl $(3<<9), %eax
 	movl %eax, %cr4
+#endif
 
+	/* Setting up the stack (xmmstack only?) */
 	xorl	%esp,%esp
 	movl	$0x7f,%esp #Start address of XMM/MMX stack.
 	movl	%esp,%dr2  #DR2 contains stack(low byte) and offset(hi byte)
@@ -112,7 +115,6 @@ reset_vector:
 
 	/* VIA romstrap */
 	.section ".romstrap", "a", @progbits
-
 #if VIA_ROMSTRAP
 /* The pointer to above table should be at 0xffffd,
  * the table itself MUST be aligned to 128B it seems!
