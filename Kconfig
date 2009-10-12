@@ -39,7 +39,7 @@ config BOARD_DELL_S1850
 config BOARD_ASUS_M2V_MX_SE
 	bool "ASUS M2V-MX SE"
 	select VIA_ROMSTRAP
-	select HAVE_SSE
+	select BUILD_XMMSTACK
 
 config BOARD_MSI_MS6178
 	bool "MSI MS6178"
@@ -62,20 +62,11 @@ config BOARD_INIT
 	default "rca_rm4100.c" if BOARD_RCA_RM4100
 	default "thomson_ip1000.c" if BOARD_THOMSON_IP1000
 
-config HAVE_SSE
-	bool
-	default n
-
-config VIA_ROMSTRAP
-	bool
-	default n
-
 choice
 	prompt "Target communication"
 
 config SERIAL
 	boolean "Serial console support"
-	default y
 	help
 	  SerialICE shell on serial console.
 
@@ -195,6 +186,15 @@ config EXPERT
 	  Warning: Only enable this option if you really know what you're
 	  doing! You have been warned!
 
+config HAVE_SSE
+	bool "Enable SSE"
+	depends on EXPERT
+	default n
+
+config VIA_ROMSTRAP
+	bool "VIA Southbridge ROMSTRAP"
+	depends on EXPERT
+	default n
 
 choice
 	prompt "Build Method"
@@ -203,15 +203,38 @@ choice
 
 config BUILD_ROMCC
 	bool "ROMCC"
+	depends on EXPERT
 
 config BUILD_XMMSTACK
 	bool "XMMSTACK"
+	select HAVE_SSE
+	depends on EXPERT
 
 endchoice
 
 endmenu
 
-config BUILD_ROMCC
+# blind default options in case CONFIG_EXPERT is not enabled.
+#
+
+config HAVE_SSE
 	bool
 	depends on !EXPERT
+	default n
+
+config VIA_ROMSTRAP
+	bool
+	depends on !EXPERT
+	default n
+
+config BUILD_ROMCC
+	bool
 	default y
+	depends on !EXPERT
+
+config BUILD_XMMSTACK
+	bool
+	select HAVE_SSE
+	depends on !EXPERT
+
+

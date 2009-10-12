@@ -158,7 +158,7 @@ $(obj)/%.o: $(obj)/%.S
 
 # #####################################################################
 
-dongle: serialice.rom
-	dongle.py -v -c /dev/cu.usbserial-00* serialice.rom  4032K
+dongle: $(TARGET-y)
+	dongle.py -v -c /dev/cu.usbserial-00* $(TARGET-y) EOF
 
 
