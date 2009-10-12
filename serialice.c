@@ -145,12 +145,15 @@ static void serialice_write_msr(void)
 
 static void serialice_cpuinfo(void)
 {
-	u32 idx;
+	u32 eax, ecx;
 	u32 reg32;
 
 	// Format:
-	// *ci00000000
-	idx = sio_get32();
+	//    --EAX--- --ECX---
+	// *ci00000000.00000000
+	eax = sio_get32();
+	sio_getc(); // skip .
+	ecx = sio_get32();
 
 	sio_putc('\r'); sio_putc('\n');
 
@@ -158,19 +161,19 @@ static void serialice_cpuinfo(void)
  	 * have to worry about running out of registers if we
  	 * occupy eax, ebx, ecx, edx at the same time 
  	 */
-	reg32 = cpuid_eax(idx);
+	reg32 = cpuid_eax(eax);
 	sio_put32(reg32);
 	sio_putc('.');
 
-	reg32 = cpuid_ebx(idx);
+	reg32 = cpuid_ebx(eax);
 	sio_put32(reg32);
 	sio_putc('.');
 
-	reg32 = cpuid_ecx(idx);
+	reg32 = cpuid_ecx(eax);
 	sio_put32(reg32);
 	sio_putc('.');
 
-	reg32 = cpuid_edx(idx);
+	reg32 = cpuid_edx(eax);
 	sio_put32(reg32);
 }
 
