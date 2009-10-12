@@ -1,55 +1,36 @@
 Index: serialice.c
 ===================================================================
---- serialice.c	(revision 55)
+--- serialice.c	(revision 18)
 +++ serialice.c	(working copy)
-@@ -146,32 +146,35 @@
- 
- static void serialice_cpuinfo(void)
- {
--	u32 idx;
-+	u32 eax, ecx;
- 	u32 reg32;
- 
- 	// Format:
--	// *ci00000000
--	idx = sio_get32();
-+	// *ci00000000.00000000
-+	eax = sio_get32();
-+	sio_getc(); // skip .
-+	ecx = sio_get32();
- 
-+
- 	sio_putc('\r'); sio_putc('\n');
- 
- 	/* This code looks quite crappy but this way we don't
+@@ -161,19 +161,19 @@
   	 * have to worry about running out of registers if we
   	 * occupy eax, ebx, ecx, edx at the same time 
   	 */
--	reg32 = cpuid_eax(idx);
+-	reg32 = cpuid_eax(eax);
 +	reg32 = cpuid_eax(eax, ecx);
  	sio_put32(reg32);
  	sio_putc('.');
  
--	reg32 = cpuid_ebx(idx);
+-	reg32 = cpuid_ebx(eax);
 +	reg32 = cpuid_ebx(eax, ecx);
  	sio_put32(reg32);
  	sio_putc('.');
  
--	reg32 = cpuid_ecx(idx);
+-	reg32 = cpuid_ecx(eax);
 +	reg32 = cpuid_ecx(eax, ecx);
  	sio_put32(reg32);
  	sio_putc('.');
  
--	reg32 = cpuid_edx(idx);
+-	reg32 = cpuid_edx(eax);
 +	reg32 = cpuid_edx(eax, ecx);
  	sio_put32(reg32);
  }
  
 Index: io.h
 ===================================================================
---- io.h	(revision 55)
+--- io.h	(revision 12)
 +++ io.h	(working copy)
-@@ -99,46 +99,46 @@
+@@ -162,46 +162,46 @@
  
  /* CPUID functions */
  
