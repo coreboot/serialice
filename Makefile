@@ -19,8 +19,27 @@
 
 VERSION="1.3"
 
-HOSTCC=gcc
-HOSTCFLAGS= -O2 -Wall
+export src := $(shell pwd)
+export srctree := $(src)
+export srck := $(src)/util/kconfig
+export obj := $(src)/build
+export objk := $(src)/build/util/kconfig
+
+export KERNELVERSION      := $(shell echo $(VERSION) )
+export KCONFIG_AUTOHEADER := $(obj)/config.h
+export KCONFIG_AUTOCONFIG := $(obj)/auto.conf
+
+CONFIG_SHELL := sh
+KBUILD_DEFCONFIG := configs/defconfig
+UNAME_RELEASE := $(shell uname -r)
+HAVE_DOTCONFIG := $(wildcard .config)
+MAKEFLAGS += -rR --no-print-directory
+
+# Make is silent per default, but 'make V=1' will show all compiler calls.
+ifneq ($(V),1)
+Q := @
+endif
+
 PCREFLAGS=-I/opt/local/include -L/opt/local/lib -lpcre
 
 ifneq ($(shell which i386-elf-gcc),)
@@ -35,54 +54,89 @@ LDFLAGS=-Wa,--divide -nostdlib -nostartfiles -static -T serialice.ld
 
 SOURCES = serialice.c chipset.c config.h serial.c types.h mainboard/*.c
 
-all: serialice.rom
+HOSTCC = gcc
+HOSTCXX = g++
+HOSTCFLAGS := -O2 -Wall -I$(srck) -I$(objk)
+HOSTCXXFLAGS := -I$(srck) -I$(objk)
 
-serialice.rom: serialice.elf
+INCLUDES = -Ibuild
+CFLAGS := -Wall -Werror -Os $(INCLUDES)
+OBJECTS = serialice.o
+OBJS    = $(patsubst %,$(obj)/%,$(OBJECTS))
+
+ifeq ($(strip $(HAVE_DOTCONFIG)),)
+
+all: config
+
+else
+
+include $(src)/.config
+
+TARGET-$(CONFIG_BUILD_ROMCC) = $(obj)/serialice.rom
+TARGET-$(CONFIG_BUILD_XMMSTACK)  = $(obj)/serialice-gcc.rom
+all: $(TARGET-y)
+
+endif
+
+prepare:
+	$(Q)mkdir -p $(obj)/util/kconfig/lxdialog
+
+clean:
+	$(Q)rm -rf $(obj)/*.elf $(obj)/*.o
+	$(Q)cd $(obj); rm -f romcc serialice.S *.o *.o.s
+	$(Q)cd $(obj); rm -f serialice.elf serialice.rom serialice.map
+	$(Q)cd $(obj); rm -f serialice-gcc.elf serialice-gcc.rom serialice-gcc.map
+	$(Q)cd $(obj); rm -f serialice-gcc.S serialice-pre.s xmmstack serialice-gcc.map
+
+distclean: clean
+	$(Q)rm -rf build
+	$(Q)rm -f .config .config.old ..config.tmp .kconfig.d .tmpconfig*
+
+include util/kconfig/Makefile
+
+.PHONY: $(PHONY) prepare clean distclean
+
+$(obj)/serialice.rom: $(obj)/serialice.elf
 	$(OBJCOPY) -O binary $< $@
 
-serialice.elf: serialice.o start.o serialice.ld
-	$(CC) $(LDFLAGS) -o $@ serialice.o start.o 
-	$(NM) $@ | sort -u > serialice.map
+$(obj)/serialice.elf: $(obj)/serialice.o $(obj)/start.o $(src)/serialice.ld
+	$(CC) $(LDFLAGS) -o $@ $(obj)/serialice.o $(obj)/start.o 
+	$(NM) $@ | sort -u > $(obj)/serialice.map
 
-serialice.S: $(SOURCES) ./romcc
-	./romcc -mcpu=i386 -I. -Imainboard -DVERSION=\"$(VERSION)\" -o $@.tmp $<
+$(obj)/serialice.S: $(SOURCES) $(obj)/romcc
+	$(obj)/romcc -mcpu=i386 -I. -Imainboard -DVERSION=\"$(VERSION)\" -o $@.tmp $<
 	printf ".section \".rom.text\"\n.globl main\nmain:\n" > $@
 	cat $@.tmp >> $@
 	rm $@.tmp
 
-romcc: util/romcc.c
+$(obj)/romcc: $(src)/util/romcc.c
 	$(HOSTCC) $(HOSTCFLAGS) -o $@ $^
 
 # #####################################################################
 
-serialice-gcc.rom: serialice-gcc.elf
+$(obj)/serialice-gcc.rom: $(obj)/serialice-gcc.elf
 	$(OBJCOPY) -O binary $< $@
 
-serialice-gcc.elf: serialice-gcc.o start.o serialice.ld
-	$(CC) $(LDFLAGS) -o $@ serialice-gcc.o start.o 
-	$(NM) $@ | sort -u > serialice-gcc.map
+$(obj)/serialice-gcc.elf: $(obj)/serialice-gcc.o $(obj)/start.o serialice.ld
+	$(CC) $(LDFLAGS) -o $@ $(obj)/serialice-gcc.o $(obj)/start.o 
+	$(NM) $@ | sort -u > $(obj)/serialice-gcc.map
 
-serialice-pre.s: $(SOURCES) ./xmmstack
-	$(CC) -O2 -march=i486 -mno-stackrealign  -mpreferred-stack-boundary=2  -I. -Imainboard -fomit-frame-pointer -fno-stack-protector -DVERSION=\"$(VERSION)\" -S $< -o serialice-pre.s
+$(obj)/serialice-pre.s: $(SOURCES) $(obj)/xmmstack
+	$(CC) -O2 -march=i486 -mno-stackrealign  -mpreferred-stack-boundary=2 -I. -Imainboard -fomit-frame-pointer -fno-stack-protector -DVERSION=\"$(VERSION)\" -S $< -o $(obj)/serialice-pre.s
 
-serialice-gcc.S: serialice-pre.s
-	./xmmstack -xmm serialice-pre.s
-	mv serialice-pre.sn.s serialice-gcc.S
+$(obj)/serialice-gcc.S: $(obj)/serialice-pre.s
+	$(obj)/xmmstack -xmm $(obj)/serialice-pre.s
+	mv $(obj)/serialice-pre.sn.s $(obj)/serialice-gcc.S
 
-xmmstack: util/xmmstack.c
+$(obj)/xmmstack: $(src)/util/xmmstack.c
 	$(HOSTCC) $(HOSTCFLAGS) $(PCREFLAGS) -o $@ $^
 
 # #####################################################################
 
 clean:
-	rm -f romcc serialice.S *.o *.o.s
-	rm -f serialice.elf serialice.rom serialice.map
-	rm -f serialice-gcc.elf serialice-gcc.rom serialice-gcc.map
-	rm -f serialice-gcc.S serialice-pre.s xmmstack serialice-gcc.map
-
 dongle: serialice.rom
 	dongle.py -v -c /dev/cu.usbserial-00* serialice.rom  4032K
 
-%.o: %.S
+$(obj)/%.o: $(src)/%.S
 	$(CPP) -DVERSION=\"$(VERSION)\" -o $@.s $^
 	$(AS) -o $@ $@.s

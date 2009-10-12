@@ -1,0 +1,215 @@
+##
+## SerialICE
+##
+## Copyright (C) 2009 coresystems GmbH
+##
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; version 2 of the License.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program; if not, write to the Free Software
+## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+##
+
+#
+# For a description of the syntax of this configuration file,
+# see http://lxr.linux.no/source/Documentation/kbuild/kconfig-language.txt.
+#
+
+mainmenu "SerialICE Configuration"
+
+choice
+	prompt "Mainboard model"
+
+config BOARD_KONTRON_986LCD_M
+	bool "Kontron 986LCD-M/mITX"
+
+config BOARD_INTEL_D945GCLF
+	bool "Intel D945GCLF"
+
+config BOARD_DELL_S1850
+	bool "Dell PowerEdge S1850"
+
+config BOARD_ASUS_M2V_MX_SE
+	bool "ASUS M2V-MX SE"
+	select VIA_ROMSTRAP
+	select HAVE_SSE
+
+config BOARD_MSI_MS6178
+	bool "MSI MS6178"
+
+config BOARD_RCA_RM4100
+	bool "RCA RM4100"
+
+config BOARD_THOMSON_IP1000
+	bool "Thomson IP1000"
+
+endchoice
+
+config BOARD_INIT
+	string
+	default "kontron_986lcd_m.c" if BOARD_KONTRON_986LCD_M
+	default "intel_d945gclf.c" if BOARD_INTEL_D945GCLF
+	default "dell_s1850.c" if BOARD_DELL_S1850
+	default "asus_m2v-mx_se.c" if BOARD_ASUS_M2V_MX_SE
+	default "msi_ms6178.c" if BOARD_MSI_MS6178
+	default "rca_rm4100.c" if BOARD_RCA_RM4100
+	default "thomson_ip1000.c" if BOARD_THOMSON_IP1000
+
+config HAVE_SSE
+	bool
+	default n
+
+config VIA_ROMSTRAP
+	bool
+	default n
+
+menu "Console Setup"
+
+config SERIAL
+	boolean "Serial console support"
+	default y
+	help
+	  SerialICE shell on serial console.
+
+choice
+	prompt "Serial console COM port"
+	default SERIAL_COM1
+	depends on SERIAL
+
+config SERIAL_COM1
+	bool "COM1/ttyS0"
+	help
+	  Serial console on COM1/ttyS0.
+
+config SERIAL_COM2
+	bool "COM2/ttyS1"
+	help
+	  Serial console on COM2/ttyS1.
+
+endchoice
+
+
+config SERIAL_PORT
+	hex
+	default 0x3f8 if SERIAL_COM1
+	default 0x2f8 if SERIAL_COM2
+
+
+choice
+	prompt "Serial console speed"
+	default SERIAL_115200
+	depends on SERIAL
+
+config SERIAL_115200
+	bool "115200 bps"
+	help
+	  Set serial port speed to 115200 bps.
+
+config SERIAL_57600
+	bool "57600 bps"
+	help
+	  Set serial port speed to 57600 bps.
+
+config SERIAL_38400
+	bool "38400 bps"
+	help
+	  Set serial port speed to 38400 bps.
+
+config SERIAL_19200
+	bool "19200 bps"
+	help
+	  Set serial port speed to 19200 bps.
+
+config SERIAL_9600
+	bool "9600 bps"
+	help
+	  Set serial port speed to 9600 bps.
+
+endchoice
+
+config SERIAL_BAUDRATE
+	int
+	default 115200 if SERIAL_115200
+	default 57600 if SERIAL_57600
+	default 38400 if SERIAL_38400
+	default 19200 if SERIAL_19200
+	default 9600 if SERIAL_9600
+
+
+config CONSOLE_USB
+	boolean "USB2 console support (BROKEN)"
+	depends on EXPERIMENTAL
+	help
+	  Send SerialICE shell to USB2 (EHCI) console.
+
+	  Note: This requires a USB2 controller which supports the EHCI
+	  Debug Port capability. Controllers which are known to work:
+
+	    * 10b9:5239 ALi Corporation USB 2.0 (USB PCI card)
+	    * 8086:24cd Intel ICH4/ICH4-M
+	    * 8086:24dd Intel ICH5
+	    * 8086:265c Intel ICH6
+	    * 8086:268c Intel 631xESB/632xESB/3100
+	    * 8086:27cc Intel ICH7
+	    * 8086:2836 Intel ICH8
+	    * 8086:283a Intel ICH8
+	    * 8086:293a Intel ICH9
+	    * 10de:0088 NVIDIA MCP2A
+	    * 10de:005b NVIDIA CK804
+	    * 10de:026e NVIDIA MCP51
+	    * 10de:036d NVIDIA MCP55
+	    * 10de:03f2 NVIDIA MCP61
+	    * 1002:4386 ATI/AMD SB600
+	    * 1106:3104 VIA VX800
+
+	  See http://www.coreboot.org/EHCI_Debug_Port for an up-to-date list.
+
+endmenu
+
+menu "Debugging setup"
+
+config EXPERIMENTAL
+	bool "Prompt for development and/or incomplete code/mainboards"
+	help
+	  Enable this option if you want to test development features or
+	  incomplete/unsupported mainboards.
+
+	  We do not make any guarantees about anything that is marked
+	  as EXPERIMENTAL! You have been warned!
+
+config EXPERT
+	bool "Expert mode"
+	help
+	  This allows you to select certain advanced configuration options.
+	  It is mainly intended for SerialICE developers.
+
+	  Warning: Only enable this option if you really know what you're
+	  doing! You have been warned!
+
+endmenu
+
+
+choice
+	prompt "Build Method"
+	default BUILD_ROMCC
+	depends on EXPERT
+
+config BUILD_ROMCC
+	bool "ROMCC"
+
+config BUILD_XMMSTACK
+	bool "XMMSTACK"
+
+endchoice
+
+config BUILD_ROMCC
+	bool
+	depends on !EXPERT
+	default y

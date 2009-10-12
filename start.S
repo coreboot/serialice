@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include "config.h"
+#include "serialice.h"
 
 	.code32
 
@@ -29,7 +29,7 @@ _c_main:
 	movl	%eax, %cr0
 	movl	%ebp, %eax
 
-#if HAVE_SSE
+#ifdef CONFIG_HAVE_SSE
 	/* enable SSE */
 	movl %cr4, %eax
 	orl $(3<<9), %eax
@@ -115,7 +115,7 @@ reset_vector:
 
 	/* VIA romstrap */
 	.section ".romstrap", "a", @progbits
-#if VIA_ROMSTRAP
+#ifdef CONFIG_VIA_ROMSTRAP
 /* The pointer to above table should be at 0xffffd,
  * the table itself MUST be aligned to 128B it seems!
  */
