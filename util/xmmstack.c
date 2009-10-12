@@ -622,9 +622,9 @@ getxmml:\n\
                 fprintf(w,"movl %%dr0,%%edx #NOSTACK\n");
                 switch(instrlen(find[1],1))
                 {
-                    case 1:fprintf(w,"%s %%dl,%%al\n",find[1],find[2]);break;
-                    case 2:fprintf(w,"%s %%dx,%%ax\n",find[1],find[2]);break;
-                    case 4:fprintf(w,"%s %%edx,%%eax\n",find[1],find[2]);break;
+                    case 1:fprintf(w,"%s %%dl,%s\n",find[1],find[2]);break;
+                    case 2:fprintf(w,"%s %%dx,%s\n",find[1],find[2]);break;
+                    case 4:fprintf(w,"%s %%edx,%s\n",find[1],find[2]);break;
                 }
                 fprintf(w,"movl %%esp,%%edx #NOSTACK\n");
             }
