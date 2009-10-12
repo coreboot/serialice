@@ -82,6 +82,7 @@ prepare:
 	$(Q)mkdir -p $(obj)/util/kconfig/lxdialog
 
 clean:
+	$(Q)printf "  CLEAN\n"
 	$(Q)rm -rf $(obj)/*.elf $(obj)/*.o
 	$(Q)cd $(obj); rm -f romcc serialice.S *.o *.o.s
 	$(Q)cd $(obj); rm -f serialice.elf serialice.rom serialice.map
@@ -89,6 +90,7 @@ clean:
 	$(Q)cd $(obj); rm -f serialice-gcc.S serialice-pre.s xmmstack serialice-gcc.map
 
 distclean: clean
+	$(Q)printf "  DISTCLEAN\n"
 	$(Q)rm -rf build
 	$(Q)rm -f .config .config.old ..config.tmp .kconfig.d .tmpconfig*
 
@@ -97,49 +99,66 @@ include util/kconfig/Makefile
 .PHONY: $(PHONY) prepare clean distclean
 
 $(obj)/serialice.rom: $(obj)/serialice.elf
-	$(OBJCOPY) -O binary $< $@
+	$(Q)printf "  OBJCOPY  $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(OBJCOPY) -O binary $< $@
 
 $(obj)/serialice.elf: $(obj)/serialice.o $(obj)/start.o $(src)/serialice.ld
-	$(CC) $(LDFLAGS) -o $@ $(obj)/serialice.o $(obj)/start.o 
-	$(NM) $@ | sort -u > $(obj)/serialice.map
+	$(Q)printf "  LINK     $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(CC) $(LDFLAGS) -o $@ $(obj)/serialice.o $(obj)/start.o 
+	$(Q)$(NM) $@ | sort -u > $(obj)/serialice.map
 
 $(obj)/serialice.S: $(SOURCES) $(obj)/romcc
-	$(obj)/romcc -mcpu=i386 $(INCLUDES) -I. -Imainboard -DVERSION=\"$(VERSION)\" -o $@.tmp $<
-	printf ".section \".rom.text\"\n.globl main\nmain:\n" > $@
-	cat $@.tmp >> $@
-	rm $@.tmp
+	$(Q)printf "  ROMCC    $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(obj)/romcc -mcpu=i386 $(INCLUDES) -I. -Imainboard -DVERSION=\"$(VERSION)\" -o $@.tmp $<
+	$(Q)printf ".section \".rom.text\"\n.globl main\nmain:\n" > $@
+	$(Q)cat $@.tmp >> $@
+	$(Q)rm $@.tmp
 
 $(obj)/romcc: $(src)/util/romcc.c
-	$(HOSTCC) $(HOSTCFLAGS) -o $@ $^
+	$(Q)printf "  HOSTCC   $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(HOSTCC) $(HOSTCFLAGS) -o $@ $^
 
 # #####################################################################
 
 $(obj)/serialice-gcc.rom: $(obj)/serialice-gcc.elf
-	$(OBJCOPY) -O binary $< $@
+	$(Q)printf "  OBJCOPY  $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(OBJCOPY) -O binary $< $@
 
 $(obj)/serialice-gcc.elf: $(obj)/serialice-gcc.o $(obj)/start.o serialice.ld
-	$(CC) $(LDFLAGS) -o $@ $(obj)/serialice-gcc.o $(obj)/start.o 
-	$(NM) $@ | sort -u > $(obj)/serialice-gcc.map
+	$(Q)printf "  LINK     $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(CC) $(LDFLAGS) -o $@ $(obj)/serialice-gcc.o $(obj)/start.o 
+	$(Q)$(NM) $@ | sort -u > $(obj)/serialice-gcc.map
 
 $(obj)/serialice-pre.s: $(SOURCES) $(obj)/xmmstack
-	$(CC) -O2 -march=i486 -mno-stackrealign  -mpreferred-stack-boundary=2 -I. -Imainboard -fomit-frame-pointer -fno-stack-protector -DVERSION=\"$(VERSION)\" -S $< -o $(obj)/serialice-pre.s
+	$(Q)printf "  CC       $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(CC) -O2 -march=i486 -mno-stackrealign -mpreferred-stack-boundary=2 $(INCLUDES) -I. -Imainboard -fomit-frame-pointer -fno-stack-protector -DVERSION=\"$(VERSION)\" -S $< -o $(obj)/serialice-pre.s
 
 $(obj)/serialice-gcc.S: $(obj)/serialice-pre.s
-	$(obj)/xmmstack -xmm $(obj)/serialice-pre.s
-	mv $(obj)/serialice-pre.sn.s $(obj)/serialice-gcc.S
+	$(Q)printf "  XMMSTACK $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(obj)/xmmstack -xmm $(obj)/serialice-pre.s
+	$(Q)mv $(obj)/serialice-pre.sn.s $(obj)/serialice-gcc.S
 
 $(obj)/xmmstack: $(src)/util/xmmstack.c
-	$(HOSTCC) $(HOSTCFLAGS) $(PCREFLAGS) -o $@ $^
+	$(Q)printf "  HOSTCC   $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(HOSTCC) $(HOSTCFLAGS) $(PCREFLAGS) -o $@ $^
 
 # #####################################################################
 
-clean:
+$(obj)/%.o: $(src)/%.S
+	$(Q)printf "  CPP      $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(CPP) $(INCLUDES) -DVERSION=\"$(VERSION)\" -o $@.s $^
+	$(Q)printf "  AS       $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(AS) -o $@ $@.s
+
+$(obj)/%.o: $(obj)/%.S
+	$(Q)printf "  CPP      $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(CPP) $(INCLUDES) -DVERSION=\"$(VERSION)\" -o $@.s $^
+	$(Q)printf "  AS       $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(AS) -o $@ $@.s
+
+# #####################################################################
+
 dongle: serialice.rom
 	dongle.py -v -c /dev/cu.usbserial-00* serialice.rom  4032K
 
-$(obj)/%.o: $(src)/%.S
-	$(CPP) $(INCLUDES) -DVERSION=\"$(VERSION)\" -o $@.s $^
-	$(AS) -o $@ $@.s
-$(obj)/%.o: $(obj)/%.S
-	$(CPP) $(INCLUDES) -DVERSION=\"$(VERSION)\" -o $@.s $^
-	$(AS) -o $@ $@.s
+
