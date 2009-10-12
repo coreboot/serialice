@@ -13,9 +13,16 @@ meant to be used together with a SerialICE capable Qemu (See README.QEMU)
 GETTING STARTED
 ---------------
 
-First, you have to compile the SerialICE shell for your mainboard. Edit
-config.h in order to choose your mainboard. Please submit an init file for
-your mainboard if it's not there yet.
+First, you have to compile the SerialICE shell for your mainboard. 
+
+Configure the SerialICE shell for your mainboard:
+ $ make menuconfig
+
+Compile the SerialICE shell:
+ $ make
+
+Please submit an init file for your mainboard if it's not there yet. (See
+"PORTING THE SHELL TO NEW MAINBOARDS")
 
 Next, you need to compile Qemu with SerialICE support.
 
@@ -29,9 +36,10 @@ For questions contact <info@coresystems.de>
 PORTING THE SHELL TO NEW MAINBOARDS
 -----------------------------------
 
-The shell (obviously) needs some extremely hardware specific initialization
-code for each supported mainboard. There is one file per mainboard with this 
-initialization code in the mainboard/ directory.
+Though it is designed to be as generic as possible the SerialICE shell needs a
+little bit of hardware specific initialization code for each supported
+mainboard. There is one file per mainboard with this initialization code in the
+mainboard/ directory.
 
 The purpose of the initialization code is to get the machine far enough to be
 able to talk via serial console. This usually requires setup of the Super I/O
@@ -110,10 +118,10 @@ character command code.
 7. CPUID
 
   Syntax:
-  *ci<addr>
+  *ci<eax>.<ecx>
 
   Example:
-  > *ci00000001
+  > *ci00000001.00000000
   000006f2.00020800.0000e3bd.bfebfbff
   >
 
