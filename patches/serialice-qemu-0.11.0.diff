@@ -1003,7 +1003,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +#ifdef CONFIG_SERIALICE
 +leave_ld:
 +    if (serialice_active)
-+        serialice_log_load(caught, addr, (uint32_t)result, (unsigned int)DATA_SIZE);
++        serialice_log_load(caught, addr, (uint32_t)res, (unsigned int)DATA_SIZE);
 +#endif
      return res;
  }
