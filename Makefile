@@ -52,7 +52,7 @@ NM=$(CROSS)nm
 
 LDFLAGS=-Wa,--divide -nostdlib -nostartfiles -static -T serialice.ld
 
-SOURCES = serialice.c chipset.c config.h serial.c types.h mainboard/*.c
+SOURCES = serialice.c serialice.h chipset.c serial.c types.h mainboard/*.c
 
 HOSTCC = gcc
 HOSTCXX = g++
@@ -104,7 +104,7 @@ $(obj)/serialice.elf: $(obj)/serialice.o $(obj)/start.o $(src)/serialice.ld
 	$(NM) $@ | sort -u > $(obj)/serialice.map
 
 $(obj)/serialice.S: $(SOURCES) $(obj)/romcc
-	$(obj)/romcc -mcpu=i386 -I. -Imainboard -DVERSION=\"$(VERSION)\" -o $@.tmp $<
+	$(obj)/romcc -mcpu=i386 $(INCLUDES) -I. -Imainboard -DVERSION=\"$(VERSION)\" -o $@.tmp $<
 	printf ".section \".rom.text\"\n.globl main\nmain:\n" > $@
 	cat $@.tmp >> $@
 	rm $@.tmp
@@ -138,5 +138,8 @@ dongle: serialice.rom
 	dongle.py -v -c /dev/cu.usbserial-00* serialice.rom  4032K
 
 $(obj)/%.o: $(src)/%.S
-	$(CPP) -DVERSION=\"$(VERSION)\" -o $@.s $^
+	$(CPP) $(INCLUDES) -DVERSION=\"$(VERSION)\" -o $@.s $^
+	$(AS) -o $@ $@.s
+$(obj)/%.o: $(obj)/%.S
+	$(CPP) $(INCLUDES) -DVERSION=\"$(VERSION)\" -o $@.s $^
 	$(AS) -o $@ $@.s

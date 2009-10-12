@@ -54,7 +54,7 @@ endchoice
 
 config BOARD_INIT
 	string
-	default "kontron_986lcd_m.c" if BOARD_KONTRON_986LCD_M
+	default "kontron_986lcd-m.c" if BOARD_KONTRON_986LCD_M
 	default "intel_d945gclf.c" if BOARD_INTEL_D945GCLF
 	default "dell_s1850.c" if BOARD_DELL_S1850
 	default "asus_m2v-mx_se.c" if BOARD_ASUS_M2V_MX_SE

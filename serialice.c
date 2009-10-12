@@ -18,7 +18,7 @@
  */
 
 #include <types.h>
-#include <config.h>
+#include <serialice.h>
 #include <io.h>
 
 /* SIO functions */
