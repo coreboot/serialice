@@ -70,13 +70,45 @@ config VIA_ROMSTRAP
 	bool
 	default n
 
-menu "Console Setup"
+choice
+	prompt "Target communication"
 
 config SERIAL
 	boolean "Serial console support"
 	default y
 	help
 	  SerialICE shell on serial console.
+
+config USB
+	boolean "USB2 console support (BROKEN)"
+	depends on EXPERIMENTAL
+	help
+	  Send SerialICE shell to USB2 (EHCI) console.
+
+	  Note: This requires a USB2 controller which supports the EHCI
+	  Debug Port capability. Controllers which are known to work:
+
+	    * 10b9:5239 ALi Corporation USB 2.0 (USB PCI card)
+	    * 8086:24cd Intel ICH4/ICH4-M
+	    * 8086:24dd Intel ICH5
+	    * 8086:265c Intel ICH6
+	    * 8086:268c Intel 631xESB/632xESB/3100
+	    * 8086:27cc Intel ICH7
+	    * 8086:2836 Intel ICH8
+	    * 8086:283a Intel ICH8
+	    * 8086:293a Intel ICH9
+	    * 10de:0088 NVIDIA MCP2A
+	    * 10de:005b NVIDIA CK804
+	    * 10de:026e NVIDIA MCP51
+	    * 10de:036d NVIDIA MCP55
+	    * 10de:03f2 NVIDIA MCP61
+	    * 1002:4386 ATI/AMD SB600
+	    * 1106:3104 VIA VX800
+
+	  See http://www.coreboot.org/EHCI_Debug_Port for an up-to-date list.
+
+endchoice
+
 
 choice
 	prompt "Serial console COM port"
@@ -143,43 +175,13 @@ config SERIAL_BAUDRATE
 	default 9600 if SERIAL_9600
 
 
-config CONSOLE_USB
-	boolean "USB2 console support (BROKEN)"
-	depends on EXPERIMENTAL
-	help
-	  Send SerialICE shell to USB2 (EHCI) console.
-
-	  Note: This requires a USB2 controller which supports the EHCI
-	  Debug Port capability. Controllers which are known to work:
-
-	    * 10b9:5239 ALi Corporation USB 2.0 (USB PCI card)
-	    * 8086:24cd Intel ICH4/ICH4-M
-	    * 8086:24dd Intel ICH5
-	    * 8086:265c Intel ICH6
-	    * 8086:268c Intel 631xESB/632xESB/3100
-	    * 8086:27cc Intel ICH7
-	    * 8086:2836 Intel ICH8
-	    * 8086:283a Intel ICH8
-	    * 8086:293a Intel ICH9
-	    * 10de:0088 NVIDIA MCP2A
-	    * 10de:005b NVIDIA CK804
-	    * 10de:026e NVIDIA MCP51
-	    * 10de:036d NVIDIA MCP55
-	    * 10de:03f2 NVIDIA MCP61
-	    * 1002:4386 ATI/AMD SB600
-	    * 1106:3104 VIA VX800
-
-	  See http://www.coreboot.org/EHCI_Debug_Port for an up-to-date list.
-
-endmenu
-
 menu "Debugging setup"
 
 config EXPERIMENTAL
-	bool "Prompt for development and/or incomplete code/mainboards"
+	bool "Prompt for development and/or incomplete code"
 	help
 	  Enable this option if you want to test development features or
-	  incomplete/unsupported mainboards.
+	  incomplete/unsupported code
 
 	  We do not make any guarantees about anything that is marked
 	  as EXPERIMENTAL! You have been warned!
@@ -192,8 +194,6 @@ config EXPERT
 
 	  Warning: Only enable this option if you really know what you're
 	  doing! You have been warned!
-
-endmenu
 
 
 choice
@@ -208,6 +208,8 @@ config BUILD_XMMSTACK
 	bool "XMMSTACK"
 
 endchoice
+
+endmenu
 
 config BUILD_ROMCC
 	bool
