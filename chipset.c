@@ -48,7 +48,7 @@ static inline void pnp_write_register(u16 port, u8 reg, u8 value)
 	outb(value, port + 1);
 }
 
-static inline void pnp_set_logical_device(u8 port, u8 device)
+static inline void pnp_set_logical_device(u16 port, u8 device)
 {
 	pnp_write_register(port, 0x07, device);
 }

@@ -22,19 +22,21 @@
 	.code32
 
 _c_main:
-	/* Enable FPU registers */
 	movl	%eax, %ebp
+
+	/* Enable FPU registers */
 	movl	%cr0, %eax
 	andl	$~(1 << 2), %eax
 	movl	%eax, %cr0
-	movl	%ebp, %eax
 
 #ifdef CONFIG_HAVE_SSE
 	/* enable SSE */
-	movl %cr4, %eax
-	orl $(3<<9), %eax
-	movl %eax, %cr4
+	movl	%cr4, %eax
+	orl	$(3<<9), %eax
+	movl	%eax, %cr4
 #endif
+
+	movl	%ebp, %eax
 
 	/* Setting up the stack (xmmstack only?) */
 	xorl	%esp,%esp

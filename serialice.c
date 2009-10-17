@@ -206,7 +206,7 @@ int main(void)
 		case (('r' << 8)|'i'): // Read IO *ri
 			serialice_read_io();
 			break;
-		case (('w' << 8)|'i'): // Read IO *wi
+		case (('w' << 8)|'i'): // Write IO *wi
 			serialice_write_io();
 			break;
 		case (('r' << 8)|'c'): // Read CPU MSR *rc
