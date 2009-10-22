@@ -463,7 +463,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	sprintf(command, "*ri%04x.b", port);
 +	// command read back: "\n00\n> " (6 characters)
 +	serialice_command(command, 6);
-+	ret = (uint8_t)strtol(s->buffer + 1, (char **)NULL, 16);
++	ret = (uint8_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +
 +	serialice_log(LOG_READ|LOG_IO, ret, port, 1);
 +
@@ -482,7 +482,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	sprintf(command, "*ri%04x.w", port);
 +	// command read back: "\n0000\n> " (8 characters)
 +	serialice_command(command, 8);
-+	ret = (uint16_t)strtol(s->buffer + 1, (char **)NULL, 16);
++	ret = (uint16_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +
 +	serialice_log(LOG_READ|LOG_IO, ret, port, 2);
 +
@@ -501,7 +501,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	sprintf(command, "*ri%04x.l", port);
 +	// command read back: "\n00000000\n> " (12 characters)
 +	serialice_command(command, 12);
-+	ret = (uint32_t)strtol(s->buffer + 1, (char **)NULL, 16);
++	ret = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +
 +	serialice_log(LOG_READ|LOG_IO, ret, port, 4);
 +
@@ -560,7 +560,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	sprintf(command, "*rm%08x.b", addr);
 +	// command read back: "\n00\n> " (6 characters)
 +	serialice_command(command, 6);
-+	ret = (uint8_t)strtol(s->buffer + 1, (char **)NULL, 16);
++	ret = (uint8_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +	return ret;
 +}
 +
@@ -571,7 +571,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	sprintf(command, "*rm%08x.w", addr);
 +	// command read back: "\n0000\n> " (8 characters)
 +	serialice_command(command, 8);
-+	ret = (uint16_t)strtol(s->buffer + 1, (char **)NULL, 16);
++	ret = (uint16_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +	return ret;
 +}
 +
@@ -582,7 +582,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	sprintf(command, "*rm%08x.l", addr);
 +	// command read back: "\n00000000\n> " (12 characters)
 +	serialice_command(command, 12);
-+	ret = (uint32_t)strtol(s->buffer + 1, (char **)NULL, 16);
++	ret = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +	return ret;
 +}
 +
@@ -626,8 +626,8 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +		serialice_command(command, 21);
 +
 +		s->buffer[9] = 0; // . -> \0
-+		hi = (uint32_t)strtol(s->buffer + 1, (char **)NULL, 16);
-+		lo = (uint32_t)strtol(s->buffer + 10, (char **)NULL, 16);
++		hi = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
++		lo = (uint32_t)strtoul(s->buffer + 10, (char **)NULL, 16);
 +	}
 +
 +	ret = hi;
@@ -682,10 +682,10 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +		s->buffer[9] = 0; // . -> \0
 +		s->buffer[18] = 0; // . -> \0
 +		s->buffer[27] = 0; // . -> \0
-+		ret.eax = (uint32_t)strtol(s->buffer +  1, (char **)NULL, 16);
-+		ret.ebx = (uint32_t)strtol(s->buffer + 10, (char **)NULL, 16);
-+		ret.ecx = (uint32_t)strtol(s->buffer + 19, (char **)NULL, 16);
-+		ret.edx = (uint32_t)strtol(s->buffer + 28, (char **)NULL, 16);
++		ret.eax = (uint32_t)strtoul(s->buffer +  1, (char **)NULL, 16);
++		ret.ebx = (uint32_t)strtoul(s->buffer + 10, (char **)NULL, 16);
++		ret.ecx = (uint32_t)strtoul(s->buffer + 19, (char **)NULL, 16);
++		ret.edx = (uint32_t)strtoul(s->buffer + 28, (char **)NULL, 16);
 +	}
 +
 +	serialice_cpuid_log(eax, ecx, ret, filtered);
