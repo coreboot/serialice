@@ -212,6 +212,10 @@ curses.o: curses.c keymaps.h curses_keys.h
 
 bt-host.o: CFLAGS += $(CONFIG_BLUEZ_CFLAGS)
 
+serialice.o: serialice.c serialice.h
+
+serialice.o: CFLAGS += $(CONFIG_SERIALICE_CFLAGS)
+
 libqemu_common.a: $(obj-y)
 
 #######################################################################

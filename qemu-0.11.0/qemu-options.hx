@@ -1661,3 +1661,14 @@ DEF("semihosting", 0, QEMU_OPTION_semihosting,
 DEF("old-param", 0, QEMU_OPTION_old_param,
     "-old-param      old param mode\n")
 #endif
+
+#ifdef CONFIG_SERIALICE
+DEF("serialice", HAS_ARG, QEMU_OPTION_serialice,
+    "-serialice dev  Enable SerialICE debugging on serial device 'dev'\n")
+STEXI
+@item -serialice @var{dev}
+Enable SerialICE debugging on serial device @var{dev}.
+ETEXI
+#endif
+
+

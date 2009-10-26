@@ -16,6 +16,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "serialice.h"
+
 #define DATA_SIZE (1 << SHIFT)
 
 #if DATA_SIZE == 8
@@ -91,6 +94,16 @@ DATA_TYPE REGPARM glue(glue(__ld, SUFFIX), MMUSUFFIX)(target_ulong addr,
     target_phys_addr_t addend;
     void *retaddr;
 
+#ifdef CONFIG_SERIALICE
+    uint32_t result;
+    int caught = 0;
+    if (serialice_active && serialice_handle_load((uint32_t)addr, &result, (unsigned int) DATA_SIZE)) {
+	res = (DATA_TYPE)result;
+	caught=1;
+	goto leave_ld;
+    }
+#endif
+
     /* test if there is match for unaligned or IO access */
     /* XXX: could done more in memory macro in a non portable way */
     index = (addr >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
@@ -134,6 +147,12 @@ DATA_TYPE REGPARM glue(glue(__ld, SUFFIX), MMUSUFFIX)(target_ulong addr,
         tlb_fill(addr, READ_ACCESS_TYPE, mmu_idx, retaddr);
         goto redo;
     }
+
+#ifdef CONFIG_SERIALICE
+leave_ld:
+    if (serialice_active)
+        serialice_log_load(caught, addr, (uint32_t)res, (unsigned int)DATA_SIZE);
+#endif
     return res;
 }
 
@@ -233,6 +252,15 @@ void REGPARM glue(glue(__st, SUFFIX), MMUSUFFIX)(target_ulong addr,
     target_ulong tlb_addr;
     void *retaddr;
     int index;
+
+#ifdef CONFIG_SERIALICE
+    if (serialice_active && serialice_handle_store((uint32_t)addr, (uint32_t)val, (unsigned int) DATA_SIZE)) {
+	// For now, we just always keep a backup of _all_ writes in qemu's
+	// memory. At this point we can later decide what to do, if it becomes
+	// necessary.
+	// return;
+    }
+#endif
 
     index = (addr >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
  redo:

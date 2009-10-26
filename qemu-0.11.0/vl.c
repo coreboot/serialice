@@ -221,6 +221,9 @@ CharDriverState *virtcon_hds[MAX_VIRTIO_CONSOLES];
 int win2k_install_hack = 0;
 int rtc_td_hack = 0;
 #endif
+#ifdef CONFIG_SERIALICE
+const char *serialice_device = NULL;
+#endif
 int usb_enabled = 0;
 int singlestep = 0;
 int smp_cpus = 1;
@@ -5107,6 +5110,11 @@ int main(int argc, char **argv, char **envp)
             case QEMU_OPTION_curses:
                 display_type = DT_CURSES;
                 break;
+#endif
+#ifdef CONFIG_SERIALICE
+	   case QEMU_OPTION_serialice:
+		serialice_device = optarg;
+		break;
 #endif
             case QEMU_OPTION_portrait:
                 graphic_rotate = 1;

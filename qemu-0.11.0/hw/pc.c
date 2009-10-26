@@ -23,6 +23,7 @@
  */
 #include "hw.h"
 #include "pc.h"
+#include "serialice.h"
 #include "fdc.h"
 #include "pci.h"
 #include "block.h"
@@ -1152,6 +1153,10 @@ static void pc_init1(ram_addr_t ram_size,
 
     /* allocate RAM */
     ram_addr = qemu_ram_alloc(0xa0000);
+#ifdef CONFIG_SERIALICE
+    if (serialice_active)
+        ram_addr |= IO_MEM_UNASSIGNED;
+#endif
     cpu_register_physical_memory(0, 0xa0000, ram_addr);
 
     /* Allocate, even though we won't register, so we don't break the
@@ -1160,6 +1165,10 @@ static void pc_init1(ram_addr_t ram_size,
      */
     ram_addr = qemu_ram_alloc(0x100000 - 0xa0000);
     ram_addr = qemu_ram_alloc(below_4g_mem_size - 0x100000);
+#ifdef CONFIG_SERIALICE
+    if (serialice_active)
+        ram_addr |= IO_MEM_UNASSIGNED;
+#endif
     cpu_register_physical_memory(0x100000,
                  below_4g_mem_size - 0x100000,
                  ram_addr);
@@ -1170,6 +1179,10 @@ static void pc_init1(ram_addr_t ram_size,
         hw_error("To much RAM for 32-bit physical address");
 #else
         ram_addr = qemu_ram_alloc(above_4g_mem_size);
+#ifdef CONFIG_SERIALICE
+        if (serialice_active)
+            ram_addr |= IO_MEM_UNASSIGNED;
+#endif
         cpu_register_physical_memory(0x100000000ULL,
                                      above_4g_mem_size,
                                      ram_addr);
@@ -1468,6 +1481,24 @@ static void pc_init_isa(ram_addr_t ram_size,
              initrd_filename, cpu_model, 0);
 }
 
+#ifdef CONFIG_SERIALICE
+static void serialice_init_pci(ram_addr_t ram_size,
+                        const char *boot_device,
+                        const char *kernel_filename,
+                        const char *kernel_cmdline,
+                        const char *initrd_filename,
+                        const char *cpu_model)
+{
+    serialice_active = 1;
+
+    pc_init1(ram_size, boot_device,
+             kernel_filename, kernel_cmdline,
+             initrd_filename, cpu_model, 1);
+
+    serialice_init();
+}
+#endif
+
 /* set CMOS shutdown status register (index 0xF) as S3_resume(0xFE)
    BIOS will read it and start S3 resume at POST Entry */
 void cmos_set_s3_resume(void)
@@ -1515,11 +1546,23 @@ static QEMUMachine isapc_machine = {
     .max_cpus = 1,
 };
 
+#ifdef CONFIG_SERIALICE
+static QEMUMachine serialice_machine = {
+    .name = "serialice",
+    .desc = "SerialICE",
+    .init = serialice_init_pci,
+    .max_cpus = 255,
+};
+#endif
+
 static void pc_machine_init(void)
 {
     qemu_register_machine(&pc_machine);
     qemu_register_machine(&pc_machine_v0_10);
     qemu_register_machine(&isapc_machine);
+#ifdef CONFIG_SERIALICE
+    qemu_register_machine(&serialice_machine);
+#endif
 }
 
 machine_init(pc_machine_init);

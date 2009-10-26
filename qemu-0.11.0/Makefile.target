@@ -488,6 +488,13 @@ obj-y += e1000.o
 # Generic watchdog support and some watchdog devices
 obj-y += wdt_ib700.o wdt_i6300esb.o
 
+# Generic SerialICE support
+ifdef CONFIG_SERIALICE
+CPPFLAGS += $(CONFIG_SERIALICE_CFLAGS)
+LIBS += $(CONFIG_SERIALICE_LIBS)
+endif
+obj-$(CONFIG_SERIALICE) += serialice.o
+
 # Hardware support
 obj-i386-y = ide.o pckbd.o vga.o $(sound-obj-y) dma.o
 obj-i386-y += fdc.o mc146818rtc.o serial.o i8259.o i8254.o pcspk.o pc.o

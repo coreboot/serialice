@@ -21,6 +21,7 @@
 #define _EXEC_ALL_H_
 
 #include "qemu-common.h"
+#include "serialice.h"
 
 /* allow to see translation results - the slowdown should be negligible, so we leave it */
 #define DEBUG_DISAS
@@ -328,6 +329,9 @@ static inline target_ulong get_phys_addr_code(CPUState *env1, target_ulong addr)
 #if defined(TARGET_SPARC) || defined(TARGET_MIPS)
         do_unassigned_access(addr, 0, 1, 0, 4);
 #else
+#if defined(CONFIG_SERIALICE)
+    if (!serialice_active)
+#endif
         cpu_abort(env1, "Trying to execute code outside RAM or ROM at 0x" TARGET_FMT_lx "\n", addr);
 #endif
     }
