@@ -20,6 +20,22 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
  vl.c                    |    8 
  13 files changed, 1091 insertions(+), 2 deletions(-)
 
+--- qemu-0.11.0/Makefile.target
++++ qemu-0.11.0/Makefile.target
+@@ -488,6 +488,13 @@
+ # Generic watchdog support and some watchdog devices
+ obj-y += wdt_ib700.o wdt_i6300esb.o
+ 
++# Generic SerialICE support
++ifdef CONFIG_SERIALICE
++CPPFLAGS += $(CONFIG_SERIALICE_CFLAGS)
++LIBS += $(CONFIG_SERIALICE_LIBS)
++endif
++obj-$(CONFIG_SERIALICE) += serialice.o
++
+ # Hardware support
+ obj-i386-y = ide.o pckbd.o vga.o $(sound-obj-y) dma.o
+ obj-i386-y += fdc.o mc146818rtc.o serial.o i8259.o i8254.o pcspk.o pc.o
 --- qemu-0.11.0/serialice.c
 +++ qemu-0.11.0/serialice.c
 @@ -0,0 +1,830 @@
@@ -898,30 +914,6 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size);
 +
 +#endif
---- qemu-0.11.0/build.sh
-+++ qemu-0.11.0/build.sh
-@@ -0,0 +1,5 @@
-+#!/bin/sh
-+./configure --disable-kvm --disable-sdl --enable-serialice \
-+	    --target-list="x86_64-softmmu, i386-softmmu"
-+
-+make
---- qemu-0.11.0/Makefile.target
-+++ qemu-0.11.0/Makefile.target
-@@ -488,6 +488,13 @@
- # Generic watchdog support and some watchdog devices
- obj-y += wdt_ib700.o wdt_i6300esb.o
- 
-+# Generic SerialICE support
-+ifdef CONFIG_SERIALICE
-+CPPFLAGS += $(CONFIG_SERIALICE_CFLAGS)
-+LIBS += $(CONFIG_SERIALICE_LIBS)
-+endif
-+obj-$(CONFIG_SERIALICE) += serialice.o
-+
- # Hardware support
- obj-i386-y = ide.o pckbd.o vga.o $(sound-obj-y) dma.o
- obj-i386-y += fdc.o mc146818rtc.o serial.o i8259.o i8254.o pcspk.o pc.o
 --- qemu-0.11.0/vl.c
 +++ qemu-0.11.0/vl.c
 @@ -221,6 +221,9 @@
@@ -966,6 +958,14 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
      if (strstart(filename, "/dev/", NULL)) {
          chr = qemu_chr_open_tty(filename);
      } else
+--- qemu-0.11.0/build.sh
++++ qemu-0.11.0/build.sh
+@@ -0,0 +1,5 @@
++#!/bin/sh
++./configure --disable-kvm --disable-sdl --enable-serialice \
++	    --target-list="x86_64-softmmu, i386-softmmu"
++
++make
 --- qemu-0.11.0/softmmu_template.h
 +++ qemu-0.11.0/softmmu_template.h
 @@ -16,6 +16,9 @@
