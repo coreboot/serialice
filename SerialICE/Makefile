@@ -17,7 +17,7 @@
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 ##
 
-VERSION="1.3"
+VERSION="1.4"
 
 export src := $(shell pwd)
 export srctree := $(src)

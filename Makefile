@@ -26,7 +26,8 @@ REVISION=32
 SERIALICE_VERSION=$(shell eval `grep ^VERSION SerialICE/Makefile`; echo $$VERSION)
 
 all:
-	@printf "\nRun 'make diff' to create a new Qemu $(VERSION) diff.\n\n"
+	@printf "\nRun 'make diff' to create a new Qemu $(VERSION) diff.\n"
+	@printf "Run 'make release' to create a new SerialICE $(SERIALICE_VERSION) release tar ball.\n\n"
 
 PATCHFILE=SerialICE/patches/serialice-qemu-$(VERSION).diff
 diff:
