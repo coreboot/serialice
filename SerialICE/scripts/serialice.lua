@@ -58,17 +58,6 @@ function SerialICE_io_read_filter(port, data_size)
 
 	-- **********************************************************
 	--
-
-	if port >= 0xcfc and port <= 0xcff then
-		printf("PCI %x:%02x.%x R.%02x\n",
-			bit.band(0xff,bit.rshift(SerialICE_pci_device, 16)),
-			bit.band(0x1f,bit.rshift(SerialICE_pci_device, 11)),
-			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
-			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc) ))
-	end
-
-	-- **********************************************************
-	--
 	-- Serial Port handling
 
 	if port >= 0x3f8 and port <= 0x3ff then
@@ -105,14 +94,6 @@ function SerialICE_io_write_filter(port, size, data)
 	if port == 0xcf8 then
 		SerialICE_pci_device = data
 		return false, data
-	end
-
-	if port >= 0xcfc and port <= 0xcff then
-		printf("PCI %x:%02x.%x R.%02x\n",
-			bit.band(0xff,bit.rshift(SerialICE_pci_device, 16)),
-			bit.band(0x1f,bit.rshift(SerialICE_pci_device, 11)),
-			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
-			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc) ))
 	end
 
 	if port == 0xcfc then
@@ -385,12 +366,36 @@ function SerialICE_io_write_log(port, size, data, target)
 	elseif size == 2 then	printf("IO: outw %04x <= %04x\n", port, data)
 	elseif size == 4 then	printf("IO: outl %04x <= %08x\n", port, data)
 	end
+
+	-- **********************************************************
+	--
+
+	if port >= 0xcfc and port <= 0xcff then
+		printf("PCI %x:%02x.%x R.%02x\n",
+			bit.band(0xff,bit.rshift(SerialICE_pci_device, 16)),
+			bit.band(0x1f,bit.rshift(SerialICE_pci_device, 11)),
+			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
+			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc) ))
+	end
+
+
 end
 
 function SerialICE_io_read_log(port, size, data, target)
 	if size == 1 then	printf("IO:  inb %04x => %02x\n", port, data)
 	elseif size == 2 then	printf("IO:  inw %04x => %04x\n", port, data)
 	elseif size == 4 then	printf("IO:  inl %04x => %08x\n", port, data)
+	end
+
+	-- **********************************************************
+	--
+
+	if port >= 0xcfc and port <= 0xcff then
+		printf("PCI %x:%02x.%x R.%02x\n",
+			bit.band(0xff,bit.rshift(SerialICE_pci_device, 16)),
+			bit.band(0x1f,bit.rshift(SerialICE_pci_device, 11)),
+			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
+			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc) ))
 	end
 end
 
