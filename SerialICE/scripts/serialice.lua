@@ -87,6 +87,16 @@ SerialICE_superio_4e_reg = 0
 SerialICE_superio_2e_reg = 0
 SerialICE_superio_2e_ldn = 0
 
+-- SerialICE_io_write_filter is the filter function for IO writes.
+--
+-- Parameters:
+--   port	IO port to be written to
+--   size	Size of the IO write
+--   data	Data to be written to
+-- Return values:
+--   caught	True if the filter intercepted the write
+--   data	Value returned if the write was *not* intercepted
+
 function SerialICE_io_write_filter(port, size, data)
 	-- **********************************************************
 	--
@@ -199,14 +209,17 @@ function SerialICE_io_write_filter(port, size, data)
 	return false, data
 end
 
--- returns 
---   to_hw   (boolean)
---   to_qemu (boolean)
---   result  (int)
+
+-- SerialICE_memory_read_filter is the filter function for memory reads
 --
--- if to_hw and to_qemu are both false, result is used, otherwise
--- the read is directed to the SerialICE target or Qemu
---
+-- Parameters:
+--   addr	memory address to be read
+--   size	Size of the memory read
+-- Return values:
+--   to_hw	True if the read should be directed to the target
+--   to_qemu	True if the read should be directed to Qemu
+--   result	Read result if both to_hw and to_qemu are false
+
 function SerialICE_memory_read_filter(addr, size)
 
 	-- Example: catch memory read and return a value
