@@ -137,39 +137,49 @@ static int serialice_io_read_filter(uint32_t *data, uint16_t port, int size)
     return ret;
 } 
 
-static int serialice_io_write_filter(uint32_t data, uint16_t port, int size)
+static int serialice_io_write_filter(uint32_t *data, uint16_t port, int size)
 {
     int ret, result;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_write_filter");
     lua_pushinteger(L, port); // port
     lua_pushinteger(L, size); // datasize
-    lua_pushinteger(L, data); // data
-    result = lua_pcall(L, 3, 1, 0);
+    lua_pushinteger(L, *data); // data
+
+    result = lua_pcall(L, 3, 2, 0);
     if (result) {
         fprintf(stderr, "Failed to run function SerialICE_io_write_filter: %s\n", lua_tostring(L, -1));
         exit(1);
     }
-    ret = lua_toboolean(L, -1);
-    lua_pop(L, 1);
+    *data = lua_tointeger(L, -1);
+    ret = lua_toboolean(L, -2);
+    lua_pop(L, 2);
 
     return ret;
 } 
 
-static int serialice_memory_read_filter(uint32_t addr, int size)
+
+#define READ_FROM_QEMU		(1 << 0)
+#define READ_FROM_SERIALICE	(1 << 1)
+static int serialice_memory_read_filter(uint32_t addr, uint32_t *data, int size)
 {
-    int ret, result;
+    int ret = 0, result;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_read_filter");
     lua_pushinteger(L, addr); // addr
     lua_pushinteger(L, size); // datasize
-    result = lua_pcall(L, 2, 1, 0);
+    result = lua_pcall(L, 2, 3, 0);
     if (result) {
         fprintf(stderr, "Failed to run function SerialICE_memory_read_filter: %s\n", lua_tostring(L, -1));
         exit(1);
     }
-    ret = lua_toboolean(L, -1);
-    lua_pop(L, 1);
+
+    *data = lua_tointeger(L, -1); // result
+
+    ret |= lua_toboolean(L, -2) ? READ_FROM_QEMU : 0; // to_qemu
+    ret |= lua_toboolean(L, -3) ? READ_FROM_SERIALICE : 0; // to_hw
+
+    lua_pop(L, 3);
 
     return ret;
 } 
@@ -177,7 +187,7 @@ static int serialice_memory_read_filter(uint32_t addr, int size)
 #define WRITE_TO_QEMU		(1 << 0)
 #define WRITE_TO_SERIALICE	(1 << 1)
 
-static int serialice_memory_write_filter(uint32_t addr, int size)
+static int serialice_memory_write_filter(uint32_t addr, int size, uint32_t *data)
 {
     int ret = 0, result;
     int write_to_qemu, write_to_serialice;
@@ -185,18 +195,19 @@ static int serialice_memory_write_filter(uint32_t addr, int size)
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_write_filter");
     lua_pushinteger(L, addr); // address
     lua_pushinteger(L, size); // datasize
-    result = lua_pcall(L, 2, 2, 0);
+    lua_pushinteger(L, *data); // data
+    result = lua_pcall(L, 3, 3, 0);
     if (result) {
         fprintf(stderr, "Failed to run function SerialICE_memory_write_filter: %s\n", lua_tostring(L, -1));
         exit(1);
     }
-    write_to_qemu = lua_toboolean(L, -1);
-    write_to_serialice = lua_toboolean(L, -2);
-    lua_pop(L, 2);
+    *data = lua_tointeger(L, -1);
+    write_to_qemu = lua_toboolean(L, -2);
+    write_to_serialice = lua_toboolean(L, -3);
+    lua_pop(L, 3);
 
-    // ugly
-    if (write_to_qemu) ret |= WRITE_TO_QEMU;
-    if (write_to_serialice) ret |= WRITE_TO_SERIALICE;
+    ret |= write_to_qemu ? WRITE_TO_QEMU : 0;
+    ret |= write_to_serialice ? WRITE_TO_SERIALICE : 0;
 
     return ret;
 } 
@@ -284,7 +295,9 @@ static void serialice_log(int flags, uint32_t data, uint32_t addr, int size)
     lua_pushinteger(L, addr); // addr/port
     lua_pushinteger(L, size); // datasize
     lua_pushinteger(L, data); // data
-    result = lua_pcall(L, 3, 0, 0);
+    lua_pushboolean(L, ((flags & LOG_TARGET) != 0));
+
+    result = lua_pcall(L, 4, 0, 0);
     if (result) {
         fprintf(stderr, "Failed to run function SerialICE_%s_%s_log: %s\n",
 			(flags & LOG_MEMORY)?"memory":"io", 
@@ -292,15 +305,6 @@ static void serialice_log(int flags, uint32_t data, uint32_t addr, int size)
 			lua_tostring(L, -1));
         exit(1);
     }
-
-    // TODO
-#if 0
-	if (caught) {
-		printf(" *");
-	}
-
-	printf("\n");
-#endif
 } 
 
 static void serialice_msr_log(int flags, uint32_t addr, uint32_t hi, uint32_t lo, int filtered)
@@ -486,13 +490,15 @@ uint32_t serialice_inl(uint16_t port)
 void serialice_outb(uint8_t data, uint16_t port)
 {
 	char command[19];
+	uint32_t filtered_data = (uint32_t)data;
 
 	serialice_log(LOG_WRITE|LOG_IO, data, port, 1);
 
-	if (serialice_io_write_filter(data, port, 1)) {
+	if (serialice_io_write_filter(&filtered_data, port, 1)) {
 		return;
 	}
 
+	data = (uint8_t)filtered_data;
 	sprintf(command, "*wi%04x.b=%02x", port, data);
 	// command read back: "\n> " (3 characters)
 	serialice_command(command, 3);
@@ -501,13 +507,15 @@ void serialice_outb(uint8_t data, uint16_t port)
 void serialice_outw(uint16_t data, uint16_t port)
 {
 	char command[21];
+	uint32_t filtered_data = (uint32_t)data;
 
 	serialice_log(LOG_WRITE|LOG_IO, data, port, 2);
 
-	if (serialice_io_write_filter(data, port, 2)) {
+	if (serialice_io_write_filter(&filtered_data, port, 2)) {
 		return;
 	}
 
+	data = (uint16_t)filtered_data;
 	sprintf(command, "*wi%04x.w=%04x", port, data);
 	// command read back: "\n> " (3 characters)
 	serialice_command(command, 3);
@@ -516,13 +524,15 @@ void serialice_outw(uint16_t data, uint16_t port)
 void serialice_outl(uint32_t data, uint16_t port)
 {
 	char command[25];
+	uint32_t filtered_data = data;
 
 	serialice_log(LOG_WRITE|LOG_IO, data, port, 4);
 
-	if (serialice_io_write_filter(data, port, 4)) {
+	if (serialice_io_write_filter(&filtered_data, port, 4)) {
 		return;
 	}
 
+	data = filtered_data;
 	sprintf(command, "*wi%04x.l=%08x", port, data);
 	// command read back: "\n> " (3 characters)
 	serialice_command(command, 3);
@@ -697,20 +707,26 @@ void serialice_log_load(int caught, uint32_t addr, uint32_t result, unsigned int
 /* This function can grab Qemu load ops and forward them to the SerialICE
  * target. 
  *
- * @return 0: Qemu exclusive or shared; 1: SerialICE exclusive.
+ * @return 0: pass on to Qemu; 1: handled locally.
  */
 int serialice_handle_load(uint32_t addr, uint32_t *result, unsigned int data_size)
 {
-	int read_from_target;
+	int source;
 
-	read_from_target = serialice_memory_read_filter(addr, data_size);
-	if (read_from_target) {
+	source = serialice_memory_read_filter(addr, result, data_size);
+
+	if (source & READ_FROM_SERIALICE) {
 		*result = serialice_load_wrapper(addr, data_size);
 		return 1;
 	}
-	return 0;
-}
 
+	if (source & READ_FROM_QEMU) {
+		return 0;
+	}
+
+	/* No source for load, so the source is the script */
+	return 1;
+}
 
 // **************************************************************************
 // memory store handling
@@ -742,16 +758,17 @@ static void serialice_log_store(int caught, uint32_t addr, uint32_t val, unsigne
 int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
 {
 	int write_to_target, write_to_qemu, ret;
+	uint32_t filtered_data = val;
 
-	ret = serialice_memory_write_filter(addr, data_size);
+	ret = serialice_memory_write_filter(addr, data_size, &filtered_data);
 
 	write_to_target = ((ret & WRITE_TO_SERIALICE) != 0);
 	write_to_qemu = ((ret & WRITE_TO_QEMU) != 0);
 
-	serialice_log_store(write_to_target, addr, val, data_size);
+	serialice_log_store(write_to_target, addr, filtered_data, data_size);
 
 	if (write_to_target)
-		serialice_store_wrapper(addr, data_size, val);
+		serialice_store_wrapper(addr, data_size, filtered_data);
 
 	return (write_to_qemu == 0);
 }
