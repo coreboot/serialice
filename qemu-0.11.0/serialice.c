@@ -355,12 +355,12 @@ static void serialice_cpuid_log(uint32_t eax, uint32_t ecx, cpuid_regs_t res, in
 // **************************************************************************
 // low level communication with the SerialICE shell (serial communication)
 
-static int serialice_read(int fd, void *buf, size_t nbyte)
+static int serialice_read(SerialICEState *state, void *buf, size_t nbyte)
 {
 	int bytes_read = 0;
 
 	while (1) {
-		int ret = read(fd, buf, nbyte);
+		int ret = read(state->fd, buf, nbyte);
 
 		if (ret == -1 && errno == EINTR)
 			continue;
@@ -378,15 +378,15 @@ static int serialice_read(int fd, void *buf, size_t nbyte)
 	return bytes_read;
 }
 
-static int serialice_write(int fd, const void *buf, size_t nbyte)
+static int serialice_write(SerialICEState *state, const void *buf, size_t nbyte)
 {
 	char *buffer = (char *) buf;
 	char c;
 	int i;
 
 	for (i = 0; i < (int)nbyte; i++) {
-		while (write(fd, buffer + i, 1) != 1) ;
-		while (read(fd, &c, 1) != 1) ;
+		while (write(state->fd, buffer + i, 1) != 1) ;
+		while (read(state->fd, &c, 1) != 1) ;
 		if (c != buffer[i]) {
 			printf("Readback error! %x/%x\n", c, buffer[i]);
 		}
@@ -402,11 +402,11 @@ static void serialice_command(const char *command, int reply_len)
 #endif
 	int l;
 
-	serialice_write(s->fd, command, strlen(command));
+	serialice_write(s, command, strlen(command));
 	
 	memset(s->buffer, 0, reply_len + 1); // clear enough of the buffer
 
-	l = serialice_read(s->fd, s->buffer, reply_len);
+	l = serialice_read(s, s->buffer, reply_len);
 
 	if (l == -1) {
 		perror("SerialICE: Could not read from target");
