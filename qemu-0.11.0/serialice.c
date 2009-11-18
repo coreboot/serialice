@@ -28,9 +28,14 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
+#ifdef WIN32
+#include <windows.h>
+#include <conio.h>
+#else
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#endif
 
 /* LUA includes */
 #include <lua.h>
@@ -46,7 +51,11 @@
 #define SERIALICE_DEBUG 3
 #define BUFFER_SIZE 1024
 typedef struct {
+#ifdef WIN32
+	HANDLE fd;
+#else
 	int fd;
+#endif
 	char *buffer;
 } SerialICEState;
 
@@ -55,7 +64,9 @@ static SerialICEState *s;
 int serialice_active = 0;
 const char *serialice_lua_script="serialice.lua";
 
+#ifndef WIN32
 static struct termios options;
+#endif
 
 static lua_State *L;
 
@@ -359,6 +370,11 @@ static int serialice_read(SerialICEState *state, void *buf, size_t nbyte)
 	int bytes_read = 0;
 
 	while (1) {
+#ifdef WIN32
+		int ret;
+		if (!ReadFile(state->fd, buf, nbyte - bytes_read, &ret, NULL))
+			break;
+#else
 		int ret = read(state->fd, buf, nbyte - bytes_read);
 
 		if (ret == -1 && errno == EINTR)
@@ -366,6 +382,7 @@ static int serialice_read(SerialICEState *state, void *buf, size_t nbyte)
 
 		if (ret == -1)
 			break;
+#endif
 
 		bytes_read += ret;
 		buf += ret;
@@ -384,8 +401,15 @@ static int serialice_write(SerialICEState *state, const void *buf, size_t nbyte)
 	int i;
 
 	for (i = 0; i < (int)nbyte; i++) {
+#ifdef WIN32
+		int ret = 0;
+		while (ret == 0) WriteFile(state->fd, buffer + i, 1, &ret, NULL);
+		ret = 0;
+		while (ret == 0) ReadFile(state->fd, buffer + i, 1, &ret, NULL);
+#else
 		while (write(state->fd, buffer + i, 1) != 1) ;
 		while (read(state->fd, &c, 1) != 1) ;
+#endif
 		if (c != buffer[i]) {
 			printf("Readback error! %x/%x\n", c, buffer[i]);
 		}
@@ -805,7 +829,49 @@ void serialice_init(void)
 	}
 
 	s =  qemu_mallocz(sizeof(SerialICEState));
+#ifdef WIN32
+	s->fd = CreateFile(serialice_device, GENERIC_READ | GENERIC_WRITE,
+		0, NULL, OPEN_EXISTING, 0, NULL);
 
+	if (s->fd == INVALID_HANDLE_VALUE) {
+		perror("SerialICE: Could not connect to target TTY");
+		exit(1);
+	}
+
+	DCB dcb;
+	if (!GetCommState(s->fd, &dcb)) {
+		perror("SerialICE: Could not load config for target TTY");
+		exit(1);
+	}
+
+	dcb.BaudRate = 115200;
+	dcb.ByteSize = 8;
+	dcb.Parity = NOPARITY;
+	dcb.StopBits = ONESTOPBIT;
+	dcb.fDtrControl = DTR_CONTROL_DISABLE;
+	dcb.fInX = FALSE;
+
+	if (!SetCommState(s->fd, &dcb)) {
+		perror("SerialICE: Could not store config for target TTY");
+		exit(1);
+	}
+
+	COMMTIMEOUTS to;
+	if (!GetCommTimeouts(s->fd, &to)) {
+		perror("SerialICE: Could not load timeouts for target TTY");
+		exit(1);
+	}
+
+	to.ReadIntervalTimeout = 1000;
+	to.ReadTotalTimeoutMultiplier = 0;
+	to.ReadTotalTimeoutConstant = 0;
+
+	if (!SetCommTimeouts(s->fd, &to)) {
+		perror("SerialICE: Could not store timeouts for target TTY");
+		exit(1);
+	}
+	
+#else
 	s->fd = open(serialice_device, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
 	if (s->fd == -1) {
@@ -842,6 +908,7 @@ void serialice_init(void)
 	tcsetattr(s->fd, TCSANOW, &options);
 
 	tcflush(s->fd, TCIOFLUSH);
+#endif
 
 	s->buffer = qemu_mallocz(BUFFER_SIZE);
 
