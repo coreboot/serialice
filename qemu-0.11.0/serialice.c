@@ -372,8 +372,9 @@ static int serialice_read(SerialICEState *state, void *buf, size_t nbyte)
 
 	while (1) {
 #ifdef WIN32
-		int ret;
-		if (!ReadFile(state->fd, buf, nbyte - bytes_read, &ret, NULL))
+		int ret = 0;
+		ReadFile(state->fd, buf, nbyte - bytes_read, &ret, NULL);
+		if (!ret)
 			break;
 #else
 		int ret = read(state->fd, buf, nbyte - bytes_read);
@@ -404,9 +405,11 @@ static int serialice_write(SerialICEState *state, const void *buf, size_t nbyte)
 	for (i = 0; i < (int)nbyte; i++) {
 #ifdef WIN32
 		int ret = 0;
-		while (ret == 0) WriteFile(state->fd, buffer + i, 1, &ret, NULL);
+		while (ret == 0)
+			WriteFile(state->fd, buffer + i, 1, &ret, NULL);
 		ret = 0;
-		while (ret == 0) ReadFile(state->fd, &c, 1, &ret, NULL);
+		while (ret == 0)
+			ReadFile(state->fd, &c, 1, &ret, NULL);
 #else
 		while (write(state->fd, buffer + i, 1) != 1) ;
 		while (read(state->fd, &c, 1) != 1) ;
@@ -462,6 +465,12 @@ static void serialice_command(const char *command, int reply_len)
 	if (l == -1) {
 		perror("SerialICE: Could not read from target");
 		exit(1);
+	}
+
+	// compensate for CR on the wire. Needed on Win32
+	if (s->buffer[0] == '\r') {
+		memmove(s->buffer, s->buffer+1, reply_len);
+		serialice_read(s, s->buffer+reply_len-1, 1);
 	}
 
 	if (l != reply_len) {
@@ -828,33 +837,16 @@ void serialice_init(void)
 		exit(1);
 	}
 
-	dcb.BaudRate = 115200;
+	dcb.BaudRate = CBR_115200;
 	dcb.ByteSize = 8;
 	dcb.Parity = NOPARITY;
 	dcb.StopBits = ONESTOPBIT;
-	dcb.fDtrControl = DTR_CONTROL_DISABLE;
-	dcb.fInX = FALSE;
 
 	if (!SetCommState(s->fd, &dcb)) {
 		perror("SerialICE: Could not store config for target TTY");
 		exit(1);
 	}
 
-	COMMTIMEOUTS to;
-	if (!GetCommTimeouts(s->fd, &to)) {
-		perror("SerialICE: Could not load timeouts for target TTY");
-		exit(1);
-	}
-
-	to.ReadIntervalTimeout = 1000;
-	to.ReadTotalTimeoutMultiplier = 0;
-	to.ReadTotalTimeoutConstant = 0;
-
-	if (!SetCommTimeouts(s->fd, &to)) {
-		perror("SerialICE: Could not store timeouts for target TTY");
-		exit(1);
-	}
-	
 #else
 	s->fd = open(serialice_device, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
