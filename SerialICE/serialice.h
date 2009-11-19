@@ -17,6 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#ifndef SERIALICE_H
+#define SERIALICE_H
+
 #include "config.h"
 
 #define ECHO_MODE	1
@@ -25,3 +28,4 @@
 #define SIO_PORT	CONFIG_SERIAL_PORT
 #define MAINBOARD	CONFIG_BOARD_INIT
 
+#endif

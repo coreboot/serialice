@@ -17,6 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#ifndef IO_H
+#define IO_H
+
 /* Memory functions */
 
 static inline u8 read8(unsigned long addr)
@@ -189,5 +192,4 @@ static inline u32 cpuid_edx(u32 op, u32 op2)
         return edx;
 }
 
-
-
+#endif
