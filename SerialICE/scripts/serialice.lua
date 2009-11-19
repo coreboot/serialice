@@ -76,6 +76,9 @@ SerialICE_superio_4e_reg = 0
 SerialICE_superio_2e_reg = 0
 SerialICE_superio_2e_ldn = 0
 
+PCIe_bar  = 0
+PCIe_size = 0
+
 -- SerialICE_io_write_filter is the filter function for IO writes.
 --
 -- Parameters:
@@ -104,6 +107,14 @@ function SerialICE_io_write_filter(port, size, data)
 			printf("LPC (filtered)\n")
 			return true, data
 		end
+
+		-- Catch PCIe base address
+		if SerialICE_pci_device == 0x80000048 then
+			PCIe_bar  = bit.band(0xfc000000,data);
+			PCIe_size = 64 * 1024; -- hard coded for now.
+			printf("PCIe BAR set up: 0x%08x\n", PCIe_bar);
+		end
+
 		return false, data
 	end
 
@@ -262,9 +273,17 @@ function SerialICE_memory_read_filter(addr, size)
 	return false, true, 0
 end
 
--- returns whether writes go to Qemu exclusively or shared or exclusively to
--- SerialICE.
--- return <to_serialice>, <to_qemu>, <data>
+-- SerialICE_memory_write_filter is the filter function for memory writes
+--
+-- Parameters:
+--   addr	memory address to write to
+--   size	Size of the memory write
+--   data	Data to be written
+-- Return values:
+--   to_hw	True if the write should be directed to the target
+--   to_qemu	True if the write should be directed to Qemu
+--   result	Data to be written (may be changed in filter)
+
 function SerialICE_memory_write_filter(addr, size, data)
 	if	addr >= 0xfff00000 and addr <= 0xffffffff then
 		io.write("\nWARNING: write access to ROM?\n")
@@ -348,6 +367,17 @@ function SerialICE_memory_write_log(addr, size, data, target)
 		printf(" *");
 	end
 	printf("\n");
+
+	-- **********************************************************
+	--
+
+	if (PCIe_bar ~= 0) and addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
+		printf("PCIe %x:%02x.%x R.%02x\n",
+			bit.band(0xff,bit.rshift(addr, 20)),
+			bit.band(0x1f,bit.rshift(addr, 15)),
+			bit.band(0x7,bit.rshift(addr, 12)),
+			bit.band(0xfff,addr))
+	end
 end
 
 function SerialICE_memory_read_log(addr, size, data, target)
@@ -359,6 +389,17 @@ function SerialICE_memory_read_log(addr, size, data, target)
 		printf(" *");
 	end
 	printf("\n");
+
+	-- **********************************************************
+	--
+
+	if (PCIe_bar ~= 0) and addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
+		printf("PCIe %x:%02x.%x R.%02x\n",
+			bit.band(0xff,bit.rshift(addr, 20)),
+			bit.band(0x1f,bit.rshift(addr, 15)),
+			bit.band(0x7,bit.rshift(addr, 12)),
+			bit.band(0xfff,addr))
+	end
 end
 
 function SerialICE_io_write_log(port, size, data, target)
@@ -377,8 +418,6 @@ function SerialICE_io_write_log(port, size, data, target)
 			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
 			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc) ))
 	end
-
-
 end
 
 function SerialICE_io_read_log(port, size, data, target)
