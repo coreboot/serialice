@@ -15,6 +15,10 @@
 #define LKC_DIRECT_LINK
 #include "lkc.h"
 
+#ifdef WIN32
+#define mkdir(x,y) mkdir(x)
+#endif
+
 static void conf_warning(const char *fmt, ...)
 	__attribute__ ((format (printf, 1, 2)));
 
