@@ -99,20 +99,20 @@ character command code.
 5. MSR reads
 
   Syntax:
-  *rc<addr>
+  *rc<addr>.<key>
 
   Example:
-  > *rc000000cd
+  > *rc000000cd.9c5a203a
   00000000.00000933
   >
 
 6. MSR Writes
 
   Syntax:
-  *wc<addr>=<high>.<low>
+  *wc<addr>.<key>=<high>.<low>
 
   Example:
-  > *wc00000000=00000000.00000000
+  > *wc00000000.9c5a203a=00000000.00000000
   >
 
 7. CPUID

@@ -57,6 +57,7 @@ typedef struct {
 	int fd;
 #endif
 	char *buffer;
+	char *command;
 } SerialICEState;
 
 static SerialICEState *s;
@@ -483,15 +484,14 @@ static void serialice_command(const char *command, int reply_len)
 uint8_t serialice_inb(uint16_t port)
 {
 	uint8_t ret;
-	char command[16];
-
 	uint32_t data;
+
 	if (serialice_io_read_filter(&data, port, 1))
 		return data & 0xff;
 
-	sprintf(command, "*ri%04x.b", port);
+	sprintf(s->command, "*ri%04x.b", port);
 	// command read back: "\n00" (3 characters)
-	serialice_command(command, 3);
+	serialice_command(s->command, 3);
 	ret = (uint8_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 
 	serialice_log(LOG_READ|LOG_IO, ret, port, 1);
@@ -502,15 +502,14 @@ uint8_t serialice_inb(uint16_t port)
 uint16_t serialice_inw(uint16_t port)
 {
 	uint16_t ret;
-	char command[16];
-
 	uint32_t data;
+
 	if (serialice_io_read_filter(&data, port, 1))
 		return data & 0xffff;
 
-	sprintf(command, "*ri%04x.w", port);
+	sprintf(s->command, "*ri%04x.w", port);
 	// command read back: "\n0000" (5 characters)
-	serialice_command(command, 5);
+	serialice_command(s->command, 5);
 	ret = (uint16_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 
 	serialice_log(LOG_READ|LOG_IO, ret, port, 2);
@@ -521,15 +520,14 @@ uint16_t serialice_inw(uint16_t port)
 uint32_t serialice_inl(uint16_t port)
 {
 	uint32_t ret;
-	char command[16];
-
 	uint32_t data;
+
 	if (serialice_io_read_filter(&data, port, 1))
 		return data;
 
-	sprintf(command, "*ri%04x.l", port);
+	sprintf(s->command, "*ri%04x.l", port);
 	// command read back: "\n00000000" (9 characters)
-	serialice_command(command, 9);
+	serialice_command(s->command, 9);
 	ret = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 
 	serialice_log(LOG_READ|LOG_IO, ret, port, 4);
@@ -539,7 +537,6 @@ uint32_t serialice_inl(uint16_t port)
 
 void serialice_outb(uint8_t data, uint16_t port)
 {
-	char command[19];
 	uint32_t filtered_data = (uint32_t)data;
 
 	serialice_log(LOG_WRITE|LOG_IO, data, port, 1);
@@ -549,13 +546,12 @@ void serialice_outb(uint8_t data, uint16_t port)
 	}
 
 	data = (uint8_t)filtered_data;
-	sprintf(command, "*wi%04x.b=%02x", port, data);
-	serialice_command(command, 0);
+	sprintf(s->command, "*wi%04x.b=%02x", port, data);
+	serialice_command(s->command, 0);
 }
 
 void serialice_outw(uint16_t data, uint16_t port)
 {
-	char command[21];
 	uint32_t filtered_data = (uint32_t)data;
 
 	serialice_log(LOG_WRITE|LOG_IO, data, port, 2);
@@ -565,13 +561,12 @@ void serialice_outw(uint16_t data, uint16_t port)
 	}
 
 	data = (uint16_t)filtered_data;
-	sprintf(command, "*wi%04x.w=%04x", port, data);
-	serialice_command(command, 0);
+	sprintf(s->command, "*wi%04x.w=%04x", port, data);
+	serialice_command(s->command, 0);
 }
 
 void serialice_outl(uint32_t data, uint16_t port)
 {
-	char command[25];
 	uint32_t filtered_data = data;
 
 	serialice_log(LOG_WRITE|LOG_IO, data, port, 4);
@@ -581,17 +576,16 @@ void serialice_outl(uint32_t data, uint16_t port)
 	}
 
 	data = filtered_data;
-	sprintf(command, "*wi%04x.l=%08x", port, data);
-	serialice_command(command, 0);
+	sprintf(s->command, "*wi%04x.l=%08x", port, data);
+	serialice_command(s->command, 0);
 }
 
 uint8_t serialice_readb(uint32_t addr)
 {
 	uint8_t ret;
-	char command[20];
-	sprintf(command, "*rm%08x.b", addr);
+	sprintf(s->command, "*rm%08x.b", addr);
 	// command read back: "\n00" (3 characters)
-	serialice_command(command, 3);
+	serialice_command(s->command, 3);
 	ret = (uint8_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 	return ret;
 }
@@ -599,10 +593,9 @@ uint8_t serialice_readb(uint32_t addr)
 uint16_t serialice_readw(uint32_t addr)
 {
 	uint16_t ret;
-	char command[20];
-	sprintf(command, "*rm%08x.w", addr);
+	sprintf(s->command, "*rm%08x.w", addr);
 	// command read back: "\n0000" (5 characters)
-	serialice_command(command, 5);
+	serialice_command(s->command, 5);
 	ret = (uint16_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 	return ret;
 }
@@ -610,36 +603,32 @@ uint16_t serialice_readw(uint32_t addr)
 uint32_t serialice_readl(uint32_t addr)
 {
 	uint32_t ret;
-	char command[20];
-	sprintf(command, "*rm%08x.l", addr);
+	sprintf(s->command, "*rm%08x.l", addr);
 	// command read back: "\n00000000" (9 characters)
-	serialice_command(command, 9);
+	serialice_command(s->command, 9);
 	ret = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 	return ret;
 }
 
 void serialice_writeb(uint8_t data, uint32_t addr)
 {
-	char command[24];
-	sprintf(command, "*wm%08x.b=%02x", addr, data);
-	serialice_command(command, 0);
+	sprintf(s->command, "*wm%08x.b=%02x", addr, data);
+	serialice_command(s->command, 0);
 }
 
 void serialice_writew(uint16_t data, uint32_t addr)
 {
-	char command[25];
-	sprintf(command, "*wm%08x.w=%04x", addr, data);
-	serialice_command(command, 0);
+	sprintf(s->command, "*wm%08x.w=%04x", addr, data);
+	serialice_command(s->command, 0);
 }
 
 void serialice_writel(uint32_t data, uint32_t addr)
 {
-	char command[29];
-	sprintf(command, "*wm%08x.l=%08x", addr, data);
-	serialice_command(command, 0);
+	sprintf(s->command, "*wm%08x.l=%08x", addr, data);
+	serialice_command(s->command, 0);
 }
 
-uint64_t serialice_rdmsr(uint32_t addr)
+uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 {
 	uint32_t hi, lo;
 	uint64_t ret;
@@ -647,12 +636,10 @@ uint64_t serialice_rdmsr(uint32_t addr)
 
 	filtered = serialice_msr_filter(FILTER_READ, addr, &hi, &lo);
 	if (!filtered) {
-		char command[18];
-
-		sprintf(command, "*rc%08x", addr);
+		sprintf(s->command, "*rc%08x.%08x", addr, key);
 
 		// command read back: "\n00000000.00000000" (18 characters)
-		serialice_command(command, 18);
+		serialice_command(s->command, 18);
 
 		s->buffer[9] = 0; // . -> \0
 		hi = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
@@ -668,7 +655,7 @@ uint64_t serialice_rdmsr(uint32_t addr)
 	return ret;
 }
 
-void serialice_wrmsr(uint64_t data, uint32_t addr)
+void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
 {
 	uint32_t hi, lo;
 	int filtered;
@@ -679,9 +666,8 @@ void serialice_wrmsr(uint64_t data, uint32_t addr)
 	filtered = serialice_msr_filter(FILTER_WRITE, addr, &hi, &lo);
 
 	if (!filtered) {
-		char command[30];
-		sprintf(command, "*wc%08x=%08x.%08x", addr, hi, lo);
-		serialice_command(command, 0);
+		sprintf(s->command, "*wc%08x.%08x=%08x.%08x", addr, key, hi, lo);
+		serialice_command(s->command, 0);
 	}
 
 	serialice_msr_log(LOG_WRITE, addr, hi, lo, filtered);
@@ -699,13 +685,11 @@ cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)
 
 	filtered = serialice_cpuid_filter(&ret);
 	if (!filtered) {
-		char command[27];
-
-		sprintf(command, "*ci%08x.%08x", eax, ecx);
+		sprintf(s->command, "*ci%08x.%08x", eax, ecx);
 
 		// command read back: "\n000006f2.00000000.00001234.12340324"
 		// (36 characters)
-		serialice_command(command, 36);
+		serialice_command(s->command, 36);
 
 		s->buffer[9] = 0; // . -> \0
 		s->buffer[18] = 0; // . -> \0
@@ -911,6 +895,7 @@ void serialice_init(void)
 #endif
 
 	s->buffer = qemu_mallocz(BUFFER_SIZE);
+	s->command = qemu_mallocz(BUFFER_SIZE);
 
 	printf("SerialICE: Waiting for handshake with target... ");
 
@@ -937,5 +922,8 @@ void serialice_init(void)
 void serialice_exit(void)
 {
 	serialice_lua_exit();
+	qemu_free(s->command);
+	qemu_free(s->buffer);
+	qemu_free(s);
 }
 

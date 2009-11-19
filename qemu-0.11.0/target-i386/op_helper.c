@@ -3078,7 +3078,7 @@ void helper_wrmsr(void)
 
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-        serialice_wrmsr(val, (uint32_t)ECX);
+        serialice_wrmsr(val, (uint32_t)ECX, (uint32_t)EDI);
         return;
     }
 #endif
@@ -3215,7 +3215,7 @@ void helper_rdmsr(void)
 
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-	val = serialice_rdmsr((uint32_t)ECX);
+	val = serialice_rdmsr((uint32_t)ECX, (uint32_t)EDI);
         EAX = (uint32_t)(val);
         EDX = (uint32_t)(val >> 32);
 	return;

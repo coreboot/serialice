@@ -1,5 +1,0 @@
-
-- Better implementation of AMD style MSRs (with an unlock key in a specific register)
-- CPUID takes ECX as input on some EAX values (See patches/serialice-cpuid-ecx.diff)
-- USB debug console support (theoretical max of ca. 60MBit instead of 115.2KBit)
-

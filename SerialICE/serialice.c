@@ -112,16 +112,18 @@ static void serialice_write_io(void)
 
 static void serialice_read_msr(void)
 {
-	u32 addr;
+	u32 addr, key;
 	msr_t msr;
 
 	// Format:
-	// *rc00000000
+	// *rc00000000.9c5a203a
 	addr = sio_get32();
+	sio_getc();	   // skip .
+	key = sio_get32(); // key in %edi
 
 	sio_putc('\r'); sio_putc('\n');
 
-	msr = rdmsr(addr);
+	msr = rdmsr(addr, key);
 	sio_put32(msr.hi);
 	sio_putc('.');
 	sio_put32(msr.lo);
@@ -129,18 +131,25 @@ static void serialice_read_msr(void)
 
 static void serialice_write_msr(void)
 {
-	u32 addr;
+	u32 addr, key;
 	msr_t msr;
 
 	// Format:
-	// *wc00000000=00000000.00000000
+	// *wc00000000.9c5a203a=00000000.00000000
 	addr = sio_get32();
+	sio_getc();	// skip .
+	key = sio_get32(); // read key in %edi
 	sio_getc();	// skip =
 	msr.hi = sio_get32();
 	sio_getc();	// skip .
 	msr.lo = sio_get32();
 
-	wrmsr(addr, msr);
+#ifdef __ROMCC__
+	/* Cheat to avoid register outage */
+	wrmsr(addr, msr, 0x9c5a203a);
+#else
+	wrmsr(addr, msr, key);
+#endif
 }
 
 static void serialice_cpuinfo(void)

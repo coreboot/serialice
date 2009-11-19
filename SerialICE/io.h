@@ -121,88 +121,71 @@ static inline u32 inl(u16 port)
 
 /* MSR functions */
 
-#ifdef __GNUC__
 typedef struct { u32 lo, hi; } msr_t;
 
-static inline msr_t rdmsr(unsigned index)
+static inline msr_t rdmsr(u32 index, u32 key)
 {
 	msr_t result;
 	__asm__ __volatile__ (
 		"rdmsr"
 		: "=a" (result.lo), "=d" (result.hi)
-		: "c" (index), "D" (0x9c5a203a)
+		: "c" (index), "D" (key)
 	);
 	return result;
 }
 
-static inline void wrmsr(unsigned index, msr_t msr)
+static inline void wrmsr(u32 index, msr_t msr, u32 key)
 {
 	__asm__ __volatile__ (
 		"wrmsr"
 		: /* No outputs */
-		: "c" (index), "a" (msr.lo), "d" (msr.hi), "D" (0x9c5a203a)
+		: "c" (index), "a" (msr.lo), "d" (msr.hi), "D" (key)
 	);
 }
 
-#else
-
-/* Since we use romcc, we're also going to use romcc's builtin functions */
-typedef __builtin_msr_t msr_t;
-
-static inline msr_t rdmsr(unsigned long index)
-{
-	return __builtin_rdmsr(index);
-}
-
-static inline void wrmsr(unsigned long index, msr_t msr)
-{
-	__builtin_wrmsr(index, msr.lo, msr.hi);
-}
-#endif
-
 /* CPUID functions */
 
-static inline unsigned int cpuid_eax(unsigned int op, unsigned op2)
+static inline u32 cpuid_eax(u32 op, u32 op2)
 {
-        unsigned int eax;
+        u32 eax;
 
         __asm__("cpuid"
                 : "=a" (eax)
-                : "0" (op), "2" (op2)
-                : "ebx", "ecx", "edx");
+                : "a" (op), "c" (op2)
+                : "ebx", "edx" );
         return eax;
 }
 
-static inline unsigned int cpuid_ebx(unsigned int op, unsigned op2)
+static inline u32 cpuid_ebx(u32 op, u32 op2)
 {
-        unsigned int eax, ebx;
+        u32 eax, ebx;
 
         __asm__("cpuid"
-                : "=a" (eax), "=b" (ebx)
-                : "0" (op), "2" (op2)
-                : "ecx", "edx" );
+                : "=b" (ebx)
+                : "a" (op), "c" (op2)
+                : "edx");
         return ebx;
 }
 
-static inline unsigned int cpuid_ecx(unsigned int op, unsigned int op2)
+static inline u32 cpuid_ecx(u32 op, u32 op2)
 {
-        unsigned int eax, ecx;
+        u32 eax, ecx;
 
         __asm__("cpuid"
-                : "=a" (eax), "=c" (ecx)
-                : "0" (op), "2" (op2)
+                : "=c" (ecx)
+                : "a" (op), "c" (op2)
                 : "ebx", "edx" );
         return ecx;
 }
 
-static inline unsigned int cpuid_edx(unsigned int op, unsigned int op2)
+static inline u32 cpuid_edx(u32 op, u32 op2)
 {
-        unsigned int eax, edx;
+        u32 eax, edx;
 
         __asm__("cpuid"
-                : "=a" (eax), "=d" (edx)
-                : "0" (op), "2" (op2)
-                : "ebx", "ecx");
+                : "=d" (edx)
+                : "a" (op), "c" (op2)
+                : "ebx");
         return edx;
 }
 
