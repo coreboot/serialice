@@ -162,46 +162,46 @@ static inline void wrmsr(unsigned long index, msr_t msr)
 
 /* CPUID functions */
 
-static inline unsigned int cpuid_eax(unsigned int op)
+static inline unsigned int cpuid_eax(unsigned int op, unsigned op2)
 {
         unsigned int eax;
 
         __asm__("cpuid"
                 : "=a" (eax)
-                : "0" (op)
+                : "0" (op), "2" (op2)
                 : "ebx", "ecx", "edx");
         return eax;
 }
 
-static inline unsigned int cpuid_ebx(unsigned int op)
+static inline unsigned int cpuid_ebx(unsigned int op, unsigned op2)
 {
         unsigned int eax, ebx;
 
         __asm__("cpuid"
                 : "=a" (eax), "=b" (ebx)
-                : "0" (op)
+                : "0" (op), "2" (op2)
                 : "ecx", "edx" );
         return ebx;
 }
 
-static inline unsigned int cpuid_ecx(unsigned int op)
+static inline unsigned int cpuid_ecx(unsigned int op, unsigned int op2)
 {
         unsigned int eax, ecx;
 
         __asm__("cpuid"
                 : "=a" (eax), "=c" (ecx)
-                : "0" (op)
+                : "0" (op), "2" (op2)
                 : "ebx", "edx" );
         return ecx;
 }
 
-static inline unsigned int cpuid_edx(unsigned int op)
+static inline unsigned int cpuid_edx(unsigned int op, unsigned int op2)
 {
         unsigned int eax, edx;
 
         __asm__("cpuid"
                 : "=a" (eax), "=d" (edx)
-                : "0" (op)
+                : "0" (op), "2" (op2)
                 : "ebx", "ecx");
         return edx;
 }

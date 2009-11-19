@@ -161,19 +161,19 @@ static void serialice_cpuinfo(void)
  	 * have to worry about running out of registers if we
  	 * occupy eax, ebx, ecx, edx at the same time 
  	 */
-	reg32 = cpuid_eax(eax);
+	reg32 = cpuid_eax(eax, ecx);
 	sio_put32(reg32);
 	sio_putc('.');
 
-	reg32 = cpuid_ebx(eax);
+	reg32 = cpuid_ebx(eax, ecx);
 	sio_put32(reg32);
 	sio_putc('.');
 
-	reg32 = cpuid_ecx(eax);
+	reg32 = cpuid_ecx(eax, ecx);
 	sio_put32(reg32);
 	sio_putc('.');
 
-	reg32 = cpuid_edx(eax);
+	reg32 = cpuid_edx(eax, ecx);
 	sio_put32(reg32);
 }
 
