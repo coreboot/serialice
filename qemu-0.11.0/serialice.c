@@ -405,7 +405,7 @@ static int serialice_write(SerialICEState *state, const void *buf, size_t nbyte)
 		int ret = 0;
 		while (ret == 0) WriteFile(state->fd, buffer + i, 1, &ret, NULL);
 		ret = 0;
-		while (ret == 0) ReadFile(state->fd, buffer + i, 1, &ret, NULL);
+		while (ret == 0) ReadFile(state->fd, &c, 1, &ret, NULL);
 #else
 		while (write(state->fd, buffer + i, 1) != 1) ;
 		while (read(state->fd, &c, 1) != 1) ;
