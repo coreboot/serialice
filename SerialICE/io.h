@@ -82,38 +82,38 @@ static inline u32 inl(u16 port)
 	return __builtin_inl(port);
 }
 #else
-static inline void outb(uint8_t value, uint16_t port)
+static inline void outb(u8 value, u16 port)
 {
 	__asm__ __volatile__("outb %b0, %w1"::"a"(value), "Nd"(port));
 }
 
-static inline void outw(uint16_t value, uint16_t port)
+static inline void outw(u16 value, u16 port)
 {
 	__asm__ __volatile__("outw %w0, %w1"::"a"(value), "Nd"(port));
 }
 
-static inline void outl(uint32_t value, uint16_t port)
+static inline void outl(u32 value, u16 port)
 {
 	__asm__ __volatile__("outl %0, %w1"::"a"(value), "Nd"(port));
 }
 
-static inline uint8_t inb(uint16_t port)
+static inline u8 inb(u16 port)
 {
-	uint8_t value;
+	u8 value;
 	__asm__ __volatile__("inb %w1, %b0":"=a"(value): "Nd"(port));
 	return value;
 }
 
-static inline uint16_t inw(uint16_t port)
+static inline u16 inw(u16 port)
 {
-	uint16_t value;
+	u16 value;
 	__asm__ __volatile__("inw %w1, %w0":"=a"(value): "Nd"(port));
 	return value;
 }
 
-static inline uint32_t inl(uint16_t port)
+static inline u32 inl(u16 port)
 {
-	uint32_t value;
+	u32 value;
 	__asm__ __volatile__("inl %w1, %0":"=a"(value): "Nd"(port));
 	return value;
 }
@@ -122,7 +122,7 @@ static inline uint32_t inl(uint16_t port)
 /* MSR functions */
 
 #ifdef __GNUC__
-typedef struct { uint32_t lo, hi; } msr_t;
+typedef struct { u32 lo, hi; } msr_t;
 
 static inline msr_t rdmsr(unsigned index)
 {
