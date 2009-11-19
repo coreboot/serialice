@@ -45,8 +45,8 @@ static void mainboard_set_ich5(void)
 
 #define nftransport  0xc
 
-#define OBF  0
-#define IBF 1
+#define OBF (1 << 0)
+#define IBF (1 << 1)
 
 #define ipmidata  0xca0
 #define ipmicsr  0xca4
@@ -54,7 +54,7 @@ static void mainboard_set_ich5(void)
 
 static inline void  ibfzero(void)
 {
-	while(inb(ipmicsr) &  (1<<IBF)) 
+	while(inb(ipmicsr) &  IBF) 
 		;
 }
 static inline void  clearobf(void)
@@ -64,9 +64,10 @@ static inline void  clearobf(void)
 
 static inline void  waitobf(void)
 {
-	while((inb(ipmicsr) &  (1<<OBF)) == 0) 
+	while((inb(ipmicsr) &  OBF) == 0) 
 		;
 }
+
 /* quite possibly the stupidest interface ever designed. */
 static inline void  first_cmd_byte(unsigned char byte)
 {
@@ -80,7 +81,6 @@ static inline void  first_cmd_byte(unsigned char byte)
 
 static inline void  next_cmd_byte(unsigned char byte)
 {
-
 	ibfzero();
 	clearobf();
 	outb(byte, ipmidata);
@@ -156,6 +156,5 @@ static void chipset_init(void)
 	mainboard_set_ich5();
 	bmc_foad();
 	superio_init();
-	outb('F', 0x3f8);
 }
 
