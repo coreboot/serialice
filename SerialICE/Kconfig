@@ -50,6 +50,9 @@ config BOARD_RCA_RM4100
 config BOARD_THOMSON_IP1000
 	bool "Thomson IP1000"
 
+config BOARD_ASUS_P2B
+	bool "ASUS P2B"
+
 endchoice
 
 config BOARD_INIT
@@ -61,6 +64,7 @@ config BOARD_INIT
 	default "msi_ms6178.c" if BOARD_MSI_MS6178
 	default "rca_rm4100.c" if BOARD_RCA_RM4100
 	default "thomson_ip1000.c" if BOARD_THOMSON_IP1000
+	default "asus_p2b.c" if BOARD_ASUS_P2B
 
 choice
 	prompt "Target communication"
