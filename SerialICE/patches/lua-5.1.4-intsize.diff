@@ -1,0 +1,19 @@
+--- src/luaconf.h.orig	2009-11-20 17:57:46.000000000 +0100
++++ src/luaconf.h	2009-11-20 18:01:21.000000000 +0100
+@@ -10,6 +10,7 @@
+ 
+ #include <limits.h>
+ #include <stddef.h>
++#include <stdint.h>
+ 
+ 
+ /*
+@@ -140,7 +141,7 @@
+ ** CHANGE that if ptrdiff_t is not adequate on your machine. (On most
+ ** machines, ptrdiff_t gives a good choice between int or long.)
+ */
+-#define LUA_INTEGER	ptrdiff_t
++#define LUA_INTEGER	int64_t
+ 
+ 
+ /*
