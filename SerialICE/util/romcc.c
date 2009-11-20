@@ -219,11 +219,11 @@ static int exists(const char *dirname, const char *filename)
 static char *slurp_file(const char *dirname, const char *filename, off_t *r_size)
 {
 	char cwd[MAX_CWD_SIZE];
-	int fd;
 	char *buf;
 	off_t size, progress;
 	ssize_t result;
 	struct stat stats;
+	FILE* file;
 	
 	if (!filename) {
 		*r_size = 0;
@@ -233,25 +233,22 @@ static char *slurp_file(const char *dirname, const char *filename, off_t *r_size
 		die("cwd buffer to small");
 	}
 	xchdir(dirname);
-	fd = open(filename, O_RDONLY);
+	file = fopen(filename, "rb");
 	xchdir(cwd);
-	if (fd < 0) {
+	if (file == NULL) {
 		die("Cannot open '%s' : %s\n",
 			filename, strerror(errno));
 	}
-	result = fstat(fd, &stats);
-	if (result < 0) {
-		die("Cannot stat: %s: %s\n",
-			filename, strerror(errno));
-	}
-	size = stats.st_size;
+	fseek(file, 0, SEEK_END);
+	size = ftell(file);
+	fseek(file, 0, SEEK_SET);
 	*r_size = size +1;
 	buf = xmalloc(size +2, filename);
 	buf[size] = '\n'; /* Make certain the file is newline terminated */
 	buf[size+1] = '\0'; /* Null terminate the file for good measure */
 	progress = 0;
 	while(progress < size) {
-		result = read(fd, buf + progress, size - progress);
+		result = fread(buf + progress, 1, size - progress, file);
 		if (result < 0) {
 			if ((errno == EINTR) ||	(errno == EAGAIN))
 				continue;
@@ -260,11 +257,7 @@ static char *slurp_file(const char *dirname, const char *filename, off_t *r_size
 		}
 		progress += result;
 	}
-	result = close(fd);
-	if (result < 0) {
-		die("Close of %s failed: %s\n",
-			filename, strerror(errno));
-	}
+	fclose(file);
 	return buf;
 }
 
