@@ -1481,24 +1481,6 @@ static void pc_init_isa(ram_addr_t ram_size,
              initrd_filename, cpu_model, 0);
 }
 
-#ifdef CONFIG_SERIALICE
-static void serialice_init_pci(ram_addr_t ram_size,
-                        const char *boot_device,
-                        const char *kernel_filename,
-                        const char *kernel_cmdline,
-                        const char *initrd_filename,
-                        const char *cpu_model)
-{
-    serialice_active = 1;
-
-    pc_init1(ram_size, boot_device,
-             kernel_filename, kernel_cmdline,
-             initrd_filename, cpu_model, 1);
-
-    serialice_init();
-}
-#endif
-
 /* set CMOS shutdown status register (index 0xF) as S3_resume(0xFE)
    BIOS will read it and start S3 resume at POST Entry */
 void cmos_set_s3_resume(void)
@@ -1546,23 +1528,11 @@ static QEMUMachine isapc_machine = {
     .max_cpus = 1,
 };
 
-#ifdef CONFIG_SERIALICE
-static QEMUMachine serialice_machine = {
-    .name = "serialice",
-    .desc = "SerialICE",
-    .init = serialice_init_pci,
-    .max_cpus = 255,
-};
-#endif
-
 static void pc_machine_init(void)
 {
     qemu_register_machine(&pc_machine);
     qemu_register_machine(&pc_machine_v0_10);
     qemu_register_machine(&isapc_machine);
-#ifdef CONFIG_SERIALICE
-    qemu_register_machine(&serialice_machine);
-#endif
 }
 
 machine_init(pc_machine_init);

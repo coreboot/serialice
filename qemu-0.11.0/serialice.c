@@ -810,7 +810,7 @@ int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
 }
 
 // **************************************************************************
-// external initialization and exit
+// initialization and exit
 
 void serialice_init(void)
 {
@@ -909,6 +909,9 @@ void serialice_init(void)
 
 	printf("SerialICE: LUA init...\n");
 	serialice_lua_init();
+
+	/* Let the rest of Qemu know we're alife */
+	serialice_active = 1;
 }
 
 void serialice_exit(void)
@@ -918,4 +921,7 @@ void serialice_exit(void)
 	qemu_free(s->buffer);
 	qemu_free(s);
 }
+
+device_init(serialice_init)
+// no exit function
 
