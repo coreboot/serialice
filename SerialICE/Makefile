@@ -19,6 +19,14 @@
 
 VERSION="1.4"
 
+_OS=$(shell uname -s |cut -c-7)
+STACK=
+ifeq ($(_OS),MINGW32)
+	STACK=-Wl,--stack,16384000
+endif
+ifeq ($(_OS),CYGWIN_)
+	STACK=-Wl,--stack,16384000
+endif
 export src := $(shell pwd)
 export srctree := $(src)
 export srck := $(src)/util/kconfig
@@ -116,7 +124,7 @@ $(obj)/serialice.S: $(SOURCES) $(obj)/romcc
 
 $(obj)/romcc: $(src)/util/romcc.c
 	$(Q)printf "  HOSTCC   $(subst $(shell pwd)/,,$(@))\n"
-	$(Q)$(HOSTCC) $(HOSTCFLAGS) -o $@ $^
+	$(Q)$(HOSTCC) $(HOSTCFLAGS) $(STACK) -o $@ $^
 
 # #####################################################################
 
