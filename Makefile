@@ -43,7 +43,7 @@ diff:
 TARBALL=SerialICE-$(SERIALICE_VERSION).tar.bz2
 release:
 	@printf "\nCreating release tarball: $(TARBALL)\n"
-	@svn export -q svn://coresystems.de/serialice/trunk/SerialICE SerialICE-$(SERIALICE_VERSION)
+	@svn export -q svn://serialice.com/serialice/trunk/SerialICE SerialICE-$(SERIALICE_VERSION)
 	@tar cjf $(TARBALL) SerialICE-$(SERIALICE_VERSION)
 	@rm -rf SerialICE-$(SERIALICE_VERSION)
 	@printf "done.\n\n"
