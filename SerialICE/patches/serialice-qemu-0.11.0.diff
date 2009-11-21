@@ -10,19 +10,19 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
  build.sh                |    5 
  configure               |   45 ++
  exec-all.h              |    4 
- hw/pc.c                 |   43 ++
+ hw/pc.c                 |   13 
  qemu-char.c             |    4 
  qemu-options.hx         |   11 
- serialice.c             |  847 ++++++++++++++++++++++++++++++++++++++++++++++++
- serialice.h             |   42 ++
+ serialice.c             |  927 ++++++++++++++++++++++++++++++++++++++++++++++++
+ serialice.h             |   66 +++
  softmmu_template.h      |   28 +
  target-i386/op_helper.c |   62 +++
  vl.c                    |    8 
- 13 files changed, 1108 insertions(+), 2 deletions(-)
+ 13 files changed, 1182 insertions(+), 2 deletions(-)
 
 --- qemu-0.11.0/serialice.c
 +++ qemu-0.11.0/serialice.c
-@@ -0,0 +1,847 @@
+@@ -0,0 +1,927 @@
 +/*
 + * QEMU PC System Emulator
 + *
@@ -53,9 +53,14 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +#include <stdint.h>
 +#include <unistd.h>
 +#include <string.h>
++#ifdef WIN32
++#include <windows.h>
++#include <conio.h>
++#else
 +#include <fcntl.h>
 +#include <termios.h>
 +#include <sys/ioctl.h>
++#endif
 +
 +/* LUA includes */
 +#include <lua.h>
@@ -71,8 +76,13 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +#define SERIALICE_DEBUG 3
 +#define BUFFER_SIZE 1024
 +typedef struct {
++#ifdef WIN32
++	HANDLE fd;
++#else
 +	int fd;
++#endif
 +	char *buffer;
++	char *command;
 +} SerialICEState;
 +
 +static SerialICEState *s;
@@ -80,7 +90,9 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +int serialice_active = 0;
 +const char *serialice_lua_script="serialice.lua";
 +
++#ifndef WIN32
 +static struct termios options;
++#endif
 +
 +static lua_State *L;
 +
@@ -358,7 +370,6 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +{
 +    int result;
 +
-+
 +    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_cpuid_log");
 +
 +    lua_pushinteger(L, eax); // input: eax
@@ -380,18 +391,25 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +// **************************************************************************
 +// low level communication with the SerialICE shell (serial communication)
 +
-+static int serialice_read(int fd, void *buf, size_t nbyte)
++static int serialice_read(SerialICEState *state, void *buf, size_t nbyte)
 +{
 +	int bytes_read = 0;
 +
 +	while (1) {
-+		int ret = read(fd, buf, nbyte);
++#ifdef WIN32
++		int ret = 0;
++		ReadFile(state->fd, buf, nbyte - bytes_read, &ret, NULL);
++		if (!ret)
++			break;
++#else
++		int ret = read(state->fd, buf, nbyte - bytes_read);
 +
 +		if (ret == -1 && errno == EINTR)
 +			continue;
 +
 +		if (ret == -1)
 +			break;
++#endif
 +
 +		bytes_read += ret;
 +		buf += ret;
@@ -403,21 +421,55 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	return bytes_read;
 +}
 +
-+static int serialice_write(int fd, const void *buf, size_t nbyte)
++static int serialice_write(SerialICEState *state, const void *buf, size_t nbyte)
 +{
 +	char *buffer = (char *) buf;
 +	char c;
 +	int i;
 +
 +	for (i = 0; i < (int)nbyte; i++) {
-+		while (write(fd, buffer + i, 1) != 1) ;
-+		while (read(fd, &c, 1) != 1) ;
++#ifdef WIN32
++		int ret = 0;
++		while (ret == 0)
++			WriteFile(state->fd, buffer + i, 1, &ret, NULL);
++		ret = 0;
++		while (ret == 0)
++			ReadFile(state->fd, &c, 1, &ret, NULL);
++#else
++		while (write(state->fd, buffer + i, 1) != 1) ;
++		while (read(state->fd, &c, 1) != 1) ;
++#endif
 +		if (c != buffer[i]) {
 +			printf("Readback error! %x/%x\n", c, buffer[i]);
 +		}
 +	}
 +
 +	return nbyte;
++}
++
++static int serialice_wait_prompt(void)
++{
++	char buf[3];
++	int l;
++
++	l = serialice_read(s, buf, 3);
++
++	if (l == -1) {
++		perror("SerialICE: Could not read from target");
++		exit(1);
++	}
++
++	while (buf[0] != '\n' || buf[1] != '>' || buf[2] != ' ') {
++		buf[0] = buf[1];
++		buf[1] = buf[2];
++		l = serialice_read(s, buf + 2, 1);
++		if (l == -1) {
++			perror("SerialICE: Could not read from target");
++			exit(1);
++		}
++	}
++
++	return 0;
 +}
 +
 +static void serialice_command(const char *command, int reply_len)
@@ -427,15 +479,23 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +#endif
 +	int l;
 +
-+	serialice_write(s->fd, command, strlen(command));
++	serialice_wait_prompt();
++
++	serialice_write(s, command, strlen(command));
 +	
 +	memset(s->buffer, 0, reply_len + 1); // clear enough of the buffer
 +
-+	l = serialice_read(s->fd, s->buffer, reply_len);
++	l = serialice_read(s, s->buffer, reply_len);
 +
 +	if (l == -1) {
 +		perror("SerialICE: Could not read from target");
 +		exit(1);
++	}
++
++	// compensate for CR on the wire. Needed on Win32
++	if (s->buffer[0] == '\r') {
++		memmove(s->buffer, s->buffer+1, reply_len);
++		serialice_read(s, s->buffer+reply_len-1, 1);
 +	}
 +
 +	if (l != reply_len) {
@@ -458,15 +518,14 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +uint8_t serialice_inb(uint16_t port)
 +{
 +	uint8_t ret;
-+	char command[16];
-+
 +	uint32_t data;
++
 +	if (serialice_io_read_filter(&data, port, 1))
 +		return data & 0xff;
 +
-+	sprintf(command, "*ri%04x.b", port);
-+	// command read back: "\n00\n> " (6 characters)
-+	serialice_command(command, 6);
++	sprintf(s->command, "*ri%04x.b", port);
++	// command read back: "\n00" (3 characters)
++	serialice_command(s->command, 3);
 +	ret = (uint8_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +
 +	serialice_log(LOG_READ|LOG_IO, ret, port, 1);
@@ -477,15 +536,14 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +uint16_t serialice_inw(uint16_t port)
 +{
 +	uint16_t ret;
-+	char command[16];
-+
 +	uint32_t data;
++
 +	if (serialice_io_read_filter(&data, port, 1))
 +		return data & 0xffff;
 +
-+	sprintf(command, "*ri%04x.w", port);
-+	// command read back: "\n0000\n> " (8 characters)
-+	serialice_command(command, 8);
++	sprintf(s->command, "*ri%04x.w", port);
++	// command read back: "\n0000" (5 characters)
++	serialice_command(s->command, 5);
 +	ret = (uint16_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +
 +	serialice_log(LOG_READ|LOG_IO, ret, port, 2);
@@ -496,15 +554,14 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +uint32_t serialice_inl(uint16_t port)
 +{
 +	uint32_t ret;
-+	char command[16];
-+
 +	uint32_t data;
++
 +	if (serialice_io_read_filter(&data, port, 1))
 +		return data;
 +
-+	sprintf(command, "*ri%04x.l", port);
-+	// command read back: "\n00000000\n> " (12 characters)
-+	serialice_command(command, 12);
++	sprintf(s->command, "*ri%04x.l", port);
++	// command read back: "\n00000000" (9 characters)
++	serialice_command(s->command, 9);
 +	ret = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +
 +	serialice_log(LOG_READ|LOG_IO, ret, port, 4);
@@ -514,7 +571,6 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +
 +void serialice_outb(uint8_t data, uint16_t port)
 +{
-+	char command[19];
 +	uint32_t filtered_data = (uint32_t)data;
 +
 +	serialice_log(LOG_WRITE|LOG_IO, data, port, 1);
@@ -524,14 +580,12 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	}
 +
 +	data = (uint8_t)filtered_data;
-+	sprintf(command, "*wi%04x.b=%02x", port, data);
-+	// command read back: "\n> " (3 characters)
-+	serialice_command(command, 3);
++	sprintf(s->command, "*wi%04x.b=%02x", port, data);
++	serialice_command(s->command, 0);
 +}
 +
 +void serialice_outw(uint16_t data, uint16_t port)
 +{
-+	char command[21];
 +	uint32_t filtered_data = (uint32_t)data;
 +
 +	serialice_log(LOG_WRITE|LOG_IO, data, port, 2);
@@ -541,14 +595,12 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	}
 +
 +	data = (uint16_t)filtered_data;
-+	sprintf(command, "*wi%04x.w=%04x", port, data);
-+	// command read back: "\n> " (3 characters)
-+	serialice_command(command, 3);
++	sprintf(s->command, "*wi%04x.w=%04x", port, data);
++	serialice_command(s->command, 0);
 +}
 +
 +void serialice_outl(uint32_t data, uint16_t port)
 +{
-+	char command[25];
 +	uint32_t filtered_data = data;
 +
 +	serialice_log(LOG_WRITE|LOG_IO, data, port, 4);
@@ -558,18 +610,16 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	}
 +
 +	data = filtered_data;
-+	sprintf(command, "*wi%04x.l=%08x", port, data);
-+	// command read back: "\n> " (3 characters)
-+	serialice_command(command, 3);
++	sprintf(s->command, "*wi%04x.l=%08x", port, data);
++	serialice_command(s->command, 0);
 +}
 +
 +uint8_t serialice_readb(uint32_t addr)
 +{
 +	uint8_t ret;
-+	char command[20];
-+	sprintf(command, "*rm%08x.b", addr);
-+	// command read back: "\n00\n> " (6 characters)
-+	serialice_command(command, 6);
++	sprintf(s->command, "*rm%08x.b", addr);
++	// command read back: "\n00" (3 characters)
++	serialice_command(s->command, 3);
 +	ret = (uint8_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +	return ret;
 +}
@@ -577,10 +627,9 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +uint16_t serialice_readw(uint32_t addr)
 +{
 +	uint16_t ret;
-+	char command[20];
-+	sprintf(command, "*rm%08x.w", addr);
-+	// command read back: "\n0000\n> " (8 characters)
-+	serialice_command(command, 8);
++	sprintf(s->command, "*rm%08x.w", addr);
++	// command read back: "\n0000" (5 characters)
++	serialice_command(s->command, 5);
 +	ret = (uint16_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +	return ret;
 +}
@@ -588,39 +637,32 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +uint32_t serialice_readl(uint32_t addr)
 +{
 +	uint32_t ret;
-+	char command[20];
-+	sprintf(command, "*rm%08x.l", addr);
-+	// command read back: "\n00000000\n> " (12 characters)
-+	serialice_command(command, 12);
++	sprintf(s->command, "*rm%08x.l", addr);
++	// command read back: "\n00000000" (9 characters)
++	serialice_command(s->command, 9);
 +	ret = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
 +	return ret;
 +}
 +
 +void serialice_writeb(uint8_t data, uint32_t addr)
 +{
-+	char command[24];
-+	sprintf(command, "*wm%08x.b=%02x", addr, data);
-+	// command read back: "\n> " (3 characters)
-+	serialice_command(command, 3);
++	sprintf(s->command, "*wm%08x.b=%02x", addr, data);
++	serialice_command(s->command, 0);
 +}
 +
 +void serialice_writew(uint16_t data, uint32_t addr)
 +{
-+	char command[25];
-+	sprintf(command, "*wm%08x.w=%04x", addr, data);
-+	// command read back: "\n> " (3 characters)
-+	serialice_command(command, 3);
++	sprintf(s->command, "*wm%08x.w=%04x", addr, data);
++	serialice_command(s->command, 0);
 +}
 +
 +void serialice_writel(uint32_t data, uint32_t addr)
 +{
-+	char command[29];
-+	sprintf(command, "*wm%08x.l=%08x", addr, data);
-+	// command read back: "\n> " (3 characters)
-+	serialice_command(command, 3);
++	sprintf(s->command, "*wm%08x.l=%08x", addr, data);
++	serialice_command(s->command, 0);
 +}
 +
-+uint64_t serialice_rdmsr(uint32_t addr)
++uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 +{
 +	uint32_t hi, lo;
 +	uint64_t ret;
@@ -628,12 +670,10 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +
 +	filtered = serialice_msr_filter(FILTER_READ, addr, &hi, &lo);
 +	if (!filtered) {
-+		char command[18];
++		sprintf(s->command, "*rc%08x.%08x", addr, key);
 +
-+		sprintf(command, "*rc%08x", addr);
-+
-+		// command read back: "\n00000000.00000000\n> " (21 characters)
-+		serialice_command(command, 21);
++		// command read back: "\n00000000.00000000" (18 characters)
++		serialice_command(s->command, 18);
 +
 +		s->buffer[9] = 0; // . -> \0
 +		hi = (uint32_t)strtoul(s->buffer + 1, (char **)NULL, 16);
@@ -649,7 +689,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	return ret;
 +}
 +
-+void serialice_wrmsr(uint64_t data, uint32_t addr)
++void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
 +{
 +	uint32_t hi, lo;
 +	int filtered;
@@ -660,10 +700,8 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	filtered = serialice_msr_filter(FILTER_WRITE, addr, &hi, &lo);
 +
 +	if (!filtered) {
-+		char command[30];
-+		sprintf(command, "*wc%08x=%08x.%08x", addr, hi, lo);
-+		// command read back: "\n> " (3 characters)
-+		serialice_command(command, 3);
++		sprintf(s->command, "*wc%08x.%08x=%08x.%08x", addr, key, hi, lo);
++		serialice_command(s->command, 0);
 +	}
 +
 +	serialice_msr_log(LOG_WRITE, addr, hi, lo, filtered);
@@ -681,13 +719,11 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +
 +	filtered = serialice_cpuid_filter(&ret);
 +	if (!filtered) {
-+		char command[27];
++		sprintf(s->command, "*ci%08x.%08x", eax, ecx);
 +
-+		sprintf(command, "*ci%08x.%08x", eax, ecx);
-+
-+		// command read back: "\n000006f2.00000000.00001234.12340324\n> "
-+		// (39 characters)
-+		serialice_command(command, 39);
++		// command read back: "\n000006f2.00000000.00001234.12340324"
++		// (36 characters)
++		serialice_command(s->command, 36);
 +
 +		s->buffer[9] = 0; // . -> \0
 +		s->buffer[18] = 0; // . -> \0
@@ -799,7 +835,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +}
 +
 +// **************************************************************************
-+// external initialization and exit
++// initialization and exit
 +
 +void serialice_init(void)
 +{
@@ -811,7 +847,32 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	}
 +
 +	s =  qemu_mallocz(sizeof(SerialICEState));
++#ifdef WIN32
++	s->fd = CreateFile(serialice_device, GENERIC_READ | GENERIC_WRITE,
++		0, NULL, OPEN_EXISTING, 0, NULL);
 +
++	if (s->fd == INVALID_HANDLE_VALUE) {
++		perror("SerialICE: Could not connect to target TTY");
++		exit(1);
++	}
++
++	DCB dcb;
++	if (!GetCommState(s->fd, &dcb)) {
++		perror("SerialICE: Could not load config for target TTY");
++		exit(1);
++	}
++
++	dcb.BaudRate = CBR_115200;
++	dcb.ByteSize = 8;
++	dcb.Parity = NOPARITY;
++	dcb.StopBits = ONESTOPBIT;
++
++	if (!SetCommState(s->fd, &dcb)) {
++		perror("SerialICE: Could not store config for target TTY");
++		exit(1);
++	}
++
++#else
 +	s->fd = open(serialice_device, O_RDWR | O_NOCTTY | O_NONBLOCK);
 +
 +	if (s->fd == -1) {
@@ -848,33 +909,76 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +	tcsetattr(s->fd, TCSANOW, &options);
 +
 +	tcflush(s->fd, TCIOFLUSH);
++#endif
 +
 +	s->buffer = qemu_mallocz(BUFFER_SIZE);
++	s->command = qemu_mallocz(BUFFER_SIZE);
 +
 +	printf("SerialICE: Waiting for handshake with target... ");
-+	serialice_command("\n", 3);
 +
-+	if (!strncmp("\n> ", s->buffer, 3)) {
++	/* Trigger a prompt */
++	serialice_write(s, "\n", 1);
++
++	/* ... and wait for it to appear */
++	if (serialice_wait_prompt() == 0) {
 +		printf("target alife!\n");
 +	} else {
-+		printf("target not ok! (%s)\n", s->buffer );
++		printf("target not ok!\n" );
 +		exit(1);
 +	}
 +
++	/* Each serialice_command() waits for a prompt, so trigger one for the
++	 * first command, as we consumed the last one for the handshake
++	 */
++	serialice_write(s, "\n", 1);
++
 +	printf("SerialICE: LUA init...\n");
 +	serialice_lua_init();
++
++	/* Let the rest of Qemu know we're alife */
++	serialice_active = 1;
 +}
 +
 +void serialice_exit(void)
 +{
 +	serialice_lua_exit();
++	qemu_free(s->command);
++	qemu_free(s->buffer);
++	qemu_free(s);
 +}
++
++device_init(serialice_init)
++// no exit function
 +
 --- qemu-0.11.0/serialice.h
 +++ qemu-0.11.0/serialice.h
-@@ -0,0 +1,42 @@
-+#ifndef HW_SERIALICE_H
-+#define HW_SERIALICE_H
+@@ -0,0 +1,66 @@
++/*
++ * QEMU PC System Emulator
++ *
++ * Copyright (c) 2009 coresystems GmbH
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++ * THE SOFTWARE.
++ */
++
++#ifndef SERIALICE_H
++#define SERIALICE_H
 +
 +#include "config-host.h"
 +
@@ -900,8 +1004,8 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
 +void serialice_writew(uint16_t data, uint32_t addr);
 +void serialice_writel(uint32_t data, uint32_t addr);
 +
-+uint64_t serialice_rdmsr(uint32_t addr);
-+void serialice_wrmsr(uint64_t data, uint32_t addr);
++uint64_t serialice_rdmsr(uint32_t addr, uint32_t key);
++void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key);
 +
 +typedef struct {
 +	uint32_t eax, ebx, ecx, edx;
@@ -1280,7 +1384,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
  
 +#ifdef CONFIG_SERIALICE
 +    if (serialice_active) {
-+        serialice_wrmsr(val, (uint32_t)ECX);
++        serialice_wrmsr(val, (uint32_t)ECX, (uint32_t)EDI);
 +        return;
 +    }
 +#endif
@@ -1294,7 +1398,7 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
  
 +#ifdef CONFIG_SERIALICE
 +    if (serialice_active) {
-+	val = serialice_rdmsr((uint32_t)ECX);
++	val = serialice_rdmsr((uint32_t)ECX, (uint32_t)EDI);
 +        EAX = (uint32_t)(val);
 +        EDX = (uint32_t)(val >> 32);
 +	return;
@@ -1347,52 +1451,3 @@ Signed-off-by: Stefan Reinauer <stepan@coresystems.de>
          cpu_register_physical_memory(0x100000000ULL,
                                       above_4g_mem_size,
                                       ram_addr);
-@@ -1468,6 +1481,24 @@
-              initrd_filename, cpu_model, 0);
- }
- 
-+#ifdef CONFIG_SERIALICE
-+static void serialice_init_pci(ram_addr_t ram_size,
-+                        const char *boot_device,
-+                        const char *kernel_filename,
-+                        const char *kernel_cmdline,
-+                        const char *initrd_filename,
-+                        const char *cpu_model)
-+{
-+    serialice_active = 1;
-+
-+    pc_init1(ram_size, boot_device,
-+             kernel_filename, kernel_cmdline,
-+             initrd_filename, cpu_model, 1);
-+
-+    serialice_init();
-+}
-+#endif
-+
- /* set CMOS shutdown status register (index 0xF) as S3_resume(0xFE)
-    BIOS will read it and start S3 resume at POST Entry */
- void cmos_set_s3_resume(void)
-@@ -1515,11 +1546,23 @@
-     .max_cpus = 1,
- };
- 
-+#ifdef CONFIG_SERIALICE
-+static QEMUMachine serialice_machine = {
-+    .name = "serialice",
-+    .desc = "SerialICE",
-+    .init = serialice_init_pci,
-+    .max_cpus = 255,
-+};
-+#endif
-+
- static void pc_machine_init(void)
- {
-     qemu_register_machine(&pc_machine);
-     qemu_register_machine(&pc_machine_v0_10);
-     qemu_register_machine(&isapc_machine);
-+#ifdef CONFIG_SERIALICE
-+    qemu_register_machine(&serialice_machine);
-+#endif
- }
- 
- machine_init(pc_machine_init);
