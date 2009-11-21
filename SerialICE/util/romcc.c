@@ -222,7 +222,6 @@ static char *slurp_file(const char *dirname, const char *filename, off_t *r_size
 	char *buf;
 	off_t size, progress;
 	ssize_t result;
-	struct stat stats;
 	FILE* file;
 	
 	if (!filename) {
@@ -273,7 +272,7 @@ typedef uint16_t ushort_t;
 typedef int32_t  int_t;
 typedef uint32_t uint_t;
 typedef int32_t  long_t;
-typedef uint32_t ulong_t;
+#define ulong_t uint32_t
 
 #define SCHAR_T_MIN (-128)
 #define SCHAR_T_MAX 127
@@ -1761,7 +1760,7 @@ static void loc(FILE *fp, struct compile_state *state, struct triple *triple)
 		state->file->report_name, state->file->report_line, col);
 }
 
-static void internal_error(struct compile_state *state, struct triple *ptr, 
+static void __attribute__ ((noreturn)) internal_error(struct compile_state *state, struct triple *ptr, 
 	const char *fmt, ...)
 {
 	FILE *fp = state->errout;
@@ -1799,7 +1798,7 @@ static void internal_warning(struct compile_state *state, struct triple *ptr,
 
 
 
-static void error(struct compile_state *state, struct triple *ptr, 
+static void __attribute__ ((noreturn)) error(struct compile_state *state, struct triple *ptr, 
 	const char *fmt, ...)
 {
 	FILE *fp = state->errout;
@@ -3856,15 +3855,16 @@ static const char *next_char(struct file_state *file, const char *pos, int index
 		}
 		/* Is this an escaped newline? */
 		if (file->join_lines &&
-			(c == '\\') && (pos + size < end) && (pos[1] == '\n')) 
+			(c == '\\') && (pos + size < end) && ((pos[1] == '\n') || ((pos[1] == '\r') && (pos[2] == '\n'))))
 		{
+			int cr_offset = ((pos[1] == '\r') && (pos[2] == '\n'))?1:0;
 			/* At the start of a line just eat it */
 			if (pos == file->pos) {
 				file->line++;
 				file->report_line++;
-				file->line_start = pos + size + 1;
+				file->line_start = pos + size + 1 + cr_offset;
 			}
-			pos += size + 1;
+			pos += size + 1 + cr_offset;
 		}
 		/* Do I need to ga any farther? */
 		else if (index == 0) {
@@ -5081,7 +5081,7 @@ static void compile_file(struct compile_state *state, const char *filename, int 
 	if (getcwd(cwd, sizeof(cwd)) == 0) {
 		die("cwd buffer to small");
 	}
-	if (subdir[0] == '/') {
+	if ((subdir[0] == '/') || ((subdir[1] == ':') && ((subdir[2] == '/') || (subdir[2] == '\\')))) {
 		file->dirname = xmalloc(subdir_len + 1, "dirname");
 		memcpy(file->dirname, subdir, subdir_len);
 		file->dirname[subdir_len] = '\0';
@@ -21089,7 +21089,7 @@ static void scc_transform(struct compile_state *state)
 			fblock = lnode->fblock;
 
 			if (state->compiler->debug & DEBUG_SCC_TRANSFORM) {
-				fprintf(state->errout, "sedge: %5d (%5d -> %5d)\n",
+				fprintf(state->errout, "sedge: %5ld (%5d -> %5d)\n",
 					sedge - scc.ssa_edges,
 					sedge->src->def->id,
 					sedge->dst->def->id);
@@ -23836,12 +23836,12 @@ static long get_const_pool_ref(
 	long ref;
 	ref = next_label(state);
 	fprintf(fp, ".section \"" DATA_SECTION "\"\n");
-	fprintf(fp, ".balign %ld\n", align_of_in_bytes(state, ins->type));
+	fprintf(fp, ".balign %ld\n", (long int)align_of_in_bytes(state, ins->type));
 	fprintf(fp, "L%s%lu:\n", state->compiler->label_prefix, ref);
 	print_const(state, ins, fp);
 	fill_bytes = bits_to_bytes(size - size_of(state, ins->type));
 	if (fill_bytes) {
-		fprintf(fp, ".fill %ld, 1, 0\n", fill_bytes);
+		fprintf(fp, ".fill %ld, 1, 0\n", (long int)fill_bytes);
 	}
 	fprintf(fp, ".section \"" TEXT_SECTION "\"\n");
 	return ref;
@@ -24650,7 +24650,7 @@ static void print_sdecl(struct compile_state *state,
 	struct triple *ins, FILE *fp)
 {
 	fprintf(fp, ".section \"" DATA_SECTION "\"\n");
-	fprintf(fp, ".balign %ld\n", align_of_in_bytes(state, ins->type));
+	fprintf(fp, ".balign %ld\n", (long int)align_of_in_bytes(state, ins->type));
 	fprintf(fp, "L%s%lu:\n", 
 		state->compiler->label_prefix, (unsigned long)(ins->u.cval));
 	print_const(state, MISC(ins, 0), fp);
@@ -24812,8 +24812,8 @@ static void print_instructions(struct compile_state *state)
 			last_occurance != ins->occurance) {
 			if (!ins->occurance->parent) {
 				fprintf(fp, "\t/* %s,%s:%d.%d */\n",
-					ins->occurance->function,
-					ins->occurance->filename,
+					ins->occurance->function?ins->occurance->function:"(null)",
+					ins->occurance->filename?ins->occurance->filename:"(null)",
 					ins->occurance->line,
 					ins->occurance->col);
 			}
