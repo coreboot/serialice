@@ -892,7 +892,7 @@ void serialice_init(void)
 	printf("SerialICE: Waiting for handshake with target... ");
 
 	/* Trigger a prompt */
-	serialice_write(s, "\n", 1);
+	serialice_write(s, "@", 1);
 
 	/* ... and wait for it to appear */
 	if (serialice_wait_prompt() == 0) {
@@ -905,7 +905,7 @@ void serialice_init(void)
 	/* Each serialice_command() waits for a prompt, so trigger one for the
 	 * first command, as we consumed the last one for the handshake
 	 */
-	serialice_write(s, "\n", 1);
+	serialice_write(s, "@", 1);
 
 	printf("SerialICE: LUA init...\n");
 	serialice_lua_init();
