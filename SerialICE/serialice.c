@@ -188,6 +188,8 @@ static void serialice_cpuinfo(void)
 
 static void serialice_mainboard(void)
 {
+	sio_putc('\r'); sio_putc('\n');
+
 	/* must be defined in mainboard/<boardname>.c */
 	sio_putstring(boardname);
 }
@@ -242,7 +244,8 @@ int main(void)
 			serialice_mainboard();
 			break;
 		case (('v' << 8)|'i'): // Read version info *vi
-			serialice_mainboard();
+			serialice_version();
+			break;
 		default:
 			sio_putstring("ERROR\n");
 			break;
