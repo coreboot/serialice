@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-/*
- * This is an example chipset init file for the THOMSON IP1000 mainboard
- */
+/* This is a chipset init file for the THOMSON IP1000 mainboard */
+
+const char boardname[33]="THOMSON IP1000                  ";
 
 /* Hardware specific functions */
 

@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-/*
- * This is an example chipset init file for the Dell S1850
- */
+/* This is a chipset init file for the Dell S1850 */
+
+const char boardname[33]="DELL S1850                      ";
 
 /* Hardware specific functions */
 static void mainboard_set_ich5(void)

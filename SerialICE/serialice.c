@@ -186,13 +186,24 @@ static void serialice_cpuinfo(void)
 	sio_put32(reg32);
 }
 
+static void serialice_mainboard(void)
+{
+	/* must be defined in mainboard/<boardname>.c */
+	sio_putstring(boardname);
+}
+
+static void serialice_version(void)
+{
+	sio_putstring("\nSerialICE v" VERSION " (" __DATE__ ")\n");
+}
+
 int main(void)
 {
 	chipset_init();
 
 	sio_init();
 
-	sio_putstring("\nSerialICE v" VERSION " (" __DATE__ ")\n");
+	serialice_version();
 
 	while(1) {
 		u16 c;
@@ -227,6 +238,11 @@ int main(void)
 		case (('c' << 8)|'i'): // Read CPUID *ci
 			serialice_cpuinfo();
 			break;
+		case (('m' << 8)|'b'): // Read mainboard type *mb
+			serialice_mainboard();
+			break;
+		case (('v' << 8)|'i'): // Read version info *vi
+			serialice_mainboard();
 		default:
 			sio_putstring("ERROR\n");
 			break;

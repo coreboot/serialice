@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+const char boardname[33]="ASUS M2V-MX SE                  ";
+
 #define SUPERIO_CONFIG_PORT		0x2e
 
 static void superio_init(void)

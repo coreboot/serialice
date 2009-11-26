@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+const char boardname[33]="MSI MS6178                      ";
+
 #define PMBASE			0x40
 #define COM_DEC			0xe0
 #define LPC_EN			0xe6

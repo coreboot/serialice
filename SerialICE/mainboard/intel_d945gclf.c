@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-/*
- * This is an example chipset init file for the Kontron 986LCD-M mainboard
- */
+/* This is a chipset init file for the Intel D945GCLF mainboard */
+
+const char boardname[33]="Intel D945GCLF                  ";
 
 /* Hardware specific functions */
 

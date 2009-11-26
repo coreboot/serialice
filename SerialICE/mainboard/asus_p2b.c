@@ -17,9 +17,9 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-/*
- * This is a chipset init file for the ASUS P2B mainboard.
- */
+/* This is a chipset init file for the ASUS P2B mainboard.  */
+
+const char boardname[33]="ASUS P2B                        ";
 
 #define PNP_PORT                  0x3f0
 
