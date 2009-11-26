@@ -65,6 +65,8 @@ static SerialICEState *s;
 int serialice_active = 0;
 const char *serialice_lua_script="serialice.lua";
 
+const char *serialice_mainboard = NULL;
+
 #ifndef WIN32
 static struct termios options;
 #endif
@@ -504,6 +506,35 @@ static void serialice_command(const char *command, int reply_len)
 // **************************************************************************
 // high level communication with the SerialICE shell
 
+static void serialice_get_version(void)
+{
+	int len = 0;
+	printf("SerialICE: Version.....: ");
+	serialice_command("*vi", 0);
+
+	memset(s->buffer, 0, BUFFER_SIZE);
+	serialice_read(s, s->buffer, 1);
+	serialice_read(s, s->buffer, 1);
+	while (s->buffer[len++] != '\n')
+		serialice_read(s, s->buffer+len, 1);
+	s->buffer[len-1]='\0';
+
+	printf("%s\n", s->buffer);
+}
+
+
+static void serialice_get_mainboard(void)
+{
+	int len = 31;
+
+	printf("SerialICE: Mainboard...: ");
+	serialice_command("*mb", 32);
+	while (len && s->buffer[len] == ' ')
+		s->buffer[len--] = '\0';
+	serialice_mainboard = strdup(s->buffer + 1);
+	printf("%s\n", serialice_mainboard);
+}
+
 uint8_t serialice_inb(uint16_t port)
 {
 	uint8_t ret;
@@ -920,6 +951,10 @@ void serialice_init(void)
 	 * first command, as we consumed the last one for the handshake
 	 */
 	serialice_write(s, "@", 1);
+
+	serialice_get_version();
+
+	serialice_get_mainboard();
 
 	printf("SerialICE: LUA init...\n");
 	serialice_lua_init();
