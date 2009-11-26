@@ -38,6 +38,7 @@
 #include "console.h"
 #include "block.h"
 #include "audio/audio.h"
+#include "serialice.h"
 #include "disas.h"
 #include "balloon.h"
 #include "qemu-timer.h"
@@ -1238,6 +1239,37 @@ static void do_system_powerdown(Monitor *mon)
 {
     qemu_system_powerdown_request();
 }
+
+#if defined(CONFIG_SERIALICE)
+static void monitor_command_lua(Monitor *mon, const char *cmdline, void *opaque)
+{
+    const char *errmsg;
+
+    if (!strncasecmp("quit", cmdline, 5)) {
+        monitor_printf(mon, "Exited LUA shell.\n");
+    	readline_start(mon->rs, "(qemu) ", 0, monitor_command_cb, NULL);
+        readline_show_prompt(mon->rs);
+        return;
+    }
+
+    errmsg = serialice_lua_execute(cmdline);
+    if(errmsg) {
+        monitor_printf(mon, "Lua error: %s\n", errmsg);
+        free (errmsg);
+    }
+
+    readline_show_prompt(mon->rs);
+}
+
+static void do_lua(Monitor *mon)
+{
+    if (serialice_active) {
+        readline_start(mon->rs, "(lua) ", 0, monitor_command_lua, NULL);
+    } else {
+        monitor_printf(mon, "SerialICE is not active.\n");
+    }
+}
+#endif
 
 #if defined(TARGET_I386)
 static void print_pte(Monitor *mon, uint32_t addr, uint32_t pte, uint32_t mask)

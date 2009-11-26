@@ -32,6 +32,7 @@ extern int serialice_active;
 
 void serialice_init(void);
 void serialice_exit(void);
+const char *serialice_lua_execute(const char *cmd);
 
 uint8_t serialice_inb(uint16_t port);
 uint16_t serialice_inw(uint16_t port);

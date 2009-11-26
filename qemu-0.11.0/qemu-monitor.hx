@@ -170,6 +170,16 @@ STEXI
 Activate logging of the specified items to @file{/tmp/qemu.log}.
 ETEXI
 
+#ifdef CONFIG_SERIALICE
+    { "lua", "", do_lua,
+      "", "go to lua shell" },
+#endif
+STEXI
+@item lua
+
+go to lua shell.
+ETEXI
+
     { "savevm", "s?", do_savevm,
       "[tag|id]", "save a VM snapshot. If no tag or id are provided, a new snapshot is created" },
 STEXI

@@ -130,6 +130,20 @@ static int serialice_lua_exit(void)
 	return 0;
 }
 
+const char *serialice_lua_execute(const char *cmd)
+{
+	int error;
+	char *errstring = NULL;
+	error = luaL_loadbuffer(L, cmd, strlen(cmd), "line") ||
+		lua_pcall(L, 0, 0, 0);
+	if (error) {
+		errstring = strdup(lua_tostring(L, -1));
+		lua_pop(L, 1);
+	}
+
+	return errstring;
+}
+
 static int serialice_io_read_filter(uint32_t *data, uint16_t port, int size)
 {
     int ret, result;
