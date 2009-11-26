@@ -125,4 +125,24 @@ character command code.
   000006f2.00020800.0000e3bd.bfebfbff
   >
 
+8. Mainboard Name
+
+  Syntax:
+  *mb
+
+  Example:
+  > *mb
+  Kontron 986LCD-M
+  >
+
+9. Version Information
+
+  Syntax:
+  *vi
+
+  Example:
+  > *vi
+  SerialICE v1.5 (Nov 26 2009)
+
+  >
 
