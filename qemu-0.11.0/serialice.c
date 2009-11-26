@@ -108,6 +108,10 @@ static int serialice_lua_init(void)
     /* Register C function callbacks */
     lua_register(L, "SerialICE_register_physical", serialice_register_physical);
 
+    /* Set global variable SerialICE_mainboard */
+    lua_pushstring(L, serialice_mainboard);
+    lua_setfield(L, LUA_GLOBALSINDEX, "SerialICE_mainboard");
+
     /* Load the script file */
     status = luaL_loadfile(L, serialice_lua_script);
     if (status) {
