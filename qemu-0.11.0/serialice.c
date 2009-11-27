@@ -965,6 +965,15 @@ void serialice_init(void)
 
 	/* Let the rest of Qemu know we're alife */
 	serialice_active = 1;
+#if SERIALICE_HIDES_VGA
+	/* Go to Qemu monitor immediately, don't try to open
+	 * vgabios-cirrus.bin, because it's not needed anyways.
+	 *
+	 * This is disabled because the Qemu window is distorted
+	 * until the first console change when this is active
+	 */
+	vga_interface_type = VGA_NONE;
+#endif
 }
 
 void serialice_exit(void)
