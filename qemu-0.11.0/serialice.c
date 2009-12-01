@@ -290,10 +290,10 @@ static int serialice_cpuid_filter(cpuid_regs_t *regs)
 
     ret = lua_toboolean(L, -5);
     if (ret) {
-    	regs->eax = lua_tointeger(L, -1);
-    	regs->ebx = lua_tointeger(L, -2);
-    	regs->ecx = lua_tointeger(L, -3);
-    	regs->edx = lua_tointeger(L, -4);
+    	regs->eax = lua_tointeger(L, -4);
+    	regs->ebx = lua_tointeger(L, -3);
+    	regs->ecx = lua_tointeger(L, -2);
+    	regs->edx = lua_tointeger(L, -1);
     }
     lua_pop(L, 5);
 
