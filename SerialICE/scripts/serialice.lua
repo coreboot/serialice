@@ -32,6 +32,21 @@ function printf(s,...)
 	return io.write(s:format(...))
 end
 
+
+-- In the beginning, during RAM initialization, it is essential that 
+-- all DRAM accesses are handled by the target, or RAM will not work
+-- correctly. After RAM initialization, RAM access has no "special"
+-- meaning anymore, so we can just use Qemu's memory (and thus get
+-- an incredible speed-up)
+
+ram_is_initialized = false
+
+-- Whether to log read access (code fetches) to 0xe0000 to 0xfffff
+
+log_rom_access = false
+
+-- Remember the PCI device selected via IO CF8
+
 SerialICE_pci_device = 0
 
 -- SerialICE_io_read_filter is the filter function for IO reads.
@@ -61,8 +76,8 @@ function SerialICE_io_read_filter(port, data_size)
 	-- Serial Port handling
 
 	if port >= 0x3f8 and port <= 0x3ff then
-		printf("serial I/O (filtered)\n")
-		data = 0x00
+		printf("Serial I/O read (filtered)\n")
+		data = 0xff
 		caught = true
 	end
 
@@ -110,9 +125,9 @@ function SerialICE_io_write_filter(port, size, data)
 
 		-- Catch PCIe base address
 		if SerialICE_pci_device == 0x80000048 then
-			PCIe_bar  = bit.band(0xfc000000,data);
-			PCIe_size = 64 * 1024; -- hard coded for now.
-			printf("PCIe BAR set up: 0x%08x\n", PCIe_bar);
+			PCIe_bar  = bit.band(0xfc000000,data)
+			PCIe_size = 64 * 1024 -- hard coded for now.
+			printf("PCIe BAR set up: 0x%08x\n", PCIe_bar)
 		end
 
 		return false, data
@@ -198,6 +213,29 @@ function SerialICE_io_write_filter(port, size, data)
 		return true, data
 	end
 
+	-- **********************************************************
+	--
+	-- Intel 82945 (reference BIOS) RAM switch
+	--
+
+	-- The RAM initialization code for the i945 used by AMI and
+	-- Phoenix uses the same POST codes. We use this to determine
+	-- when RAM init is done on that chipset.
+	-- Not catching the end of RAM init is not problematic, except
+	-- that it makes decompression of the BIOS core to RAM incredibly
+	-- slow as the decompressor inner loop has to be fetched
+	-- permanently from the target (several reads/writes per 
+	-- decompressed byte).
+
+	if port == 0x80 and data == 0xff37 then
+		ram_is_initialized = true
+		-- Register low RAM 0x00000000 - 0x000dffff 
+		SerialICE_register_physical(0x00000000, 0xa0000)
+		-- SMI/VGA memory should go to the target...
+		SerialICE_register_physical(0x000c0000, 0x20000)
+		printf("\nLow RAM accesses are now directed to Qemu.\n")
+	end
+
 	return false, data
 end
 
@@ -245,26 +283,40 @@ function SerialICE_memory_read_filter(addr, size)
 		-- Local APIC.. Hm, not sure what to do here.
 		-- We should avoid that someone wakes up cores
 		-- on the target system that go wild.
-		return false, true, 0 -- Handle by Qemu for now
+		return true, false, 0 -- XXX Handled by target
 	elseif	addr >= 0xfec00000 and addr <= 0xfecfffff then
 		-- IO APIC.. Hm, not sure what to do here.
-		return false, true, 0 -- Handle by Qemu for now
+		return true, false, 0 -- XXX Handled by target
 	elseif	addr >= 0xfed40000 and addr <= 0xfed45000 then
 		-- ICH7 TPM
 		-- Phoenix "Secure" Core bails out if we don't pass this on ;-)
 		return true, false, 0
-	elseif	addr >= 0x000c0000 and addr <= 0x000fffff then
+	elseif	addr >= 0x000e0000 and addr <= 0x000fffff then
 		-- Low ROM accesses go to Qemu memory
 		return false, true, 0
-	elseif	addr >= 0x00000000 and addr <= 0x000bffff then
+	elseif	addr >= 0x000a0000 and addr <= 0x000affff then
+		-- SMI/VGA go to target
+		return true, false, 0
+	elseif	addr >= 0x00000000 and addr <= 0x000dffff then
 		-- RAM access. This is handled by SerialICE
 		-- but *NOT* exclusively. Writes should end
 		-- up in Qemu memory, too
-		return true, false, 0
+		if not ram_is_initialized then
+			-- RAM init has not not been marked done yet.
+			-- so send reads to the target only.
+			return true, false, 0
+		end
+		-- RAM init is done. Send all RAM accesses
+		-- to Qemu. Using the target as storage would
+		-- only slow execution down.
+		-- TODO handle VGA / SMI memory correctly
+		return false, true, 0
 	elseif	addr >= 0x00100000 and addr <= 0xcfffffff then
-		-- 3.25GB RAM. This is handled by SerialICE
-		-- but *NOT* exclusively. Writes should end
-		-- up in Qemu memory, too
+		-- 3.25GB RAM. This is handled by SerialICE.
+		-- We refrain from backing up this memory in Qemu
+		-- because Qemu would need 3.25G RAM on the host
+		-- and firmware usually does not intensively use
+		-- high memory anyways.
 		return true, false, 0
 	else
 		printf("\nWARNING: undefined load operation @%08x\n", addr)
@@ -286,7 +338,7 @@ end
 
 function SerialICE_memory_write_filter(addr, size, data)
 	if	addr >= 0xfff00000 and addr <= 0xffffffff then
-		io.write("\nWARNING: write access to ROM?\n")
+		printf("\nWARNING: write access to ROM?\n")
 		-- ROM accesses go to Qemu only
 		return false, true, data
 	elseif	addr >= 0xf0000000 and addr <= 0xf3ffffff then
@@ -310,28 +362,36 @@ function SerialICE_memory_write_filter(addr, size, data)
 		-- Local APIC.. Hm, not sure what to do here.
 		-- We should avoid that someone wakes up cores
 		-- on the target system that go wild.
-		return false, true, data
+		return true, false, data
 	elseif	addr >= 0xfec00000 and addr <= 0xfecfffff then
 		-- IO APIC.. Hm, not sure what to do here.
-		return false, true, data
+		return true, false, data
 	elseif	addr >= 0xfed40000 and addr <= 0xfed45000 then
 		-- ICH7 TPM
 		return true, false, data
-	elseif	addr >= 0x000c0000 and addr <= 0x000fffff then
+	elseif	addr >= 0x000e0000 and addr <= 0x000fffff then
 		-- Low ROM accesses go to Qemu memory
 		return false, true, data
-	elseif	addr >= 0x00000000 and addr <= 0x000bffff then
-		-- RAM access. This is handled by SerialICE
-		return true, false, data
+	elseif	addr >= 0x000a0000 and addr <= 0x000affff then
+		-- SMI/VGA go to target
+		return true, true, data
+	elseif	addr >= 0x00000000 and addr <= 0x000dffff then
+		-- RAM access. This is handled by SerialICE during 
+		-- RAM initialization and by Qemu later on.
+		if not ram_is_initialized then
+			return true, true, data
+		end
+		-- Don't send writes to the target for speed reasons.
+		return false, true, data
 	elseif	addr >= 0x00100000 and addr <= 0xcfffffff then
 		-- 3.25 GB RAM ... This is handled by SerialICE
 		return true, false, data
 	else
 		printf("\nWARNING: undefined store operation @%08x\n", addr)
-		-- Fall through, send to both Qemu and SerialICE
+		-- Fall through, send to SerialICE
 	end
 
-	return true, true, data
+	return true, false, data
 end
 
 function SerialICE_msr_read_filter(addr, hi, lo)
@@ -359,14 +419,21 @@ end
 -- logging functions
 
 function SerialICE_memory_write_log(addr, size, data, target)
+	if addr >= 0x00000000 and addr <= 0x0009ffff and ram_is_initialized then
+		return
+	end
+	if addr >= 0x000c0000 and addr <= 0x000dffff and ram_is_initialized then
+		return
+	end
+
 	if size == 1 then	printf("MEM: writeb %08x <= %02x", addr, data)
 	elseif size == 2 then	printf("MEM: writew %08x <= %04x", addr, data)
 	elseif size == 4 then	printf("MEM: writel %08x <= %08x", addr, data)
 	end
 	if target then
-		printf(" *");
+		printf(" *")
 	end
-	printf("\n");
+	printf("\n")
 
 	-- **********************************************************
 	--
@@ -381,14 +448,27 @@ function SerialICE_memory_write_log(addr, size, data, target)
 end
 
 function SerialICE_memory_read_log(addr, size, data, target)
+	if addr >= 0x00000000 and addr <= 0x0009ffff and ram_is_initialized then
+		return
+	end
+	if addr >= 0x000c0000 and addr <= 0x000dffff and ram_is_initialized then
+		return
+	end
+	if addr >= 0xe0000 and addr <= 0xfffff and not log_rom_access then
+		return
+	end
+	if addr >= 0xfff00000 and addr <= 0xffffffff and not log_rom_access then
+		return
+	end
+
 	if size == 1 then	printf("MEM:  readb %08x => %02x", addr, data)
 	elseif size == 2 then	printf("MEM:  readw %08x => %04x", addr, data)
 	elseif size == 4 then	printf("MEM:  readl %08x => %08x", addr, data)
 	end
 	if target then
-		printf(" *");
+		printf(" *")
 	end
-	printf("\n");
+	printf("\n")
 
 	-- **********************************************************
 	--
