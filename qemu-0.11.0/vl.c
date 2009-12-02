@@ -2756,13 +2756,6 @@ static void dumb_display_init(void)
 {
     DisplayState *ds = qemu_mallocz(sizeof(DisplayState));
     ds->allocator = &default_allocator;
-#ifdef CONFIG_SERIALICE
-#if SERIALICE_HIDES_VGA
-    if (serialice_active)
-        ds->surface = qemu_create_displaysurface(ds, 640, 384);
-    else
-#endif
-#endif
     ds->surface = qemu_create_displaysurface(ds, 640, 480);
     register_displaystate(ds);
 }

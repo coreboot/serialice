@@ -448,6 +448,8 @@ static int serialice_read(SerialICEState * state, void *buf, size_t nbyte)
     return bytes_read;
 }
 
+static int handshake_mode = 0;
+
 static int serialice_write(SerialICEState * state, const void *buf,
 			   size_t nbyte)
 {
@@ -469,7 +471,7 @@ static int serialice_write(SerialICEState * state, const void *buf,
 	while (write(state->fd, buffer + i, 1) != 1) ;
 	while (read(state->fd, &c, 1) != 1) ;
 #endif
-	if (c != buffer[i]) {
+	if (c != buffer[i] && !handshake_mode) {
 	    printf("Readback error! %x/%x\n", c, buffer[i]);
 	}
     }
@@ -1042,6 +1044,8 @@ void serialice_init(void)
 
     printf("SerialICE: Waiting for handshake with target... ");
 
+    handshake_mode = 1; // Readback errors are to be expected in this phase.
+
     /* Trigger a prompt */
     serialice_write(s, "@", 1);
 
@@ -1058,6 +1062,8 @@ void serialice_init(void)
      */
     serialice_write(s, "@", 1);
 
+    handshake_mode = 0; // from now on, warn about readback errors.
+
     serialice_get_version();
 
     serialice_get_mainboard();
@@ -1067,15 +1073,6 @@ void serialice_init(void)
 
     /* Let the rest of Qemu know we're alife */
     serialice_active = 1;
-#if SERIALICE_HIDES_VGA
-    /* Go to Qemu monitor immediately, don't try to open
-     * vgabios-cirrus.bin, because it's not needed anyways.
-     *
-     * This is disabled because the Qemu window is distorted
-     * until the first console change when this is active
-     */
-    vga_interface_type = VGA_NONE;
-#endif
 }
 
 void serialice_exit(void)
@@ -1109,8 +1106,7 @@ static void pc_init_serialice(ram_addr_t ram_size,
 
     /* init CPUs */
     if (cpu_model == NULL) {
-	printf
-	    ("Warning: Running SerialICE with generic CPU type might fail.\n");
+	//printf("Warning: Running SerialICE with generic CPU type might fail.\n");
 #ifdef TARGET_X86_64
 	cpu_model = "qemu64";
 #else

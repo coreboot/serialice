@@ -1243,7 +1243,7 @@ static void do_system_powerdown(Monitor *mon)
 #if defined(CONFIG_SERIALICE)
 static void monitor_command_lua(Monitor *mon, const char *cmdline, void *opaque)
 {
-    const char *errmsg;
+    char *errmsg;
 
     if (!strncasecmp("quit", cmdline, 5)) {
         monitor_printf(mon, "Exited LUA shell.\n");
@@ -1252,7 +1252,7 @@ static void monitor_command_lua(Monitor *mon, const char *cmdline, void *opaque)
         return;
     }
 
-    errmsg = serialice_lua_execute(cmdline);
+    errmsg = (char *)serialice_lua_execute(cmdline);
     if(errmsg) {
         monitor_printf(mon, "Lua error: %s\n", errmsg);
         free (errmsg);

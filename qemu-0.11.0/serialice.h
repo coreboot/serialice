@@ -65,6 +65,4 @@ void serialice_log_load(int caught, uint32_t addr, uint32_t result,
 			unsigned int data_size);
 int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size);
 
-#define SERIALICE_HIDES_VGA 0
-
 #endif
