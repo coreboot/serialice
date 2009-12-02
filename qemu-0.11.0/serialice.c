@@ -45,8 +45,18 @@
 /* Local includes */
 #include "hw/hw.h"
 #include "hw/pc.h"
+#include "hw/boards.h"
+#include "console.h"
 #include "serialice.h"
 #include "sysemu.h"
+
+#define SERIALICE_BANNER 1
+#if SERIALICE_BANNER
+#include "serialice_banner.h"
+#endif
+
+#define DEFAULT_RAM_SIZE 128
+#define BIOS_FILENAME "bios.bin"
 
 #define SERIALICE_DEBUG 3
 #define BUFFER_SIZE 1024
@@ -56,6 +66,7 @@ typedef struct {
 #else
     int fd;
 #endif
+    DisplayState *ds;
     char *buffer;
     char *command;
 } SerialICEState;
@@ -904,19 +915,65 @@ int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
     return (write_to_qemu == 0);
 }
 
+static int screen_invalid = 1;
+
+static void serialice_refresh(void *opaque)
+{
+    uint8_t *dest;
+    int bpp, linesize;
+
+    if (!screen_invalid) {
+	return;
+    }
+
+    dest = ds_get_data(s->ds);
+    bpp = (ds_get_bits_per_pixel(s->ds) + 7) >> 3;
+    linesize = ds_get_linesize(s->ds);
+
+    memset(dest, 0x00, linesize * ds_get_height(s->ds));
+#if SERIALICE_BANNER
+    int x, y;
+    if (bpp == 4) {
+	for (y = 0; y < 240; y++) {
+	    for (x = 0; x < 320; x++) {
+		int doff = (y * linesize) + (x * bpp);
+		int soff = (y * (320 * 3)) + (x * 3);
+		dest[doff + 0] = serialice_banner[soff + 2];	// blue
+		dest[doff + 1] = serialice_banner[soff + 1];	// green
+		dest[doff + 2] = serialice_banner[soff + 0];	// red
+	    }
+	}
+    } else {
+	printf("Banner enabled and BPP = %d (line size = %d)\n", bpp, linesize);
+    }
+#endif
+
+    dpy_update(s->ds, 0, 0, ds_get_width(s->ds), ds_get_height(s->ds));
+    screen_invalid = 0;
+}
+
+static void serialice_invalidate(void *opaque)
+{
+    screen_invalid = 1;
+}
+
 // **************************************************************************
 // initialization and exit
 
 void serialice_init(void)
 {
+    s = qemu_mallocz(sizeof(SerialICEState));
+
+    s->ds = graphic_console_init(serialice_refresh, serialice_invalidate,
+				 NULL, NULL, s);
+    qemu_console_resize(s->ds, 320, 240);
+
     printf("SerialICE: Open connection to target hardware...\n");
 
     if (serialice_device == NULL) {
 	printf("You need to specify a serial device to use SerialICE.\n");
 	exit(1);
     }
-
-    s = qemu_mallocz(sizeof(SerialICEState));
 #ifdef WIN32
     s->fd = CreateFile(serialice_device, GENERIC_READ | GENERIC_WRITE,
 		       0, NULL, OPEN_EXISTING, 0, NULL);
@@ -1029,5 +1086,99 @@ void serialice_exit(void)
     qemu_free(s);
 }
 
-device_init(serialice_init)
-// no exit function
+static void pc_init_serialice(ram_addr_t ram_size,
+			      const char *boot_device,
+			      const char *kernel_filename,
+			      const char *kernel_cmdline,
+			      const char *initrd_filename,
+			      const char *cpu_model)
+{
+    char *filename;
+    int ret, i, linux_boot;
+    int isa_bios_size, bios_size;
+    ram_addr_t bios_offset;
+    CPUState *env;
+
+    if (ram_size != (DEFAULT_RAM_SIZE * 1024 * 1024)) {
+	printf
+	    ("Warning: Running SerialICE with non-default ram size is not supported.\n");
+	exit(1);
+    }
+
+    linux_boot = (kernel_filename != NULL);
+
+    /* init CPUs */
+    if (cpu_model == NULL) {
+	printf
+	    ("Warning: Running SerialICE with generic CPU type might fail.\n");
+#ifdef TARGET_X86_64
+	cpu_model = "qemu64";
+#else
+	cpu_model = "qemu32";
+#endif
+    }
+
+    for (i = 0; i < smp_cpus; i++) {
+	env = cpu_init(cpu_model);
+    }
+
+    /* Must not happen before CPUs are initialized */
+    serialice_init();
+
+    /* BIOS load */
+    if (bios_name == NULL)
+	bios_name = BIOS_FILENAME;
+    filename = qemu_find_file(QEMU_FILE_TYPE_BIOS, bios_name);
+    if (filename) {
+	bios_size = get_image_size(filename);
+    } else {
+	bios_size = -1;
+    }
+    if (bios_size <= 0 || (bios_size % 65536) != 0) {
+	goto bios_error;
+    }
+    bios_offset = qemu_ram_alloc(bios_size);
+    ret = load_image(filename, qemu_get_ram_ptr(bios_offset));
+    if (ret != bios_size) {
+      bios_error:
+	fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
+	exit(1);
+    }
+    if (filename) {
+	qemu_free(filename);
+    }
+    /* map the last 128KB of the BIOS in ISA space */
+    isa_bios_size = bios_size;
+    if (isa_bios_size > (128 * 1024))
+	isa_bios_size = 128 * 1024;
+
+    cpu_register_physical_memory(0x100000 - isa_bios_size,
+				 isa_bios_size,
+				 (bios_offset + bios_size -
+				  isa_bios_size) | IO_MEM_ROM);
+
+    /* map all the bios at the top of memory */
+    cpu_register_physical_memory((uint32_t) (-bios_size), bios_size,
+				 bios_offset | IO_MEM_ROM);
+    if (linux_boot) {
+	printf("Booting Linux in SerialICE mode is currently not supported.\n");
+	exit(1);
+    }
+
+}
+
+static QEMUMachine serialice_machine = {
+    .name = "serialice-x86",
+    .alias = "serialice",
+    .desc = "SerialICE Debugger",
+    .init = pc_init_serialice,
+    .max_cpus = 255,
+    //.is_default = 1,
+};
+
+static void serialice_machine_init(void)
+{
+    qemu_register_machine(&serialice_machine);
+}
+
+machine_init(serialice_machine_init);

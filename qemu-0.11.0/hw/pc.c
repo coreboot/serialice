@@ -23,7 +23,6 @@
  */
 #include "hw.h"
 #include "pc.h"
-#include "serialice.h"
 #include "fdc.h"
 #include "pci.h"
 #include "block.h"
@@ -1153,10 +1152,6 @@ static void pc_init1(ram_addr_t ram_size,
 
     /* allocate RAM */
     ram_addr = qemu_ram_alloc(0xa0000);
-#ifdef CONFIG_SERIALICE
-    if (serialice_active)
-        ram_addr |= IO_MEM_UNASSIGNED;
-#endif
     cpu_register_physical_memory(0, 0xa0000, ram_addr);
 
     /* Allocate, even though we won't register, so we don't break the
@@ -1165,10 +1160,6 @@ static void pc_init1(ram_addr_t ram_size,
      */
     ram_addr = qemu_ram_alloc(0x100000 - 0xa0000);
     ram_addr = qemu_ram_alloc(below_4g_mem_size - 0x100000);
-#ifdef CONFIG_SERIALICE
-    if (serialice_active)
-        ram_addr |= IO_MEM_UNASSIGNED;
-#endif
     cpu_register_physical_memory(0x100000,
                  below_4g_mem_size - 0x100000,
                  ram_addr);
@@ -1179,10 +1170,6 @@ static void pc_init1(ram_addr_t ram_size,
         hw_error("To much RAM for 32-bit physical address");
 #else
         ram_addr = qemu_ram_alloc(above_4g_mem_size);
-#ifdef CONFIG_SERIALICE
-        if (serialice_active)
-            ram_addr |= IO_MEM_UNASSIGNED;
-#endif
         cpu_register_physical_memory(0x100000000ULL,
                                      above_4g_mem_size,
                                      ram_addr);
