@@ -286,8 +286,8 @@ static int serialice_msr_filter(int flags, uint32_t addr, uint32_t * hi,
     result = lua_pcall(L, 3, 3, 0);
     if (result) {
 	fprintf(stderr,
-		"Failed to run function SerialICE_msr_read_filter: %s\n",
-		lua_tostring(L, -1));
+		"Failed to run function SerialICE_msr_%s_filter: %s\n",
+		(flags & FILTER_WRITE)?"write":"read", lua_tostring(L, -1));
 	exit(1);
     }
     ret = lua_toboolean(L, -3);
@@ -300,18 +300,24 @@ static int serialice_msr_filter(int flags, uint32_t addr, uint32_t * hi,
     return ret;
 }
 
-static int serialice_cpuid_filter(cpuid_regs_t * regs)
+static int serialice_cpuid_filter(uint32_t eax, uint32_t ecx,
+		cpuid_regs_t * regs)
 {
     int ret, result;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_cpuid_filter");
 
-    lua_pushinteger(L, regs->eax);	// eax
-    lua_pushinteger(L, regs->ecx);	// ecx
-    result = lua_pcall(L, 2, 5, 0);
+    lua_pushinteger(L, eax);	// eax before calling
+    lua_pushinteger(L, ecx);	// ecx before calling
+    // and the registers after calling cpuid
+    lua_pushinteger(L, regs->eax); // eax
+    lua_pushinteger(L, regs->ebx); // ebx
+    lua_pushinteger(L, regs->ecx); // ecx
+    lua_pushinteger(L, regs->edx); // edx
+    result = lua_pcall(L, 6, 5, 0);
     if (result) {
 	fprintf(stderr,
-		"Failed to run function SerialICE_msr_read_filter: %s\n",
+		"Failed to run function SerialICE_cpuid_filter: %s\n",
 		lua_tostring(L, -1));
 	exit(1);
     }
@@ -780,22 +786,21 @@ cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)
     ret.ecx = ecx;
     ret.edx = 0;		// either set by filter or by target
 
-    filtered = serialice_cpuid_filter(&ret);
-    if (!filtered) {
-	sprintf(s->command, "*ci%08x.%08x", eax, ecx);
+    sprintf(s->command, "*ci%08x.%08x", eax, ecx);
 
-	// command read back: "\n000006f2.00000000.00001234.12340324"
-	// (36 characters)
-	serialice_command(s->command, 36);
+    // command read back: "\n000006f2.00000000.00001234.12340324"
+    // (36 characters)
+    serialice_command(s->command, 36);
+    
+    s->buffer[9] = 0;	// . -> \0
+    s->buffer[18] = 0;	// . -> \0
+    s->buffer[27] = 0;	// . -> \0
+    ret.eax = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+    ret.ebx = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
+    ret.ecx = (uint32_t) strtoul(s->buffer + 19, (char **)NULL, 16);
+    ret.edx = (uint32_t) strtoul(s->buffer + 28, (char **)NULL, 16);
 
-	s->buffer[9] = 0;	// . -> \0
-	s->buffer[18] = 0;	// . -> \0
-	s->buffer[27] = 0;	// . -> \0
-	ret.eax = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
-	ret.ebx = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
-	ret.ecx = (uint32_t) strtoul(s->buffer + 19, (char **)NULL, 16);
-	ret.edx = (uint32_t) strtoul(s->buffer + 28, (char **)NULL, 16);
-    }
+    filtered = serialice_cpuid_filter(eax, ecx, &ret);
 
     serialice_cpuid_log(eax, ecx, ret, filtered);
 
@@ -1151,7 +1156,7 @@ static void pc_init_serialice(ram_addr_t ram_size,
     cpu_register_physical_memory(0x100000 - isa_bios_size,
 				 isa_bios_size,
 				 (bios_offset + bios_size -
-				  isa_bios_size) | IO_MEM_ROM);
+				  isa_bios_size));
 
     /* map all the bios at the top of memory */
     cpu_register_physical_memory((uint32_t) (-bios_size), bios_size,

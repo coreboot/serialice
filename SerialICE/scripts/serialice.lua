@@ -402,15 +402,17 @@ function SerialICE_msr_write_filter(addr, hi, lo)
 	return false, hi, lo
 end
 
-function SerialICE_cpuid_filter(eax, ecx)
-	-- set all to 0 so they're defined but return false, so the 
-	-- result is not filtered.
-	-- NOTE: If the result is filtered, all four registers are 
-	-- overwritten.
-	eax = 0
-	ebx = 0
-	ecx = 0
-	edx = 0
+function SerialICE_cpuid_filter(in_eax, in_ecx, eax, ebx, ecx, edx)
+
+	-- Set number of cores to 1 on Core Duo and Atom to trick the
+	-- firmware into not trying to wake up non-BSP nodes.
+	if in_eax == 1 then
+		ebx = bit.band(0xff00ffff, ebx);
+		ebx = bit.bor(0x00010000, ebx);
+		return true, eax, ebx, ecx, edx
+	end
+
+	-- return false, so the result is not filtered.
 	return false, eax, ebx, ecx, edx
 end
 
