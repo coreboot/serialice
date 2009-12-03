@@ -27,6 +27,11 @@
 
 #include "config-host.h"
 
+#include "config.h"
+#if !defined(HOST_X86_64) && !defined(HOST_I386)
+#error "SerialICE currently only supports x86 and x64 platforms."
+#endif
+
 extern const char *serialice_device;
 extern int serialice_active;
 
