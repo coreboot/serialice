@@ -110,6 +110,106 @@ static int serialice_register_physical(lua_State * luastate)
     return 0;
 }
 
+// **************************************************************************
+// LUA register access
+
+// copied from target-i386/exec.h 
+//CPUX86State *env;
+#define env first_cpu
+#define EAX (env->regs[R_EAX])
+#define ECX (env->regs[R_ECX])
+#define EDX (env->regs[R_EDX])
+#define EBX (env->regs[R_EBX])
+#define ESP (env->regs[R_ESP])
+#define EBP (env->regs[R_EBP])
+#define ESI (env->regs[R_ESI])
+#define EDI (env->regs[R_EDI])
+#define EIP (env->eip)
+#define CS  (env->segs[R_CS].base)
+static int register_set(lua_State * L)
+{
+    const char *key = luaL_checkstring(L, 2);
+    int val = luaL_checkint(L, 3);
+    int ret = 1;
+
+    if (strcmp(key, "eax") == 0) {
+        EAX = val;
+    } else if (strcmp(key, "ecx") == 0) {
+        ECX = val;
+    } else if (strcmp(key, "edx") == 0) {
+        EDX = val;
+    } else if (strcmp(key, "ebx") == 0) {
+        EBX = val;
+    } else if (strcmp(key, "esp") == 0) {
+        ESP = val;
+    } else if (strcmp(key, "ebp") == 0) {
+        EBP = val;
+    } else if (strcmp(key, "esi") == 0) {
+        ESI = val;
+    } else if (strcmp(key, "edi") == 0) {
+        EDI = val;
+    } else if (strcmp(key, "eip") == 0) {
+        EIP = val;
+    } else if (strcmp(key, "cs") == 0) {
+        CS = (val << 4);
+    } else {
+        lua_pushstring(L, "No such register.");
+        lua_error(L);
+        ret = 0;
+    }
+    return ret;
+}
+
+static int register_get(lua_State * L)
+{
+    const char *key = luaL_checkstring(L, 2);
+    int ret = 1;
+    if (strcmp(key, "eax") == 0) {
+	lua_pushinteger(L, EAX);
+    } else if (strcmp(key, "ecx") == 0) {
+	lua_pushinteger(L, ECX);
+    } else if (strcmp(key, "edx") == 0) {
+	lua_pushinteger(L, EDX);
+    } else if (strcmp(key, "ebx") == 0) {
+	lua_pushinteger(L, EBX);
+    } else if (strcmp(key, "esp") == 0) {
+	lua_pushinteger(L, ESP);
+    } else if (strcmp(key, "ebp") == 0) {
+	lua_pushinteger(L, EBP);
+    } else if (strcmp(key, "esi") == 0) {
+	lua_pushinteger(L, ESI);
+    } else if (strcmp(key, "edi") == 0) {
+	lua_pushinteger(L, EDI);
+    } else if (strcmp(key, "eip") == 0) {
+	lua_pushinteger(L, EIP);
+    } else if (strcmp(key, "cs") == 0) {
+	lua_pushinteger(L, (CS >> 4));
+    } else {
+        lua_pushstring(L, "No such register.");
+        lua_error(L);
+        ret = 0;
+    }
+    return ret;
+}
+#undef env
+
+static int serialice_lua_registers(void)
+{
+    const struct luaL_Reg registermt[] = {
+	{"__index", register_get},
+	{"__newindex", register_set},
+	{NULL, NULL}
+    };
+
+    lua_newuserdata(L, sizeof(void *));
+    luaL_newmetatable(L, "registermt");
+    luaL_register(L, NULL, registermt);
+    lua_setmetatable(L, -2);
+    lua_setglobal(L, "regs");
+
+    return 0;
+}
+
 static int serialice_lua_init(void)
 {
     int status;
@@ -124,6 +224,9 @@ static int serialice_lua_init(void)
     /* Set global variable SerialICE_mainboard */
     lua_pushstring(L, serialice_mainboard);
     lua_setfield(L, LUA_GLOBALSINDEX, "SerialICE_mainboard");
+
+    /* Enable Register Access */
+    serialice_lua_registers();
 
     /* Load the script file */
     status = luaL_loadfile(L, serialice_lua_script);
