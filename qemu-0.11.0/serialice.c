@@ -110,11 +110,17 @@ static int serialice_register_physical(lua_State * luastate)
     return 0;
 }
 
+static int serialice_system_reset(lua_State * luastate)
+{
+    printf("Rebooting the emulated host CPU\n");
+    qemu_system_reset_request();
+    return 0;
+}
+
 // **************************************************************************
 // LUA register access
 
-// copied from target-i386/exec.h 
-//CPUX86State *env;
+// some macros from target-i386/exec.h, which we can't include directly
 #define env first_cpu
 #define EAX (env->regs[R_EAX])
 #define ECX (env->regs[R_ECX])
@@ -220,6 +226,7 @@ static int serialice_lua_init(void)
 
     /* Register C function callbacks */
     lua_register(L, "SerialICE_register_physical", serialice_register_physical);
+    lua_register(L, "SerialICE_system_reset", serialice_system_reset);
 
     /* Set global variable SerialICE_mainboard */
     lua_pushstring(L, serialice_mainboard);
@@ -1224,6 +1231,7 @@ static void pc_init_serialice(ram_addr_t ram_size,
 
     for (i = 0; i < smp_cpus; i++) {
 	env = cpu_init(cpu_model);
+	qemu_register_reset((QEMUResetHandler*)cpu_reset, env);
     }
 
     /* Must not happen before CPUs are initialized */
