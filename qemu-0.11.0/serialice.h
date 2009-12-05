@@ -65,9 +65,9 @@ typedef struct {
 cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx);
 
 int serialice_handle_load(uint32_t addr, uint32_t * result,
-			  unsigned int data_size);
+                          unsigned int data_size);
 void serialice_log_load(int caught, uint32_t addr, uint32_t result,
-			unsigned int data_size);
+                        unsigned int data_size);
 int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size);
 
 #endif

@@ -22,6 +22,10 @@
  * THE SOFTWARE.
  */
 
+/* Indented with:
+ * gnuindent -npro -kr -i4 -nut -bap -sob -l80 -ss -ncs serialice.*
+ */
+
 /* System includes */
 #include <stdlib.h>
 #include <stdio.h>
@@ -94,16 +98,16 @@ static int serialice_register_physical(lua_State * luastate)
     ram_addr_t phys;
 
     if (n != 2) {
-	fprintf(stderr,
-		"ERROR: Not called as SerialICE_register_physical(<addr> <size>)\n");
-	return 0;
+        fprintf(stderr,
+                "ERROR: Not called as SerialICE_register_physical(<addr> <size>)\n");
+        return 0;
     }
 
     addr = lua_tointeger(luastate, 1);
     size = lua_tointeger(luastate, 2);
 
     printf("Registering physical memory at 0x%08x (0x%08x bytes)\n", addr,
-	   size);
+           size);
     phys = qemu_ram_alloc(size);
     cpu_register_physical_memory(addr, size, phys);
 
@@ -171,25 +175,25 @@ static int register_get(lua_State * L)
     const char *key = luaL_checkstring(L, 2);
     int ret = 1;
     if (strcmp(key, "eax") == 0) {
-	lua_pushinteger(L, EAX);
+        lua_pushinteger(L, EAX);
     } else if (strcmp(key, "ecx") == 0) {
-	lua_pushinteger(L, ECX);
+        lua_pushinteger(L, ECX);
     } else if (strcmp(key, "edx") == 0) {
-	lua_pushinteger(L, EDX);
+        lua_pushinteger(L, EDX);
     } else if (strcmp(key, "ebx") == 0) {
-	lua_pushinteger(L, EBX);
+        lua_pushinteger(L, EBX);
     } else if (strcmp(key, "esp") == 0) {
-	lua_pushinteger(L, ESP);
+        lua_pushinteger(L, ESP);
     } else if (strcmp(key, "ebp") == 0) {
-	lua_pushinteger(L, EBP);
+        lua_pushinteger(L, EBP);
     } else if (strcmp(key, "esi") == 0) {
-	lua_pushinteger(L, ESI);
+        lua_pushinteger(L, ESI);
     } else if (strcmp(key, "edi") == 0) {
-	lua_pushinteger(L, EDI);
+        lua_pushinteger(L, EDI);
     } else if (strcmp(key, "eip") == 0) {
-	lua_pushinteger(L, EIP);
+        lua_pushinteger(L, EIP);
     } else if (strcmp(key, "cs") == 0) {
-	lua_pushinteger(L, (CS >> 4));
+        lua_pushinteger(L, (CS >> 4));
     } else {
         lua_pushstring(L, "No such register.");
         lua_error(L);
@@ -197,14 +201,15 @@ static int register_get(lua_State * L)
     }
     return ret;
 }
+
 #undef env
 
 static int serialice_lua_registers(void)
 {
     const struct luaL_Reg registermt[] = {
-	{"__index", register_get},
-	{"__newindex", register_set},
-	{NULL, NULL}
+        {"__index", register_get},
+        {"__newindex", register_set},
+        {NULL, NULL}
     };
 
     lua_newuserdata(L, sizeof(void *));
@@ -238,16 +243,16 @@ static int serialice_lua_init(void)
     /* Load the script file */
     status = luaL_loadfile(L, serialice_lua_script);
     if (status) {
-	fprintf(stderr, "Couldn't load SerialICE script: %s\n",
-		lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr, "Couldn't load SerialICE script: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
     }
 
     /* Ask Lua to run our little script */
     status = lua_pcall(L, 0, 1, 0);
     if (status) {
-	fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+        exit(1);
     }
     lua_pop(L, 1);
 
@@ -265,10 +270,10 @@ const char *serialice_lua_execute(const char *cmd)
     int error;
     char *errstring = NULL;
     error = luaL_loadbuffer(L, cmd, strlen(cmd), "line")
-	|| lua_pcall(L, 0, 0, 0);
+        || lua_pcall(L, 0, 0, 0);
     if (error) {
-	errstring = strdup(lua_tostring(L, -1));
-	lua_pop(L, 1);
+        errstring = strdup(lua_tostring(L, -1));
+        lua_pop(L, 1);
     }
 
     return errstring;
@@ -279,13 +284,13 @@ static int serialice_io_read_filter(uint32_t * data, uint16_t port, int size)
     int ret, result;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_read_filter");
-    lua_pushinteger(L, port);	// port
-    lua_pushinteger(L, size);	// datasize
+    lua_pushinteger(L, port);   // port
+    lua_pushinteger(L, size);   // datasize
     result = lua_pcall(L, 2, 2, 0);
     if (result) {
-	fprintf(stderr, "Failed to run function SerialICE_io_read_filter: %s\n",
-		lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr, "Failed to run function SerialICE_io_read_filter: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
     }
     *data = lua_tointeger(L, -1);
     ret = lua_toboolean(L, -2);
@@ -299,16 +304,16 @@ static int serialice_io_write_filter(uint32_t * data, uint16_t port, int size)
     int ret, result;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_write_filter");
-    lua_pushinteger(L, port);	// port
-    lua_pushinteger(L, size);	// datasize
-    lua_pushinteger(L, *data);	// data
+    lua_pushinteger(L, port);   // port
+    lua_pushinteger(L, size);   // datasize
+    lua_pushinteger(L, *data);  // data
 
     result = lua_pcall(L, 3, 2, 0);
     if (result) {
-	fprintf(stderr,
-		"Failed to run function SerialICE_io_write_filter: %s\n",
-		lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr,
+                "Failed to run function SerialICE_io_write_filter: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
     }
     *data = lua_tointeger(L, -1);
     ret = lua_toboolean(L, -2);
@@ -320,25 +325,25 @@ static int serialice_io_write_filter(uint32_t * data, uint16_t port, int size)
 #define READ_FROM_QEMU		(1 << 0)
 #define READ_FROM_SERIALICE	(1 << 1)
 static int serialice_memory_read_filter(uint32_t addr, uint32_t * data,
-					int size)
+                                        int size)
 {
     int ret = 0, result;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_read_filter");
-    lua_pushinteger(L, addr);	// addr
-    lua_pushinteger(L, size);	// datasize
+    lua_pushinteger(L, addr);   // addr
+    lua_pushinteger(L, size);   // datasize
     result = lua_pcall(L, 2, 3, 0);
     if (result) {
-	fprintf(stderr,
-		"Failed to run function SerialICE_memory_read_filter: %s\n",
-		lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr,
+                "Failed to run function SerialICE_memory_read_filter: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
     }
 
-    *data = lua_tointeger(L, -1);	// result
+    *data = lua_tointeger(L, -1);       // result
 
-    ret |= lua_toboolean(L, -2) ? READ_FROM_QEMU : 0;	// to_qemu
-    ret |= lua_toboolean(L, -3) ? READ_FROM_SERIALICE : 0;	// to_hw
+    ret |= lua_toboolean(L, -2) ? READ_FROM_QEMU : 0;   // to_qemu
+    ret |= lua_toboolean(L, -3) ? READ_FROM_SERIALICE : 0;      // to_hw
 
     lua_pop(L, 3);
 
@@ -349,21 +354,21 @@ static int serialice_memory_read_filter(uint32_t addr, uint32_t * data,
 #define WRITE_TO_SERIALICE	(1 << 1)
 
 static int serialice_memory_write_filter(uint32_t addr, int size,
-					 uint32_t * data)
+                                         uint32_t * data)
 {
     int ret = 0, result;
     int write_to_qemu, write_to_serialice;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_write_filter");
-    lua_pushinteger(L, addr);	// address
-    lua_pushinteger(L, size);	// datasize
-    lua_pushinteger(L, *data);	// data
+    lua_pushinteger(L, addr);   // address
+    lua_pushinteger(L, size);   // datasize
+    lua_pushinteger(L, *data);  // data
     result = lua_pcall(L, 3, 3, 0);
     if (result) {
-	fprintf(stderr,
-		"Failed to run function SerialICE_memory_write_filter: %s\n",
-		lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr,
+                "Failed to run function SerialICE_memory_write_filter: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
     }
     *data = lua_tointeger(L, -1);
     write_to_qemu = lua_toboolean(L, -2);
@@ -380,30 +385,30 @@ static int serialice_memory_write_filter(uint32_t addr, int size,
 #define FILTER_WRITE	1
 
 static int serialice_msr_filter(int flags, uint32_t addr, uint32_t * hi,
-				uint32_t * lo)
+                                uint32_t * lo)
 {
     int ret, result;
 
     if (flags & FILTER_WRITE) {
-	lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_write_filter");
+        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_write_filter");
     } else {
-	lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_read_filter");
+        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_read_filter");
     }
 
-    lua_pushinteger(L, addr);	// port
-    lua_pushinteger(L, *hi);	// high
-    lua_pushinteger(L, *lo);	// low
+    lua_pushinteger(L, addr);   // port
+    lua_pushinteger(L, *hi);    // high
+    lua_pushinteger(L, *lo);    // low
     result = lua_pcall(L, 3, 3, 0);
     if (result) {
-	fprintf(stderr,
-		"Failed to run function SerialICE_msr_%s_filter: %s\n",
-		(flags & FILTER_WRITE)?"write":"read", lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr,
+                "Failed to run function SerialICE_msr_%s_filter: %s\n",
+                (flags & FILTER_WRITE) ? "write" : "read", lua_tostring(L, -1));
+        exit(1);
     }
     ret = lua_toboolean(L, -3);
     if (ret) {
-	*hi = lua_tointeger(L, -1);
-	*lo = lua_tointeger(L, -2);
+        *hi = lua_tointeger(L, -1);
+        *lo = lua_tointeger(L, -2);
     }
     lua_pop(L, 3);
 
@@ -411,33 +416,33 @@ static int serialice_msr_filter(int flags, uint32_t addr, uint32_t * hi,
 }
 
 static int serialice_cpuid_filter(uint32_t eax, uint32_t ecx,
-		cpuid_regs_t * regs)
+                                  cpuid_regs_t * regs)
 {
     int ret, result;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_cpuid_filter");
 
-    lua_pushinteger(L, eax);	// eax before calling
-    lua_pushinteger(L, ecx);	// ecx before calling
+    lua_pushinteger(L, eax);    // eax before calling
+    lua_pushinteger(L, ecx);    // ecx before calling
     // and the registers after calling cpuid
-    lua_pushinteger(L, regs->eax); // eax
-    lua_pushinteger(L, regs->ebx); // ebx
-    lua_pushinteger(L, regs->ecx); // ecx
-    lua_pushinteger(L, regs->edx); // edx
+    lua_pushinteger(L, regs->eax);      // eax
+    lua_pushinteger(L, regs->ebx);      // ebx
+    lua_pushinteger(L, regs->ecx);      // ecx
+    lua_pushinteger(L, regs->edx);      // edx
     result = lua_pcall(L, 6, 5, 0);
     if (result) {
-	fprintf(stderr,
-		"Failed to run function SerialICE_cpuid_filter: %s\n",
-		lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr,
+                "Failed to run function SerialICE_cpuid_filter: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
     }
 
     ret = lua_toboolean(L, -5);
     if (ret) {
-	regs->eax = lua_tointeger(L, -4);
-	regs->ebx = lua_tointeger(L, -3);
-	regs->ecx = lua_tointeger(L, -2);
-	regs->edx = lua_tointeger(L, -1);
+        regs->eax = lua_tointeger(L, -4);
+        regs->ebx = lua_tointeger(L, -3);
+        regs->ecx = lua_tointeger(L, -2);
+        regs->edx = lua_tointeger(L, -1);
     }
     lua_pop(L, 5);
 
@@ -459,71 +464,71 @@ static void serialice_log(int flags, uint32_t data, uint32_t addr, int size)
     int result;
 
     if ((flags & LOG_WRITE) && (flags & LOG_MEMORY)) {
-	lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_write_log");
+        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_write_log");
     } else if (!(flags & LOG_WRITE) && (flags & LOG_MEMORY)) {
-	lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_read_log");
+        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_read_log");
     } else if ((flags & LOG_WRITE) && !(flags & LOG_MEMORY)) {
-	lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_write_log");
-    } else {			// if (!(flags & LOG_WRITE) && !(flags & LOG_MEMORY))
-	lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_read_log");
+        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_write_log");
+    } else {                    // if (!(flags & LOG_WRITE) && !(flags & LOG_MEMORY))
+        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_read_log");
     }
 
-    lua_pushinteger(L, addr);	// addr/port
-    lua_pushinteger(L, size);	// datasize
-    lua_pushinteger(L, data);	// data
+    lua_pushinteger(L, addr);   // addr/port
+    lua_pushinteger(L, size);   // datasize
+    lua_pushinteger(L, data);   // data
     lua_pushboolean(L, ((flags & LOG_TARGET) != 0));
 
     result = lua_pcall(L, 4, 0, 0);
     if (result) {
-	fprintf(stderr, "Failed to run function SerialICE_%s_%s_log: %s\n",
-		(flags & LOG_MEMORY) ? "memory" : "io",
-		(flags & LOG_WRITE) ? "write" : "read", lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr, "Failed to run function SerialICE_%s_%s_log: %s\n",
+                (flags & LOG_MEMORY) ? "memory" : "io",
+                (flags & LOG_WRITE) ? "write" : "read", lua_tostring(L, -1));
+        exit(1);
     }
 }
 
 static void serialice_msr_log(int flags, uint32_t addr, uint32_t hi,
-			      uint32_t lo, int filtered)
+                              uint32_t lo, int filtered)
 {
     int result;
 
     if (flags & LOG_WRITE) {
-	lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_write_log");
-    } else {			// if (!(flags & LOG_WRITE))
-	lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_read_log");
+        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_write_log");
+    } else {                    // if (!(flags & LOG_WRITE))
+        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_read_log");
     }
 
-    lua_pushinteger(L, addr);	// addr/port
-    lua_pushinteger(L, hi);	// datasize
-    lua_pushinteger(L, lo);	// data
-    lua_pushboolean(L, filtered);	// data
+    lua_pushinteger(L, addr);   // addr/port
+    lua_pushinteger(L, hi);     // datasize
+    lua_pushinteger(L, lo);     // data
+    lua_pushboolean(L, filtered);       // data
     result = lua_pcall(L, 4, 0, 0);
     if (result) {
-	fprintf(stderr, "Failed to run function SerialICE_msr_%s_log: %s\n",
-		(flags & LOG_WRITE) ? "write" : "read", lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr, "Failed to run function SerialICE_msr_%s_log: %s\n",
+                (flags & LOG_WRITE) ? "write" : "read", lua_tostring(L, -1));
+        exit(1);
     }
 }
 
 static void serialice_cpuid_log(uint32_t eax, uint32_t ecx, cpuid_regs_t res,
-				int filtered)
+                                int filtered)
 {
     int result;
 
     lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_cpuid_log");
 
-    lua_pushinteger(L, eax);	// input: eax
-    lua_pushinteger(L, ecx);	// input: ecx
-    lua_pushinteger(L, res.eax);	// output: eax
-    lua_pushinteger(L, res.ebx);	// output: ebx
-    lua_pushinteger(L, res.ecx);	// output: ecx
-    lua_pushinteger(L, res.edx);	// output: edx
-    lua_pushboolean(L, filtered);	// data
+    lua_pushinteger(L, eax);    // input: eax
+    lua_pushinteger(L, ecx);    // input: ecx
+    lua_pushinteger(L, res.eax);        // output: eax
+    lua_pushinteger(L, res.ebx);        // output: ebx
+    lua_pushinteger(L, res.ecx);        // output: ecx
+    lua_pushinteger(L, res.edx);        // output: edx
+    lua_pushboolean(L, filtered);       // data
     result = lua_pcall(L, 7, 0, 0);
     if (result) {
-	fprintf(stderr, "Failed to run function SerialICE_cpuid_log: %s\n",
-		lua_tostring(L, -1));
-	exit(1);
+        fprintf(stderr, "Failed to run function SerialICE_cpuid_log: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
     }
 }
 
@@ -536,29 +541,29 @@ static int serialice_read(SerialICEState * state, void *buf, size_t nbyte)
 
     while (1) {
 #ifdef WIN32
-	int ret = 0;
-	ReadFile(state->fd, buf, nbyte - bytes_read, &ret, NULL);
-	if (!ret) {
-	    break;
-	}
+        int ret = 0;
+        ReadFile(state->fd, buf, nbyte - bytes_read, &ret, NULL);
+        if (!ret) {
+            break;
+        }
 #else
-	int ret = read(state->fd, buf, nbyte - bytes_read);
+        int ret = read(state->fd, buf, nbyte - bytes_read);
 
-	if (ret == -1 && errno == EINTR) {
-	    continue;
-	}
+        if (ret == -1 && errno == EINTR) {
+            continue;
+        }
 
-	if (ret == -1) {
-	    break;
-	}
+        if (ret == -1) {
+            break;
+        }
 #endif
 
-	bytes_read += ret;
-	buf += ret;
+        bytes_read += ret;
+        buf += ret;
 
-	if (bytes_read >= (int)nbyte) {
-	    break;
-	}
+        if (bytes_read >= (int)nbyte) {
+            break;
+        }
     }
 
     return bytes_read;
@@ -567,7 +572,7 @@ static int serialice_read(SerialICEState * state, void *buf, size_t nbyte)
 static int handshake_mode = 0;
 
 static int serialice_write(SerialICEState * state, const void *buf,
-			   size_t nbyte)
+                           size_t nbyte)
 {
     char *buffer = (char *)buf;
     char c;
@@ -575,21 +580,21 @@ static int serialice_write(SerialICEState * state, const void *buf,
 
     for (i = 0; i < (int)nbyte; i++) {
 #ifdef WIN32
-	int ret = 0;
-	while (ret == 0) {
-	    WriteFile(state->fd, buffer + i, 1, &ret, NULL);
-	}
-	ret = 0;
-	while (ret == 0) {
-	    ReadFile(state->fd, &c, 1, &ret, NULL);
-	}
+        int ret = 0;
+        while (ret == 0) {
+            WriteFile(state->fd, buffer + i, 1, &ret, NULL);
+        }
+        ret = 0;
+        while (ret == 0) {
+            ReadFile(state->fd, &c, 1, &ret, NULL);
+        }
 #else
-	while (write(state->fd, buffer + i, 1) != 1) ;
-	while (read(state->fd, &c, 1) != 1) ;
+        while (write(state->fd, buffer + i, 1) != 1) ;
+        while (read(state->fd, &c, 1) != 1) ;
 #endif
-	if (c != buffer[i] && !handshake_mode) {
-	    printf("Readback error! %x/%x\n", c, buffer[i]);
-	}
+        if (c != buffer[i] && !handshake_mode) {
+            printf("Readback error! %x/%x\n", c, buffer[i]);
+        }
     }
 
     return nbyte;
@@ -603,18 +608,18 @@ static int serialice_wait_prompt(void)
     l = serialice_read(s, buf, 3);
 
     if (l == -1) {
-	perror("SerialICE: Could not read from target");
-	exit(1);
+        perror("SerialICE: Could not read from target");
+        exit(1);
     }
 
     while (buf[0] != '\n' || buf[1] != '>' || buf[2] != ' ') {
-	buf[0] = buf[1];
-	buf[1] = buf[2];
-	l = serialice_read(s, buf + 2, 1);
-	if (l == -1) {
-	    perror("SerialICE: Could not read from target");
-	    exit(1);
-	}
+        buf[0] = buf[1];
+        buf[1] = buf[2];
+        l = serialice_read(s, buf + 2, 1);
+        if (l == -1) {
+            perror("SerialICE: Could not read from target");
+            exit(1);
+        }
     }
 
     return 0;
@@ -631,28 +636,28 @@ static void serialice_command(const char *command, int reply_len)
 
     serialice_write(s, command, strlen(command));
 
-    memset(s->buffer, 0, reply_len + 1);	// clear enough of the buffer
+    memset(s->buffer, 0, reply_len + 1);        // clear enough of the buffer
 
     l = serialice_read(s, s->buffer, reply_len);
 
     if (l == -1) {
-	perror("SerialICE: Could not read from target");
-	exit(1);
+        perror("SerialICE: Could not read from target");
+        exit(1);
     }
     // compensate for CR on the wire. Needed on Win32
     if (s->buffer[0] == '\r') {
-	memmove(s->buffer, s->buffer + 1, reply_len);
-	serialice_read(s, s->buffer + reply_len - 1, 1);
+        memmove(s->buffer, s->buffer + 1, reply_len);
+        serialice_read(s, s->buffer + reply_len - 1, 1);
     }
 
     if (l != reply_len) {
-	printf("SerialICE: command was not answered sufficiently: "
-	       "(%d/%d bytes)\n'%s'\n", l, reply_len, s->buffer);
-	exit(1);
+        printf("SerialICE: command was not answered sufficiently: "
+               "(%d/%d bytes)\n'%s'\n", l, reply_len, s->buffer);
+        exit(1);
     }
 #if SERIALICE_DEBUG > 5
     for (i = 0; i < reply_len; i++) {
-	printf("%02x ", s->buffer[i]);
+        printf("%02x ", s->buffer[i]);
     }
     printf("\n");
 #endif
@@ -671,7 +676,7 @@ static void serialice_get_version(void)
     serialice_read(s, s->buffer, 1);
     serialice_read(s, s->buffer, 1);
     while (s->buffer[len++] != '\n') {
-	serialice_read(s, s->buffer + len, 1);
+        serialice_read(s, s->buffer + len, 1);
     }
     s->buffer[len - 1] = '\0';
 
@@ -685,7 +690,7 @@ static void serialice_get_mainboard(void)
     printf("SerialICE: Mainboard...: ");
     serialice_command("*mb", 32);
     while (len && s->buffer[len] == ' ') {
-	s->buffer[len--] = '\0';
+        s->buffer[len--] = '\0';
     }
     serialice_mainboard = strdup(s->buffer + 1);
     printf("%s\n", serialice_mainboard);
@@ -697,7 +702,7 @@ uint8_t serialice_inb(uint16_t port)
     uint32_t data;
 
     if (serialice_io_read_filter(&data, port, 1)) {
-	return data & 0xff;
+        return data & 0xff;
     }
 
     sprintf(s->command, "*ri%04x.b", port);
@@ -716,7 +721,7 @@ uint16_t serialice_inw(uint16_t port)
     uint32_t data;
 
     if (serialice_io_read_filter(&data, port, 1)) {
-	return data & 0xffff;
+        return data & 0xffff;
     }
 
     sprintf(s->command, "*ri%04x.w", port);
@@ -735,7 +740,7 @@ uint32_t serialice_inl(uint16_t port)
     uint32_t data;
 
     if (serialice_io_read_filter(&data, port, 1)) {
-	return data;
+        return data;
     }
 
     sprintf(s->command, "*ri%04x.l", port);
@@ -755,7 +760,7 @@ void serialice_outb(uint8_t data, uint16_t port)
     serialice_log(LOG_WRITE | LOG_IO, data, port, 1);
 
     if (serialice_io_write_filter(&filtered_data, port, 1)) {
-	return;
+        return;
     }
 
     data = (uint8_t) filtered_data;
@@ -770,7 +775,7 @@ void serialice_outw(uint16_t data, uint16_t port)
     serialice_log(LOG_WRITE | LOG_IO, data, port, 2);
 
     if (serialice_io_write_filter(&filtered_data, port, 2)) {
-	return;
+        return;
     }
 
     data = (uint16_t) filtered_data;
@@ -785,7 +790,7 @@ void serialice_outl(uint32_t data, uint16_t port)
     serialice_log(LOG_WRITE | LOG_IO, data, port, 4);
 
     if (serialice_io_write_filter(&filtered_data, port, 4)) {
-	return;
+        return;
     }
 
     data = filtered_data;
@@ -849,14 +854,14 @@ uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 
     filtered = serialice_msr_filter(FILTER_READ, addr, &hi, &lo);
     if (!filtered) {
-	sprintf(s->command, "*rc%08x.%08x", addr, key);
+        sprintf(s->command, "*rc%08x.%08x", addr, key);
 
-	// command read back: "\n00000000.00000000" (18 characters)
-	serialice_command(s->command, 18);
+        // command read back: "\n00000000.00000000" (18 characters)
+        serialice_command(s->command, 18);
 
-	s->buffer[9] = 0;	// . -> \0
-	hi = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
-	lo = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
+        s->buffer[9] = 0;       // . -> \0
+        hi = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+        lo = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
     }
 
     ret = hi;
@@ -879,8 +884,8 @@ void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
     filtered = serialice_msr_filter(FILTER_WRITE, addr, &hi, &lo);
 
     if (!filtered) {
-	sprintf(s->command, "*wc%08x.%08x=%08x.%08x", addr, key, hi, lo);
-	serialice_command(s->command, 0);
+        sprintf(s->command, "*wc%08x.%08x=%08x.%08x", addr, key, hi, lo);
+        serialice_command(s->command, 0);
     }
 
     serialice_msr_log(LOG_WRITE, addr, hi, lo, filtered);
@@ -892,19 +897,19 @@ cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)
     int filtered;
 
     ret.eax = eax;
-    ret.ebx = 0;		// either set by filter or by target
+    ret.ebx = 0;                // either set by filter or by target
     ret.ecx = ecx;
-    ret.edx = 0;		// either set by filter or by target
+    ret.edx = 0;                // either set by filter or by target
 
     sprintf(s->command, "*ci%08x.%08x", eax, ecx);
 
     // command read back: "\n000006f2.00000000.00001234.12340324"
     // (36 characters)
     serialice_command(s->command, 36);
-    
-    s->buffer[9] = 0;	// . -> \0
-    s->buffer[18] = 0;	// . -> \0
-    s->buffer[27] = 0;	// . -> \0
+
+    s->buffer[9] = 0;           // . -> \0
+    s->buffer[18] = 0;          // . -> \0
+    s->buffer[27] = 0;          // . -> \0
     ret.eax = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
     ret.ebx = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
     ret.ecx = (uint32_t) strtoul(s->buffer + 19, (char **)NULL, 16);
@@ -924,13 +929,13 @@ static uint32_t serialice_load_wrapper(uint32_t addr, unsigned int size)
 {
     switch (size) {
     case 1:
-	return (uint32_t) serialice_readb(addr);
+        return (uint32_t) serialice_readb(addr);
     case 2:
-	return (uint32_t) serialice_readw(addr);
+        return (uint32_t) serialice_readw(addr);
     case 4:
-	return (uint32_t) serialice_readl(addr);
+        return (uint32_t) serialice_readl(addr);
     default:
-	printf("WARNING: unknown read access size %d @%08x\n", size, addr);
+        printf("WARNING: unknown read access size %d @%08x\n", size, addr);
     }
     return 0;
 }
@@ -940,13 +945,13 @@ static uint32_t serialice_load_wrapper(uint32_t addr, unsigned int size)
  * of a load cycle
  */
 void serialice_log_load(int caught, uint32_t addr, uint32_t result,
-			unsigned int data_size)
+                        unsigned int data_size)
 {
     if (caught) {
-	serialice_log(LOG_READ | LOG_MEMORY | LOG_TARGET, result, addr,
-		      data_size);
+        serialice_log(LOG_READ | LOG_MEMORY | LOG_TARGET, result, addr,
+                      data_size);
     } else {
-	serialice_log(LOG_READ | LOG_MEMORY, result, addr, data_size);
+        serialice_log(LOG_READ | LOG_MEMORY, result, addr, data_size);
     }
 }
 
@@ -956,19 +961,19 @@ void serialice_log_load(int caught, uint32_t addr, uint32_t result,
  * @return 0: pass on to Qemu; 1: handled locally.
  */
 int serialice_handle_load(uint32_t addr, uint32_t * result,
-			  unsigned int data_size)
+                          unsigned int data_size)
 {
     int source;
 
     source = serialice_memory_read_filter(addr, result, data_size);
 
     if (source & READ_FROM_SERIALICE) {
-	*result = serialice_load_wrapper(addr, data_size);
-	return 1;
+        *result = serialice_load_wrapper(addr, data_size);
+        return 1;
     }
 
     if (source & READ_FROM_QEMU) {
-	return 0;
+        return 0;
     }
 
     /* No source for load, so the source is the script */
@@ -979,31 +984,31 @@ int serialice_handle_load(uint32_t addr, uint32_t * result,
 // memory store handling
 
 static void serialice_store_wrapper(uint32_t addr, unsigned int size,
-				    uint32_t data)
+                                    uint32_t data)
 {
     switch (size) {
     case 1:
-	serialice_writeb((uint8_t) data, addr);
-	break;
+        serialice_writeb((uint8_t) data, addr);
+        break;
     case 2:
-	serialice_writew((uint16_t) data, addr);
-	break;
+        serialice_writew((uint16_t) data, addr);
+        break;
     case 4:
-	serialice_writel((uint32_t) data, addr);
-	break;
+        serialice_writel((uint32_t) data, addr);
+        break;
     default:
-	printf("WARNING: unknown write access size %d @%08x\n", size, addr);
+        printf("WARNING: unknown write access size %d @%08x\n", size, addr);
     }
 }
 
 static void serialice_log_store(int caught, uint32_t addr, uint32_t val,
-				unsigned int data_size)
+                                unsigned int data_size)
 {
     if (caught) {
-	serialice_log(LOG_WRITE | LOG_MEMORY | LOG_TARGET, val, addr,
-		      data_size);
+        serialice_log(LOG_WRITE | LOG_MEMORY | LOG_TARGET, val, addr,
+                      data_size);
     } else {
-	serialice_log(LOG_WRITE | LOG_MEMORY, val, addr, data_size);
+        serialice_log(LOG_WRITE | LOG_MEMORY, val, addr, data_size);
     }
 }
 
@@ -1026,7 +1031,7 @@ int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
     serialice_log_store(write_to_target, addr, filtered_data, data_size);
 
     if (write_to_target) {
-	serialice_store_wrapper(addr, data_size, filtered_data);
+        serialice_store_wrapper(addr, data_size, filtered_data);
     }
 
     return (write_to_qemu == 0);
@@ -1040,7 +1045,7 @@ static void serialice_refresh(void *opaque)
     int bpp, linesize;
 
     if (!screen_invalid) {
-	return;
+        return;
     }
 
     dest = ds_get_data(s->ds);
@@ -1051,17 +1056,17 @@ static void serialice_refresh(void *opaque)
 #if SERIALICE_BANNER
     int x, y;
     if (bpp == 4) {
-	for (y = 0; y < 240; y++) {
-	    for (x = 0; x < 320; x++) {
-		int doff = (y * linesize) + (x * bpp);
-		int soff = (y * (320 * 3)) + (x * 3);
-		dest[doff + 0] = serialice_banner[soff + 2];	// blue
-		dest[doff + 1] = serialice_banner[soff + 1];	// green
-		dest[doff + 2] = serialice_banner[soff + 0];	// red
-	    }
-	}
+        for (y = 0; y < 240; y++) {
+            for (x = 0; x < 320; x++) {
+                int doff = (y * linesize) + (x * bpp);
+                int soff = (y * (320 * 3)) + (x * 3);
+                dest[doff + 0] = serialice_banner[soff + 2];    // blue
+                dest[doff + 1] = serialice_banner[soff + 1];    // green
+                dest[doff + 2] = serialice_banner[soff + 0];    // red
+            }
+        }
     } else {
-	printf("Banner enabled and BPP = %d (line size = %d)\n", bpp, linesize);
+        printf("Banner enabled and BPP = %d (line size = %d)\n", bpp, linesize);
     }
 #endif
 
@@ -1082,28 +1087,28 @@ void serialice_init(void)
     s = qemu_mallocz(sizeof(SerialICEState));
 
     s->ds = graphic_console_init(serialice_refresh, serialice_invalidate,
-				 NULL, NULL, s);
+                                 NULL, NULL, s);
     qemu_console_resize(s->ds, 320, 240);
 
     printf("SerialICE: Open connection to target hardware...\n");
 
     if (serialice_device == NULL) {
-	printf("You need to specify a serial device to use SerialICE.\n");
-	exit(1);
+        printf("You need to specify a serial device to use SerialICE.\n");
+        exit(1);
     }
 #ifdef WIN32
     s->fd = CreateFile(serialice_device, GENERIC_READ | GENERIC_WRITE,
-		       0, NULL, OPEN_EXISTING, 0, NULL);
+                       0, NULL, OPEN_EXISTING, 0, NULL);
 
     if (s->fd == INVALID_HANDLE_VALUE) {
-	perror("SerialICE: Could not connect to target TTY");
-	exit(1);
+        perror("SerialICE: Could not connect to target TTY");
+        exit(1);
     }
 
     DCB dcb;
     if (!GetCommState(s->fd, &dcb)) {
-	perror("SerialICE: Could not load config for target TTY");
-	exit(1);
+        perror("SerialICE: Could not load config for target TTY");
+        exit(1);
     }
 
     dcb.BaudRate = CBR_115200;
@@ -1112,30 +1117,30 @@ void serialice_init(void)
     dcb.StopBits = ONESTOPBIT;
 
     if (!SetCommState(s->fd, &dcb)) {
-	perror("SerialICE: Could not store config for target TTY");
-	exit(1);
+        perror("SerialICE: Could not store config for target TTY");
+        exit(1);
     }
 #else
     s->fd = open(serialice_device, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
     if (s->fd == -1) {
-	perror("SerialICE: Could not connect to target TTY");
-	exit(1);
+        perror("SerialICE: Could not connect to target TTY");
+        exit(1);
     }
 
     if (ioctl(s->fd, TIOCEXCL) == -1) {
-	perror("SerialICE: TTY not exclusively available");
-	exit(1);
+        perror("SerialICE: TTY not exclusively available");
+        exit(1);
     }
 
     if (fcntl(s->fd, F_SETFL, 0) == -1) {
-	perror("SerialICE: Could not switch to blocking I/O");
-	exit(1);
+        perror("SerialICE: Could not switch to blocking I/O");
+        exit(1);
     }
 
     if (tcgetattr(s->fd, &options) == -1) {
-	perror("SerialICE: Could not get TTY attributes");
-	exit(1);
+        perror("SerialICE: Could not get TTY attributes");
+        exit(1);
     }
 
     cfsetispeed(&options, B115200);
@@ -1159,17 +1164,17 @@ void serialice_init(void)
 
     printf("SerialICE: Waiting for handshake with target... ");
 
-    handshake_mode = 1; // Readback errors are to be expected in this phase.
+    handshake_mode = 1;         // Readback errors are to be expected in this phase.
 
     /* Trigger a prompt */
     serialice_write(s, "@", 1);
 
     /* ... and wait for it to appear */
     if (serialice_wait_prompt() == 0) {
-	printf("target alife!\n");
+        printf("target alife!\n");
     } else {
-	printf("target not ok!\n");
-	exit(1);
+        printf("target not ok!\n");
+        exit(1);
     }
 
     /* Each serialice_command() waits for a prompt, so trigger one for the
@@ -1177,7 +1182,7 @@ void serialice_init(void)
      */
     serialice_write(s, "@", 1);
 
-    handshake_mode = 0; // from now on, warn about readback errors.
+    handshake_mode = 0;         // from now on, warn about readback errors.
 
     serialice_get_version();
 
@@ -1199,11 +1204,11 @@ void serialice_exit(void)
 }
 
 static void pc_init_serialice(ram_addr_t ram_size,
-			      const char *boot_device,
-			      const char *kernel_filename,
-			      const char *kernel_cmdline,
-			      const char *initrd_filename,
-			      const char *cpu_model)
+                              const char *boot_device,
+                              const char *kernel_filename,
+                              const char *kernel_cmdline,
+                              const char *initrd_filename,
+                              const char *cpu_model)
 {
     char *filename;
     int ret, i, linux_boot;
@@ -1212,26 +1217,26 @@ static void pc_init_serialice(ram_addr_t ram_size,
     CPUState *env;
 
     if (ram_size != (DEFAULT_RAM_SIZE * 1024 * 1024)) {
-	printf
-	    ("Warning: Running SerialICE with non-default ram size is not supported.\n");
-	exit(1);
+        printf
+            ("Warning: Running SerialICE with non-default ram size is not supported.\n");
+        exit(1);
     }
 
     linux_boot = (kernel_filename != NULL);
 
     /* init CPUs */
     if (cpu_model == NULL) {
-	//printf("Warning: Running SerialICE with generic CPU type might fail.\n");
+        //printf("Warning: Running SerialICE with generic CPU type might fail.\n");
 #ifdef TARGET_X86_64
-	cpu_model = "qemu64";
+        cpu_model = "qemu64";
 #else
-	cpu_model = "qemu32";
+        cpu_model = "qemu32";
 #endif
     }
 
     for (i = 0; i < smp_cpus; i++) {
-	env = cpu_init(cpu_model);
-	qemu_register_reset((QEMUResetHandler*)cpu_reset, env);
+        env = cpu_init(cpu_model);
+        qemu_register_reset((QEMUResetHandler *) cpu_reset, env);
     }
 
     /* Must not happen before CPUs are initialized */
@@ -1239,42 +1244,41 @@ static void pc_init_serialice(ram_addr_t ram_size,
 
     /* BIOS load */
     if (bios_name == NULL)
-	bios_name = BIOS_FILENAME;
+        bios_name = BIOS_FILENAME;
     filename = qemu_find_file(QEMU_FILE_TYPE_BIOS, bios_name);
     if (filename) {
-	bios_size = get_image_size(filename);
+        bios_size = get_image_size(filename);
     } else {
-	bios_size = -1;
+        bios_size = -1;
     }
     if (bios_size <= 0 || (bios_size % 65536) != 0) {
-	goto bios_error;
+        goto bios_error;
     }
     bios_offset = qemu_ram_alloc(bios_size);
     ret = load_image(filename, qemu_get_ram_ptr(bios_offset));
     if (ret != bios_size) {
       bios_error:
-	fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
-	exit(1);
+        fprintf(stderr, "qemu: could not load PC BIOS '%s'\n", bios_name);
+        exit(1);
     }
     if (filename) {
-	qemu_free(filename);
+        qemu_free(filename);
     }
     /* map the last 128KB of the BIOS in ISA space */
     isa_bios_size = bios_size;
     if (isa_bios_size > (128 * 1024))
-	isa_bios_size = 128 * 1024;
+        isa_bios_size = 128 * 1024;
 
     cpu_register_physical_memory(0x100000 - isa_bios_size,
-				 isa_bios_size,
-				 (bios_offset + bios_size -
-				  isa_bios_size));
+                                 isa_bios_size,
+                                 (bios_offset + bios_size - isa_bios_size));
 
     /* map all the bios at the top of memory */
     cpu_register_physical_memory((uint32_t) (-bios_size), bios_size,
-				 bios_offset | IO_MEM_ROM);
+                                 bios_offset | IO_MEM_ROM);
     if (linux_boot) {
-	printf("Booting Linux in SerialICE mode is currently not supported.\n");
-	exit(1);
+        printf("Booting Linux in SerialICE mode is currently not supported.\n");
+        exit(1);
     }
 
 }
