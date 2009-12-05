@@ -561,8 +561,8 @@ void helper_outb(uint32_t port, uint32_t data)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-	    serialice_outb(data & 0xff, port);
-	    return;
+        serialice_outb(data & 0xff, port);
+        return;
     }
 #endif
     cpu_outb(env, port, data & 0xff);
@@ -572,7 +572,7 @@ target_ulong helper_inb(uint32_t port)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-	    return (target_ulong)serialice_inb(port);
+        return (target_ulong) serialice_inb(port);
     }
 #endif
     return cpu_inb(env, port);
@@ -582,8 +582,8 @@ void helper_outw(uint32_t port, uint32_t data)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-	    serialice_outw(data & 0xffff, port);
-	    return;
+        serialice_outw(data & 0xffff, port);
+        return;
     }
 #endif
     cpu_outw(env, port, data & 0xffff);
@@ -593,7 +593,7 @@ target_ulong helper_inw(uint32_t port)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-	    return (target_ulong)serialice_inw(port);
+        return (target_ulong) serialice_inw(port);
     }
 #endif
     return cpu_inw(env, port);
@@ -603,8 +603,8 @@ void helper_outl(uint32_t port, uint32_t data)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-	    serialice_outl(data & 0xffffffff, port);
-	    return;
+        serialice_outl(data & 0xffffffff, port);
+        return;
     }
 #endif
     cpu_outl(env, port, data);
@@ -614,7 +614,7 @@ target_ulong helper_inl(uint32_t port)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-	    return (target_ulong)serialice_inl(port);
+        return (target_ulong) serialice_inl(port);
     }
 #endif
     return cpu_inl(env, port);
@@ -1977,7 +1977,7 @@ void helper_cpuid(void)
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
         cpuid_regs_t ret;
-        ret = serialice_cpuid((uint32_t)EAX, (uint32_t)ECX);
+        ret = serialice_cpuid((uint32_t) EAX, (uint32_t) ECX);
         EAX = ret.eax;
         EBX = ret.ebx;
         ECX = ret.ecx;
@@ -3078,7 +3078,7 @@ void helper_wrmsr(void)
 
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-        serialice_wrmsr(val, (uint32_t)ECX, (uint32_t)EDI);
+        serialice_wrmsr(val, (uint32_t) ECX, (uint32_t) EDI);
         return;
     }
 #endif
@@ -3215,10 +3215,10 @@ void helper_rdmsr(void)
 
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-	val = serialice_rdmsr((uint32_t)ECX, (uint32_t)EDI);
-        EAX = (uint32_t)(val);
-        EDX = (uint32_t)(val >> 32);
-	return;
+        val = serialice_rdmsr((uint32_t) ECX, (uint32_t) EDI);
+        EAX = (uint32_t) (val);
+        EDX = (uint32_t) (val >> 32);
+        return;
     }
 #endif
 
