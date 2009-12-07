@@ -41,9 +41,13 @@ end
 
 ram_is_initialized = false
 
--- Whether to log read access (code fetches) to 0xe0000 to 0xfffff
+-- Set to "true" to log read access (code fetches) to 0xe0000 to 0xfffff
 
 log_rom_access = false
+
+-- Set to "true" to log CS:IP for each access
+
+ip_logging = false
 
 -- Remember the PCI device selected via IO CF8
 
@@ -83,6 +87,15 @@ function SerialICE_io_read_filter(port, data_size)
 
 	-- **********************************************************
 	--
+
+	if ( port == 0x60 and data_size == 1 ) then
+		if ( regs.eip == 0xbd6d and regs.eax == 0x8aa and regs.ecx == 0x00fffff0 ) then
+			-- f000:bd6d
+			printf("Skipping keyboard timeout...\n")
+			regs.eax = 0x01aa
+			regs.ecx = 0x0010
+		end
+	end
 
 	return caught, data
 end
@@ -227,13 +240,38 @@ function SerialICE_io_write_filter(port, size, data)
 	-- permanently from the target (several reads/writes per 
 	-- decompressed byte).
 
-	if port == 0x80 and data == 0xff37 then
+	if port == 0x80 and data == 0xff37 and ram_is_initialized == false then
 		ram_is_initialized = true
 		-- Register low RAM 0x00000000 - 0x000dffff 
 		SerialICE_register_physical(0x00000000, 0xa0000)
 		-- SMI/VGA memory should go to the target...
 		SerialICE_register_physical(0x000c0000, 0x20000)
 		printf("\nLow RAM accesses are now directed to Qemu.\n")
+
+		return false, data
+	end
+
+	if port == 0xcf9 and data == 0x06 then
+		SerialICE_system_reset()
+		return false, data
+	end
+
+	if ( port == 0xed and data == 0x40 ) then
+		if ( regs.eip == 0x3ed and regs.ecx == 0x00000290 ) then
+			printf("Skipping IO delay...\n")
+			-- f100:03ed
+			regs.ecx = 0x05
+		end
+	end
+
+	if ( port == 0xed and data == 0x83 ) 
+        then
+		if ( regs.eip == 0x1bb and regs.ecx == 0x0000fff0 ) then
+			printf("Skipping IO delay...\n")
+			-- e002:01bb
+			regs.ecx = 0x10
+			regs.ebx = 0x01
+		end
 	end
 
 	return false, data
@@ -384,6 +422,17 @@ function SerialICE_memory_write_filter(addr, size, data)
 		-- Don't send writes to the target for speed reasons.
 		return false, true, data
 	elseif	addr >= 0x00100000 and addr <= 0xcfffffff then
+		if addr == 0x00100000 then
+			if regs.cs == 0xe002 and regs.eip == 0x07fb then
+				-- skip high memory wipe
+				regs.ecx = 0x10
+			end
+			if regs.cs == 0xe002 and regs.eip == 0x076c and regs.edi == 0x3f then
+				-- skip high memory test
+				regs.edi=1;
+			end
+		end
+
 		-- 3.25 GB RAM ... This is handled by SerialICE
 		return true, false, data
 	else
@@ -394,16 +443,31 @@ function SerialICE_memory_write_filter(addr, size, data)
 	return true, false, data
 end
 
+
+function log_cs_ip()
+	if (ip_logging) then printf("[%04x:%04x] -- ", regs.cs, regs.eip) end
+end
+
 function SerialICE_msr_read_filter(addr, hi, lo)
+	-- Intel CPU microcode revision check.
+	if addr == 0x8b then
+		-- fake microcode revision of my 0x6f6 Core 2 Duo Mobile
+		return true, 0xc7, 0x00
+	end
+
 	return false, hi, lo
 end
 
 function SerialICE_msr_write_filter(addr, hi, lo)
+	-- Intel CPU microcode update
+	if addr == 0x79 then
+		return true, 0, 0xffff0000
+	end
+
 	return false, hi, lo
 end
 
 function SerialICE_cpuid_filter(in_eax, in_ecx, eax, ebx, ecx, edx)
-
 	-- Set number of cores to 1 on Core Duo and Atom to trick the
 	-- firmware into not trying to wake up non-BSP nodes.
 	if in_eax == 1 then
@@ -427,6 +491,8 @@ function SerialICE_memory_write_log(addr, size, data, target)
 	if addr >= 0x000c0000 and addr <= 0x000dffff and ram_is_initialized then
 		return
 	end
+
+	log_cs_ip()
 
 	if size == 1 then	printf("MEM: writeb %08x <= %02x", addr, data)
 	elseif size == 2 then	printf("MEM: writew %08x <= %04x", addr, data)
@@ -463,6 +529,8 @@ function SerialICE_memory_read_log(addr, size, data, target)
 		return
 	end
 
+	log_cs_ip()
+
 	if size == 1 then	printf("MEM:  readb %08x => %02x", addr, data)
 	elseif size == 2 then	printf("MEM:  readw %08x => %04x", addr, data)
 	elseif size == 4 then	printf("MEM:  readl %08x => %08x", addr, data)
@@ -485,6 +553,8 @@ function SerialICE_memory_read_log(addr, size, data, target)
 end
 
 function SerialICE_io_write_log(port, size, data, target)
+	log_cs_ip()
+
 	if size == 1 then	printf("IO: outb %04x <= %02x\n", port, data)
 	elseif size == 2 then	printf("IO: outw %04x <= %04x\n", port, data)
 	elseif size == 4 then	printf("IO: outl %04x <= %08x\n", port, data)
@@ -500,9 +570,18 @@ function SerialICE_io_write_log(port, size, data, target)
 			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
 			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc) ))
 	end
+
+	-- **********************************************************
+	--
+
+	if port == 0xcf9 then
+		printf("Reset triggered at %04x:%04x\n", regs.cs, regs.eip);
+	end
 end
 
 function SerialICE_io_read_log(port, size, data, target)
+	log_cs_ip()
+
 	if size == 1 then	printf("IO:  inb %04x => %02x\n", port, data)
 	elseif size == 2 then	printf("IO:  inw %04x => %04x\n", port, data)
 	elseif size == 4 then	printf("IO:  inl %04x => %08x\n", port, data)
@@ -521,14 +600,17 @@ function SerialICE_io_read_log(port, size, data, target)
 end
 
 function SerialICE_msr_write_log(addr, hi, lo, filtered)
+	log_cs_ip()
 	printf("CPU: wrmsr %08x <= %08x.%08x\n", addr, hi, lo)
 end
 
 function SerialICE_msr_read_log(addr, hi, lo, filtered)
+	log_cs_ip()
 	printf("CPU: rdmsr %08x => %08x.%08x\n", addr, hi, lo)
 end
 
 function SerialICE_cpuid_log(in_eax, in_ecx, out_eax, out_ebx, out_ecx, out_edx, filtered)
+	log_cs_ip()
 	printf("CPU: CPUID eax: %08x; ecx: %08x => %08x.%08x.%08x.%08x\n", 
 			in_eax, in_ecx, out_eax, out_ebx, out_ecx, out_edx)
 end
