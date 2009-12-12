@@ -254,11 +254,16 @@ void REGPARM glue(glue(__st, SUFFIX), MMUSUFFIX)(target_ulong addr,
     int index;
 
 #ifdef CONFIG_SERIALICE
-    if (serialice_active && serialice_handle_store((uint32_t)addr, (uint32_t)val, (unsigned int) DATA_SIZE)) {
-	// For now, we just always keep a backup of _all_ writes in qemu's
-	// memory. At this point we can later decide what to do, if it becomes
-	// necessary.
-	// return;
+    if (serialice_active && serialice_handle_store((uint32_t)addr, 
+        		    (uint32_t)val, (unsigned int) DATA_SIZE)) {
+        /* The memory catch mechanism does not work particularly well
+         * because of the softmmu is optimizing all accesses to Qemu
+         * "memory". Because of this we need to leave RAM "unassigned"
+         * until RAM init is done, and can't freely switch around.
+         *
+         * It's the right thing, however, to return here.
+         */
+        return;
     }
 #endif
 
