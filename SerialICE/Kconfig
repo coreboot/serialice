@@ -41,6 +41,10 @@ config BOARD_ASUS_M2V_MX_SE
 	select VIA_ROMSTRAP
 	select BUILD_XMMSTACK
 
+config BOARD_ASROCK_939A785GMH
+	bool "Asrock 939A785GMH"
+	select BUILD_XMMSTACK
+
 config BOARD_MSI_MS6178
 	bool "MSI MS6178"
 
@@ -65,7 +69,7 @@ config BOARD_INIT
 	default "rca_rm4100.c" if BOARD_RCA_RM4100
 	default "thomson_ip1000.c" if BOARD_THOMSON_IP1000
 	default "asus_p2b.c" if BOARD_ASUS_P2B
-
+	default "asrock_939a785gmh.c" if BOARD_ASROCK_939A785GMH
 choice
 	prompt "Target communication"
 
