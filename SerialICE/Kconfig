@@ -30,6 +30,9 @@ choice
 config BOARD_KONTRON_986LCD_M
 	bool "Kontron 986LCD-M/mITX"
 
+config BOARD_RODA_RK886EX
+	bool "Roda RK886EX"
+
 config BOARD_INTEL_D945GCLF
 	bool "Intel D945GCLF"
 
@@ -62,6 +65,7 @@ endchoice
 config BOARD_INIT
 	string
 	default "kontron_986lcd-m.c" if BOARD_KONTRON_986LCD_M
+	default "roda_rk886ex.c" if BOARD_RODA_RK886EX
 	default "intel_d945gclf.c" if BOARD_INTEL_D945GCLF
 	default "dell_s1850.c" if BOARD_DELL_S1850
 	default "asus_m2v-mx_se.c" if BOARD_ASUS_M2V_MX_SE
