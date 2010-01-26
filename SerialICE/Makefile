@@ -19,7 +19,9 @@
 
 VERSION="1.5"
 
-_OS=$(shell uname -s |cut -c-7)
+# romcc requires lots of stack space, and win32 seems to have a fixed size
+# stack. Give romcc some room on mingw and cygwin.
+_OS=$(shell uname -s | cut -c -7)
 STACK=
 ifeq ($(_OS),MINGW32)
 	STACK=-Wl,--stack,16384000
@@ -27,6 +29,7 @@ endif
 ifeq ($(_OS),CYGWIN_)
 	STACK=-Wl,--stack,16384000
 endif
+
 export src := $(shell pwd)
 export srctree := $(src)
 export srck := $(src)/util/kconfig
