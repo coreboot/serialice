@@ -20,6 +20,7 @@
 /*
  * This is an example chipset init file for the Roda RK886EX (Rocky 3+)
  */
+const char boardname[33]="Roda RK886EX (Rocky III+)       ";
 
 /* Hardware specific functions */
 
