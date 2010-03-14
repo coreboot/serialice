@@ -60,6 +60,9 @@ config BOARD_THOMSON_IP1000
 config BOARD_ASUS_P2B
 	bool "ASUS P2B"
 
+config BOARD_TELEVIDEO_TC7010
+	bool "Televideo TC7010"
+
 endchoice
 
 config BOARD_INIT
@@ -74,6 +77,7 @@ config BOARD_INIT
 	default "thomson_ip1000.c" if BOARD_THOMSON_IP1000
 	default "asus_p2b.c" if BOARD_ASUS_P2B
 	default "asrock_939a785gmh.c" if BOARD_ASROCK_939A785GMH
+	default "televideo_tc7010.c" if BOARD_TELEVIDEO_TC7010
 choice
 	prompt "Target communication"
 
