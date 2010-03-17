@@ -63,6 +63,10 @@ config BOARD_ASUS_P2B
 config BOARD_TELEVIDEO_TC7010
 	bool "Televideo TC7010"
 
+config BOARD_TYAN_S2912
+	bool "Tyan S2912"
+	select MCP55_ROMSTRAP
+
 endchoice
 
 config BOARD_INIT
@@ -78,6 +82,7 @@ config BOARD_INIT
 	default "asus_p2b.c" if BOARD_ASUS_P2B
 	default "asrock_939a785gmh.c" if BOARD_ASROCK_939A785GMH
 	default "televideo_tc7010.c" if BOARD_TELEVIDEO_TC7010
+ 	default "tyan_s2912.c" if BOARD_TYAN_S2912
 choice
 	prompt "Target communication"
 
@@ -212,6 +217,11 @@ config VIA_ROMSTRAP
 	depends on EXPERT
 	default n
 
+config MCP55_ROMSTRAP
+	bool "NVIDIA MCP55 Southbridge ROMSTRAP"
+	depends on EXPERT
+	default n
+
 choice
 	prompt "Build Method"
 	default BUILD_ROMCC
@@ -239,6 +249,11 @@ config HAVE_SSE
 	default n
 
 config VIA_ROMSTRAP
+	bool
+	depends on !EXPERT
+	default n
+
+config MCP55_ROMSTRAP
 	bool
 	depends on !EXPERT
 	default n
