@@ -77,7 +77,7 @@ static void superio_init(void)
 static void chipset_init(void)
 {
 	superio_init();
-
+	smsc_enable_serial(SUPERIO_CONFIG_PORT, LPC47B397_SP1, CONFIG_SERIAL_PORT);
 	__asm__ __volatile__("\
 	jmp skip\n\
 	.align 128\n\

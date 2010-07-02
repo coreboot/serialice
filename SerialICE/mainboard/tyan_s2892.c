@@ -18,64 +18,44 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-const char boardname[33]="Tyan S2895                      ";
+const char boardname[33]="Tyan S2892                      ";
 
 #define SUPERIO_CONFIG_PORT	0x2e
-#define SUPERIO_GPIO_IO_BASE	0x400
+#define W83627HF_SP1            2
 
-#define LPC47B397_SP1		4	/* Com1 */
-#define LPC47B397_RT		10	/* Runtime reg */
-
-static void lpc47b397_gpio_offset_out(unsigned iobase, unsigned offset, unsigned value)
-{
-	outb(value,iobase+offset);
-}
-
-static unsigned lpc47b397_gpio_offset_in(unsigned iobase, unsigned offset)
-{
-	return inb(iobase+offset);
-}
-
-
-/* Functions for the SMSC LPC47B272 & B397 */
-static void smsc_enable_serial(u16 port, u8 dev, unsigned iobase)
-{
-	pnp_enter_ext_func_mode_alt(port);
-	pnp_set_logical_device(port, dev);
-	pnp_set_enable(port, 0);
-	pnp_set_iobase0(port, iobase);
-	pnp_set_enable(port, 1);
-	pnp_exit_ext_func_mode(port);
-}
-
-static void superio_init(void)
+static void sio_setup(void)
 {
 	unsigned value;
 	u32 dword;
 	u8 byte;
-
-	pci_write_config32(PCI_ADDR(0, 1, 0, 0xac), 0x047f0400);
 
 	byte = pci_read_config8(PCI_ADDR(0, 1 , 0, 0x7b));
 	byte |= 0x20;
 	pci_write_config8(PCI_ADDR(0, 1 , 0, 0x7b), byte);
 
 	dword = pci_read_config32(PCI_ADDR(0, 1 , 0, 0xa0));
-	dword |= (1<<29)|(1<<0);
+	dword |= (1<<0);
 	pci_write_config32(PCI_ADDR(0, 1 , 0, 0xa0), dword);
+}
 
-	dword = pci_read_config32(PCI_ADDR(0, 1, 0, 0xa4));
-	dword |= (1<<16);
-	pci_write_config32(PCI_ADDR(0, 1, 0, 0xa4), dword);
+static void superio_init(void)
+{
+	int i;
+	pnp_enter_ext_func_mode(SUPERIO_CONFIG_PORT);
 
-	smsc_enable_serial(SUPERIO_CONFIG_PORT, LPC47B397_RT, SUPERIO_GPIO_IO_BASE);
-	value = lpc47b397_gpio_offset_in(SUPERIO_GPIO_IO_BASE, 0x77);
-	value &= 0xbf;
-	lpc47b397_gpio_offset_out(SUPERIO_GPIO_IO_BASE, 0x77, value);
+	/* Enable the serial port. */
+	pnp_set_logical_device(SUPERIO_CONFIG_PORT, W83627HF_SP1); /* COM1 */
+	pnp_set_enable(SUPERIO_CONFIG_PORT, 0);
+	pnp_set_iobase0(SUPERIO_CONFIG_PORT, CONFIG_SERIAL_PORT);
+	pnp_set_irq0(SUPERIO_CONFIG_PORT, 4);
+	pnp_set_enable(SUPERIO_CONFIG_PORT, 1);
+
+	pnp_exit_ext_func_mode(SUPERIO_CONFIG_PORT);
 }
 
 static void chipset_init(void)
 {
+	sio_setup();
 	superio_init();
 
 	__asm__ __volatile__("\
