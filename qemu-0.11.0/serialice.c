@@ -720,7 +720,7 @@ uint16_t serialice_inw(uint16_t port)
     uint16_t ret;
     uint32_t data;
 
-    if (serialice_io_read_filter(&data, port, 1)) {
+    if (serialice_io_read_filter(&data, port, 2)) {
         return data & 0xffff;
     }
 
@@ -739,7 +739,7 @@ uint32_t serialice_inl(uint16_t port)
     uint32_t ret;
     uint32_t data;
 
-    if (serialice_io_read_filter(&data, port, 1)) {
+    if (serialice_io_read_filter(&data, port, 4)) {
         return data;
     }
 
