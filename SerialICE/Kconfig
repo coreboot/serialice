@@ -67,6 +67,9 @@ config BOARD_TYAN_S2912
 	bool "Tyan S2912"
 	select MCP55_ROMSTRAP
 
+config BOARD_HP_DL165_G6
+	bool "HP DL165 G6"
+
 endchoice
 
 config BOARD_INIT
@@ -83,6 +86,7 @@ config BOARD_INIT
 	default "asrock_939a785gmh.c" if BOARD_ASROCK_939A785GMH
 	default "televideo_tc7010.c" if BOARD_TELEVIDEO_TC7010
  	default "tyan_s2912.c" if BOARD_TYAN_S2912
+	default "hp_dl165_g6.c" if BOARD_HP_DL165_G6
 choice
 	prompt "Target communication"
 

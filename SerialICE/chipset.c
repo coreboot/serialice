@@ -64,6 +64,12 @@ static inline void pnp_set_iobase0(u16 port, u16 iobase)
 	pnp_write_register(port, 0x61, iobase & 0xff);
 }
 
+static inline void pnp_set_iobase1(u16 port, u16 iobase)
+{
+	pnp_write_register(port, 0x62, (iobase >> 8) & 0xff);
+	pnp_write_register(port, 0x63, iobase & 0xff);
+}
+
 static inline void pnp_set_irq0(u16 port, u8 irq)
 {
 	pnp_write_register(port, 0x70, irq);
