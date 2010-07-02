@@ -124,6 +124,15 @@ reset_vector:
 	.long via_romstrap
 #endif
 
+#ifdef CONFIG_CK804_ROMSTRAP
+/* Pointers to nvidia tables at 0xffffe0 */
+	. = 0x10;
+	.long ck804_romstrap
+	.long ck804_romstrap
+	.long ck804_romstrap
+	.long ck804_romstrap
+#endif
+
 #ifdef CONFIG_MCP55_ROMSTRAP
 /* Pointers to nvidia tables at 0xffffe0 */
 	. = 0x10;

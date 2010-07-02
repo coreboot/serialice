@@ -69,6 +69,14 @@ config BOARD_ASUS_P2B
 config BOARD_TELEVIDEO_TC7010
 	bool "Televideo TC7010"
 
+config BOARD_TYAN_S2892
+	bool "Tyan S2892"
+	select CK804_ROMSTRAP
+
+config BOARD_TYAN_S2895
+	bool "Tyan S2895"
+	select CK804_ROMSTRAP
+
 config BOARD_TYAN_S2912
 	bool "Tyan S2912"
 	select MCP55_ROMSTRAP
@@ -93,6 +101,8 @@ config BOARD_INIT
 	default "asus_p2b.c" if BOARD_ASUS_P2B
 	default "asrock_939a785gmh.c" if BOARD_ASROCK_939A785GMH
 	default "televideo_tc7010.c" if BOARD_TELEVIDEO_TC7010
+ 	default "tyan_s2892.c" if BOARD_TYAN_S2892
+ 	default "tyan_s2895.c" if BOARD_TYAN_S2895
  	default "tyan_s2912.c" if BOARD_TYAN_S2912
 	default "hp_dl165_g6.c" if BOARD_HP_DL165_G6
 choice
@@ -226,6 +236,11 @@ config HAVE_SSE
 
 config VIA_ROMSTRAP
 	bool "VIA Southbridge ROMSTRAP"
+	depends on EXPERT
+	default n
+
+config CK804_ROMSTRAP
+	bool "NVIDIA CK804 Southbridge ROMSTRAP"
 	depends on EXPERT
 	default n
 
