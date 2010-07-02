@@ -1171,7 +1171,7 @@ void serialice_init(void)
 
     /* ... and wait for it to appear */
     if (serialice_wait_prompt() == 0) {
-        printf("target alife!\n");
+        printf("target alive!\n");
     } else {
         printf("target not ok!\n");
         exit(1);
@@ -1191,7 +1191,7 @@ void serialice_init(void)
     printf("SerialICE: LUA init...\n");
     serialice_lua_init();
 
-    /* Let the rest of Qemu know we're alife */
+    /* Let the rest of Qemu know we're alive */
     serialice_active = 1;
 }
 
