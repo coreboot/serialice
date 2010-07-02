@@ -40,6 +40,24 @@ static void pci_write_config32(u32 addr, u32 value)
         outl(value, 0xcfc);
 }
 
+static u8 pci_read_config8(u32 addr)
+{
+        outl(addr & ~3, 0xcf8);
+        inb(0xcfc + (addr & 3));
+}
+
+static u16 pci_read_config16(u32 addr)
+{
+        outl(addr & ~3, 0xcf8);
+        inw(0xcfc + (addr & 2));
+}
+
+static u32 pci_read_config32(u32 addr)
+{
+        outl(addr & ~3, 0xcf8);
+        inl(0xcfc);
+}
+
 /* PnP / SuperIO access functions */
 
 static inline void pnp_write_register(u16 port, u8 reg, u8 value)
