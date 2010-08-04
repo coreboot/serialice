@@ -50,6 +50,10 @@ config BOARD_ASUS_M2V_MX_SE
 	select VIA_ROMSTRAP
 	select BUILD_XMMSTACK
 
+config BOARD_ASUS_M4A77TD_PRO
+	bool "ASUS M4A77TD-PRO"
+	select BUILD_XMMSTACK
+
 config BOARD_ASROCK_939A785GMH
 	bool "Asrock 939A785GMH"
 	select BUILD_XMMSTACK
@@ -99,6 +103,7 @@ config BOARD_INIT
 	default "rca_rm4100.c" if BOARD_RCA_RM4100
 	default "thomson_ip1000.c" if BOARD_THOMSON_IP1000
 	default "asus_p2b.c" if BOARD_ASUS_P2B
+	default "asus_m4a77td-pro.c" if BOARD_ASUS_M4A77TD_PRO
 	default "asrock_939a785gmh.c" if BOARD_ASROCK_939A785GMH
 	default "televideo_tc7010.c" if BOARD_TELEVIDEO_TC7010
  	default "tyan_s2892.c" if BOARD_TYAN_S2892
