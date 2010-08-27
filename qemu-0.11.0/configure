@@ -1084,12 +1084,12 @@ EOF
   
   LUA_CFLAGS="-I/usr/local/include"
   LUA_LDFLAGS="-L/usr/local/lib -llua"
-  if $cc $EXTRA_CFLAGS $EXTRA_LDFLAGS $ARCH_CFLAGS $LUA_CFLAGS $LUA_LDFLAGS -o $TMPE $TMPC -llua > /dev/null 2> /dev/null ; then
+  if $cc $EXTRA_CFLAGS $EXTRA_LDFLAGS $ARCH_CFLAGS $LUA_CFLAGS $LUA_LDFLAGS -o $TMPE $TMPC -llua -lm > /dev/null 2> /dev/null; then
     serialice=yes
   else
     LUA_CFLAGS=`pkg-config --cflags lua`
     LUA_LDFLAGS=`pkg-config --libs lua`
-    if $cc $EXTRA_CFLAGS $EXTRA_LDFLAGS $ARCH_CFLAGS $LUA_CFLAGS $LUA_LDFLAGS -o $TMPE $TMPC -llua > /dev/null 2> /dev/null ; then
+    if $cc $EXTRA_CFLAGS $EXTRA_LDFLAGS $ARCH_CFLAGS $LUA_CFLAGS $LUA_LDFLAGS -o $TMPE $TMPC -llua -lm > /dev/null 2> /dev/null ; then
       serialice=yes
     else
       echo
