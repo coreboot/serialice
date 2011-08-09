@@ -109,9 +109,9 @@ config BOARD_INIT
 	default "asus_m4a77td-pro.c" if BOARD_ASUS_M4A77TD_PRO
 	default "asrock_939a785gmh.c" if BOARD_ASROCK_939A785GMH
 	default "televideo_tc7010.c" if BOARD_TELEVIDEO_TC7010
- 	default "tyan_s2892.c" if BOARD_TYAN_S2892
- 	default "tyan_s2895.c" if BOARD_TYAN_S2895
- 	default "tyan_s2912.c" if BOARD_TYAN_S2912
+	default "tyan_s2892.c" if BOARD_TYAN_S2892
+	default "tyan_s2895.c" if BOARD_TYAN_S2895
+	default "tyan_s2912.c" if BOARD_TYAN_S2912
 	default "hp_dl165_g6.c" if BOARD_HP_DL165_G6
 	default "wyse_s50.c" if BOARD_WYSE_S50
 choice
