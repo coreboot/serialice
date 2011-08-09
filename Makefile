@@ -47,3 +47,16 @@ release:
 	@tar cjf $(TARBALL) SerialICE-$(SERIALICE_VERSION)
 	@rm -rf SerialICE-$(SERIALICE_VERSION)
 	@printf "done.\n\n"
+
+buildall:
+	@printf "\nBuild SerialICE's QEmu\n"
+	@cd qemu-$(VERSION); ./configure --enable-serialice --target-list=i386-softmmu && $(MAKE) CC="ccache gcc" HOST_CC="ccache gcc"
+	@printf "\nBuild SerialICE target stubs\n"
+	@cd SerialICE; \
+	for board in `grep "^config *BOARD_" Kconfig |cut -d' ' -f2 |grep -v "^BOARD_INIT$$"`; do \
+		echo CONFIG_$$board=y > .config; \
+		yes "" | $(MAKE) HOSTCC="ccache gcc" oldconfig && \
+		$(MAKE) HOSTCC="ccache gcc" || exit 1; \
+		mv build build-$$board; \
+	done
+

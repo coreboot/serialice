@@ -65,12 +65,12 @@ LDFLAGS=-Wa,--divide -nostdlib -nostartfiles -static -T serialice.ld
 
 SOURCES = serialice.c serialice.h chipset.c serial.c types.h mainboard/*.c
 
-HOSTCC = gcc
-HOSTCXX = g++
+HOSTCC ?= gcc
+HOSTCXX ?= g++
 HOSTCFLAGS := -O2 -Wall -I$(srck) -I$(objk)
 HOSTCXXFLAGS := -I$(srck) -I$(objk)
 
-INCLUDES = -Ibuild
+INCLUDES = -I$(obj)
 CFLAGS := -Wall -Werror -Os $(INCLUDES)
 OBJECTS = serialice.o
 OBJS    = $(patsubst %,$(obj)/%,$(OBJECTS))
@@ -125,7 +125,12 @@ $(obj)/serialice.S: $(SOURCES) $(obj)/romcc
 	$(Q)cat $@.tmp >> $@
 	$(Q)rm $@.tmp
 
-$(obj)/romcc: $(src)/util/romcc.c
+
+$(obj)/romcc.o: $(src)/util/romcc.c
+	$(Q)printf "  HOSTCC   $(subst $(shell pwd)/,,$(@))\n"
+	$(Q)$(HOSTCC) $(HOSTCFLAGS) -c -o $@ $^
+
+$(obj)/romcc: $(obj)/romcc.o
 	$(Q)printf "  HOSTCC   $(subst $(shell pwd)/,,$(@))\n"
 	$(Q)$(HOSTCC) $(HOSTCFLAGS) $(STACK) -o $@ $^
 
