@@ -99,6 +99,9 @@ config BOARD_WYSE_S50
 config BOARD_ASROCK_P4I65GV
 	bool "ASRock P4i65GV"
 
+config BOARD_ASUS_P4P800_VM
+	bool "ASUS P4P800-VM"
+
 endchoice
 
 config BOARD_INIT
@@ -124,6 +127,7 @@ config BOARD_INIT
 	default "hp_dl165_g6.c" if BOARD_HP_DL165_G6
 	default "wyse_s50.c" if BOARD_WYSE_S50
 	default "asrock_p4i65gv.c" if BOARD_ASROCK_P4I65GV
+	default "asus_p4p800-vm.c" if BOARD_ASUS_P4P800_VM
 
 config SOUTHBRIDGE_INIT
 	string
