@@ -96,6 +96,9 @@ config BOARD_HP_DL165_G6
 config BOARD_WYSE_S50
 	bool "WYSE S50"
 
+config BOARD_ASROCK_P4I65GV
+	bool "ASRock P4i65GV"
+
 endchoice
 
 config BOARD_INIT
@@ -120,6 +123,7 @@ config BOARD_INIT
 	default "tyan_s2912.c" if BOARD_TYAN_S2912
 	default "hp_dl165_g6.c" if BOARD_HP_DL165_G6
 	default "wyse_s50.c" if BOARD_WYSE_S50
+	default "asrock_p4i65gv.c" if BOARD_ASROCK_P4I65GV
 choice
 	prompt "Target communication"
 
@@ -309,5 +313,3 @@ config BUILD_XMMSTACK
 	bool
 	select HAVE_SSE
 	depends on !EXPERT
-
-
