@@ -54,6 +54,27 @@ function pci_bdf(bus, dev, func, reg)
 	return 0x80000000 + bus*65536 + dev*2048 + func*256 + reg
 end
 
+car_regions = { list = nil }
+
+function new_car_region(start, size)
+	car_regions.list = { next = car_regions.list, start = start, size = size }
+	SerialICE_register_physical(start, size)
+end
+
+function is_car(addr)
+	if car_regions.list == nil then
+		return false
+	end
+	local l = car_regions.list
+	while l do
+		if addr >= l.start and addr < l.start + l.size then
+			return true
+		end
+		l = l.next
+	end
+	return false
+end
+
 function new_list()
 	return { list = nil }
 end
@@ -389,6 +410,12 @@ function SerialICE_memory_read_filter(addr, size)
 	-- 	return false, false, 0x23232323
 	-- end
 
+	-- Cache-As-RAM is exclusively
+	-- handled by Qemu (RAM backed)
+	if is_car(addr) then
+		return false, true, 0
+	end
+
 	if	addr >= 0xfff00000 and addr <= 0xffffffff then
 		-- ROM accesses go to Qemu only
 		return false, true, 0
@@ -401,14 +428,6 @@ function SerialICE_memory_read_filter(addr, size)
 		-- Intel chipset BARs are exclusively 
 		-- handled by the SerialICE target
 		return true, false, 0
-	elseif	addr >= 0xffd80000 and addr <= 0xffdfffff then
-		-- coreboot Cache-As-RAM is exclusively
-		-- handled by Qemu (RAM backed)
-		return false, true, 0
-	elseif	addr >= 0xffbc0000 and addr <= 0xffbfffff then
-		-- AMI Cache-As-RAM is exclusively
-		-- handled by Qemu (RAM backed)
-		return false, true, 0
 	elseif	addr >= 0xfee00000 and addr <= 0xfeefffff then
 		-- Local APIC.. Hm, not sure what to do here.
 		-- We should avoid that someone wakes up cores
@@ -467,6 +486,12 @@ end
 --   result	Data to be written (may be changed in filter)
 
 function SerialICE_memory_write_filter(addr, size, data)
+	-- Cache-As-RAM is exclusively
+	-- handled by Qemu (RAM backed)
+	if is_car(addr) then
+		return false, true, data
+	end
+
 	if	addr >= 0xfff00000 and addr <= 0xffffffff then
 		printf("\nWARNING: write access to ROM?\n")
 		-- ROM accesses go to Qemu only
@@ -480,14 +505,6 @@ function SerialICE_memory_write_filter(addr, size, data)
 		-- Intel chipset BARs are exclusively 
 		-- handled by the SerialICE target
 		return true, false, data
-	elseif	addr >= 0xffd80000 and addr <= 0xffdfffff then
-		-- coreboot Cache-As-RAM is exclusively
-		-- handled by Qemu (RAM backed)
-		return false, true, data
-	elseif	addr >= 0xffbc0000 and addr <= 0xffbfffff then
-		-- AMI Cache-As-RAM is exclusively
-		-- handled by Qemu (RAM backed)
-		return false, true, data
 	elseif	addr >= 0xfee00000 and addr <= 0xfeefffff then
 		-- Local APIC.. Hm, not sure what to do here.
 		-- We should avoid that someone wakes up cores
@@ -707,11 +724,14 @@ printf("SerialICE: Registering physical memory areas for Cache-As-Ram:\n")
 
 -- Register Phoenix BIOS Cache as RAM area as normal RAM 
 -- 0xffd80000 - 0xffdfffff
-SerialICE_register_physical(0xffd80000, 0x80000)
+new_car_region(0xffd80000, 0x80000)
 
 -- Register AMI BIOS Cache as RAM area as normal RAM
 -- 0xffbc0000 - 0xffbfffff
-SerialICE_register_physical(0xffbc0000, 0x40000)
+new_car_region(0xffbc0000, 0x40000)
+
+-- current Phoenix BIOS
+new_car_region(0xde000, 0x2000)
 
 printf("SerialICE: LUA script initialized.\n")
 
