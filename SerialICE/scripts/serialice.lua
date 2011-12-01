@@ -98,8 +98,48 @@ function walk_list(list, ...)
 end
 
 io_write_hooks = new_list()
+io_write_log_hooks = new_list()
+io_read_hooks = new_list()
+io_read_log_hooks = new_list()
 msr_write_hooks = new_list()
 msr_read_hooks = new_list()
+
+prepend_to_list(io_write_log_hooks, function(port, size, data, target)
+	if port == 0xcf9 then
+		printf("Reset triggered at %04x:%04x\n", regs.cs, regs.eip);
+		return true
+	end
+end)
+
+prepend_to_list(io_write_log_hooks, function(port, size, data, target)
+	if port == 0xcf8 then
+		return true -- Ignore
+	end
+	if port >= 0xcfc and port <= 0xcff then
+		printf("PCI %x:%02x.%x R.%02x <= %s\n",
+			bit.band(0xff,bit.rshift(SerialICE_pci_device, 16)),
+			bit.band(0x1f,bit.rshift(SerialICE_pci_device, 11)),
+			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
+			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc)),
+			size_data(size, data))
+		return true
+	end
+end)
+
+prepend_to_list(io_read_log_hooks, function(port, size, data, target)
+	if port == 0xcf8 then
+		return true -- Ignore
+	end
+	if port >= 0xcfc and port <= 0xcff then
+		printf("PCI %x:%02x.%x R.%02x => %s\n",
+			bit.band(0xff,bit.rshift(SerialICE_pci_device, 16)),
+			bit.band(0x1f,bit.rshift(SerialICE_pci_device, 11)),
+			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
+			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc)),
+			size_data(size, data))
+		return true
+	end
+end)
 
 -- handle MTRRs
 prepend_to_list(msr_write_hooks,
@@ -657,43 +697,20 @@ end
 
 function SerialICE_io_write_log(port, size, data, target)
 	log_cs_ip()
+	if walk_list(io_write_log_hooks, port, size, data, target) then
+		return
+	end
 
 	printf("IO: out%s %04x <= %s\n", size_suffix(size), port, size_data(size, data))
-
-	-- **********************************************************
-	--
-
-	if port >= 0xcfc and port <= 0xcff then
-		printf("PCI %x:%02x.%x R.%02x\n",
-			bit.band(0xff,bit.rshift(SerialICE_pci_device, 16)),
-			bit.band(0x1f,bit.rshift(SerialICE_pci_device, 11)),
-			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
-			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc) ))
-	end
-
-	-- **********************************************************
-	--
-
-	if port == 0xcf9 then
-		printf("Reset triggered at %04x:%04x\n", regs.cs, regs.eip);
-	end
 end
 
 function SerialICE_io_read_log(port, size, data, target)
 	log_cs_ip()
+	if walk_list(io_read_log_hooks, port, size, data, target) then
+		return
+	end
 
 	printf("IO:  in%s %04x => %s\n", size_suffix(size), port, size_data(size, data))
-
-	-- **********************************************************
-	--
-
-	if port >= 0xcfc and port <= 0xcff then
-		printf("PCI %x:%02x.%x R.%02x\n",
-			bit.band(0xff,bit.rshift(SerialICE_pci_device, 16)),
-			bit.band(0x1f,bit.rshift(SerialICE_pci_device, 11)),
-			bit.band(0x7,bit.rshift(SerialICE_pci_device, 8)),
-			bit.band(0xff,SerialICE_pci_device + (port - 0xcfc) ))
-	end
 end
 
 function SerialICE_msr_write_log(addr, hi, lo, filtered)
