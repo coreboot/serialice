@@ -50,6 +50,58 @@ function size_data(size, data)
 	end
 end
 
+function new_list()
+	return { list = nil }
+end
+
+function prepend_to_list(list, value)
+	list.list = { next = list.list, value = value }
+end
+
+function walk_list(list, ...)
+	if list == nil or list.list == nil then
+		return false
+	end
+	local l = list.list
+	while l do
+		if l.value(...) then
+			return true
+		end
+		l = l.next
+	end
+	return false
+end
+
+msr_write_hooks = new_list()
+msr_read_hooks = new_list()
+
+-- handle MTRRs
+prepend_to_list(msr_write_hooks,
+function(addr, hi, lo, filtered)
+	if addr >= 0x200 and addr < 0x210 then
+		if addr % 2 == 0 then
+			mt = lo % 0x100
+			if     mt == 0 then memtype = "Uncacheable"
+			elseif mt == 1 then memtype = "Write-Combine"
+			elseif mt == 4 then memtype = "Write-Through"
+			elseif mt == 5 then memtype = "Write-Protect"
+			elseif mt == 6 then memtype = "Write-Back"
+			else memtype = "Unknown"
+			end
+			printf("CPU: Set MTRR %x base to %08x.%08x (%s)\n", (addr - 0x200) / 2, hi, bit.band(lo, 0xffffff00), memtype)
+		else
+			if bit.band(lo, 0x800) == 0x800 then
+				valid = "valid"
+			else
+				valid = "disabled"
+			end
+			printf("CPU: Set MTRR %x mask to %08x.%08x (%s)\n", (addr - 0x200) / 2, hi, bit.band(lo, 0xfffff000), valid)
+		end
+		return true
+	end
+	return false
+end)
+
 -- In the beginning, during RAM initialization, it is essential that 
 -- all DRAM accesses are handled by the target, or RAM will not work
 -- correctly. After RAM initialization, RAM access has no "special"
@@ -606,12 +658,16 @@ end
 
 function SerialICE_msr_write_log(addr, hi, lo, filtered)
 	log_cs_ip()
-	printf("CPU: wrmsr %08x <= %08x.%08x\n", addr, hi, lo)
+	if not walk_list(msr_write_hooks, addr, hi, lo, filtered) then
+		printf("CPU: wrmsr %08x <= %08x.%08x\n", addr, hi, lo)
+	end
 end
 
 function SerialICE_msr_read_log(addr, hi, lo, filtered)
 	log_cs_ip()
-	printf("CPU: rdmsr %08x => %08x.%08x\n", addr, hi, lo)
+	if not walk_list(msr_write_hooks, addr, hi, lo, filtered) then
+		printf("CPU: rdmsr %08x => %08x.%08x\n", addr, hi, lo)
+	end
 end
 
 function SerialICE_cpuid_log(in_eax, in_ecx, out_eax, out_ebx, out_ecx, out_edx, filtered)
