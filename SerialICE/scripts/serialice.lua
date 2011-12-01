@@ -32,6 +32,23 @@ function printf(s,...)
 	return io.write(s:format(...))
 end
 
+function size_suffix(size)
+	if     size == 1 then return "b"
+	elseif size == 2 then return "w"
+	elseif size == 4 then return "l"
+	elseif size == 8 then return "ll"
+	else return string.format("invalid size: %d", size)
+	end
+end
+
+function size_data(size, data)
+	if     size == 1 then return string.format("%02x", data)
+	elseif size == 2 then return string.format("%04x", data)
+	elseif size == 4 then return string.format("%08x", data)
+	elseif size == 8 then return string.format("%16x", data)
+	else return string.format("Error: size=%x", size)
+	end
+end
 
 -- In the beginning, during RAM initialization, it is essential that 
 -- all DRAM accesses are handled by the target, or RAM will not work
@@ -494,10 +511,7 @@ function SerialICE_memory_write_log(addr, size, data, target)
 
 	log_cs_ip()
 
-	if size == 1 then	printf("MEM: writeb %08x <= %02x", addr, data)
-	elseif size == 2 then	printf("MEM: writew %08x <= %04x", addr, data)
-	elseif size == 4 then	printf("MEM: writel %08x <= %08x", addr, data)
-	end
+	printf("MEM: write%s %08x <= %s", size_suffix(size), addr, size_data(size, data))
 	if target then
 		printf(" *")
 	end
@@ -531,10 +545,7 @@ function SerialICE_memory_read_log(addr, size, data, target)
 
 	log_cs_ip()
 
-	if size == 1 then	printf("MEM:  readb %08x => %02x", addr, data)
-	elseif size == 2 then	printf("MEM:  readw %08x => %04x", addr, data)
-	elseif size == 4 then	printf("MEM:  readl %08x => %08x", addr, data)
-	end
+	printf("MEM:  read%s %08x => %s", size_suffix(size), addr, size_data(size, data))
 	if target then
 		printf(" *")
 	end
@@ -555,10 +566,7 @@ end
 function SerialICE_io_write_log(port, size, data, target)
 	log_cs_ip()
 
-	if size == 1 then	printf("IO: outb %04x <= %02x\n", port, data)
-	elseif size == 2 then	printf("IO: outw %04x <= %04x\n", port, data)
-	elseif size == 4 then	printf("IO: outl %04x <= %08x\n", port, data)
-	end
+	printf("IO: out%s %04x <= %s\n", size_suffix(size), port, size_data(size, data))
 
 	-- **********************************************************
 	--
@@ -582,10 +590,7 @@ end
 function SerialICE_io_read_log(port, size, data, target)
 	log_cs_ip()
 
-	if size == 1 then	printf("IO:  inb %04x => %02x\n", port, data)
-	elseif size == 2 then	printf("IO:  inw %04x => %04x\n", port, data)
-	elseif size == 4 then	printf("IO:  inl %04x => %08x\n", port, data)
-	end
+	printf("IO:  in%s %04x => %s\n", size_suffix(size), port, size_data(size, data))
 
 	-- **********************************************************
 	--
