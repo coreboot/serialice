@@ -123,5 +123,14 @@ static void pnp_exit_ext_func_mode_ite(u16 port)
 	pnp_write_register(port, 0x02, 0x02);
 }
 
+#ifndef CONFIG_SOUTHBRIDGE_INIT
+#define CONFIG_SOUTHBRIDGE_INIT "types.h"
+#endif
+#include CONFIG_SOUTHBRIDGE_INIT
+
+#ifndef CONFIG_SUPERIO_INIT
+#define CONFIG_SUPERIO_INIT "types.h"
+#endif
+#include CONFIG_SUPERIO_INIT
 #include MAINBOARD
 

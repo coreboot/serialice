@@ -124,6 +124,16 @@ config BOARD_INIT
 	default "hp_dl165_g6.c" if BOARD_HP_DL165_G6
 	default "wyse_s50.c" if BOARD_WYSE_S50
 	default "asrock_p4i65gv.c" if BOARD_ASROCK_P4I65GV
+
+config SOUTHBRIDGE_INIT
+	string
+	default "southbridge/intel-ich7.c" if BOARD_KONTRON_986LCD_M
+
+config SUPERIO_INIT
+	string
+	default "superio/winbond-w83627thg.c" if BOARD_KONTRON_986LCD_M
+
+
 choice
 	prompt "Target communication"
 
@@ -192,6 +202,16 @@ choice
 	default SERIAL_115200
 	depends on SERIAL
 
+config SERIAL_460800
+	bool "460800 bps"
+	help
+	  Set serial port speed to 460800 bps.
+
+config SERIAL_230400
+	bool "230400 bps"
+	help
+	  Set serial port speed to 230400 bps.
+
 config SERIAL_115200
 	bool "115200 bps"
 	help
@@ -221,6 +241,8 @@ endchoice
 
 config SERIAL_BAUDRATE
 	int
+	default 460800 if SERIAL_460800
+	default 230400 if SERIAL_230400
 	default 115200 if SERIAL_115200
 	default 57600 if SERIAL_57600
 	default 38400 if SERIAL_38400

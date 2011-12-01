@@ -21,12 +21,12 @@
 #include <serialice.h>
 #include <io.h>
 
-/* SIO functions */
-#include "serial.c"
-
 /* Hardware specific functions */
 
 #include "chipset.c"
+
+/* SIO functions */
+#include "serial.c"
 
 /* Accessor functions */
 

@@ -120,7 +120,7 @@ $(obj)/serialice.elf: $(obj)/serialice.o $(obj)/start.o $(src)/serialice.ld
 
 $(obj)/serialice.S: $(SOURCES) $(obj)/romcc
 	$(Q)printf "  ROMCC    $(subst $(shell pwd)/,,$(@))\n"
-	$(Q)$(obj)/romcc -mcpu=i386 $(INCLUDES) -I. -Imainboard -DVERSION=\"$(VERSION)\" -o $@.tmp $<
+	$(Q)$(obj)/romcc -mcpu=i386 $(INCLUDES) -I. -Imainboard -Isouthbridge -Isuperio -DVERSION=\"$(VERSION)\" -o $@.tmp $<
 	$(Q)printf ".section \".rom.text\"\n.globl main\nmain:\n" > $@
 	$(Q)cat $@.tmp >> $@
 	$(Q)rm $@.tmp
