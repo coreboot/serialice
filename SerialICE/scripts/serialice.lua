@@ -50,6 +50,10 @@ function size_data(size, data)
 	end
 end
 
+function pci_bdf(bus, dev, func, reg)
+	return 0x80000000 + bus*65536 + dev*2048 + func*256 + reg
+end
+
 function new_list()
 	return { list = nil }
 end
@@ -72,6 +76,7 @@ function walk_list(list, ...)
 	return false
 end
 
+io_write_hooks = new_list()
 msr_write_hooks = new_list()
 msr_read_hooks = new_list()
 
@@ -101,6 +106,27 @@ function(addr, hi, lo, filtered)
 	end
 	return false
 end)
+
+function trim (s)
+	return (string.gsub(s, "^%s*(.-)%s*$", "%1"))
+end
+
+mainboard = trim(SerialICE_mainboard)
+
+if northbridge == "intel-i945" then
+	prepend_to_list(io_write_hooks, function(port, size, data, filter)
+		if port == 0xcfc then
+			-- Catch PCIe base address
+			if SerialICE_pci_device == pci_bdf(0,0,0,0x48) then
+				PCIe_bar  = bit.band(0xfc000000,data) % 0x100000000
+				PCIe_size = 64 * 1024 -- hard coded for now.
+				printf("PCIe BAR set up: 0x%08x\n", PCIe_bar)
+				return true
+			end
+		end
+		return false
+	end)
+end
 
 -- In the beginning, during RAM initialization, it is essential that 
 -- all DRAM accesses are handled by the target, or RAM will not work
@@ -187,6 +213,10 @@ PCIe_size = 0
 --   data	Value returned if the write was *not* intercepted
 
 function SerialICE_io_write_filter(port, size, data)
+	filter = { filter = false, data = data }
+	if walk_list(io_write_hooks, port, size, data, filter) then
+		return filter.filter, filter.data
+	end
 	-- **********************************************************
 	--
 	-- PCI config space handling
@@ -203,13 +233,6 @@ function SerialICE_io_write_filter(port, size, data)
 		if SerialICE_pci_device == 0x8000f880 then
 			printf("LPC (filtered)\n")
 			return true, data
-		end
-
-		-- Catch PCIe base address
-		if SerialICE_pci_device == 0x80000048 then
-			PCIe_bar  = bit.band(0xfc000000,data)
-			PCIe_size = 64 * 1024 -- hard coded for now.
-			printf("PCIe BAR set up: 0x%08x\n", PCIe_bar)
 		end
 
 		return false, data
@@ -369,7 +392,7 @@ function SerialICE_memory_read_filter(addr, size)
 	if	addr >= 0xfff00000 and addr <= 0xffffffff then
 		-- ROM accesses go to Qemu only
 		return false, true, 0
-	elseif	addr >= 0xf0000000 and addr <= 0xf3ffffff then
+	elseif	addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
 		-- PCIe MMIO config space accesses are
 		-- exclusively handled by the SerialICE
 		-- target
@@ -448,7 +471,7 @@ function SerialICE_memory_write_filter(addr, size, data)
 		printf("\nWARNING: write access to ROM?\n")
 		-- ROM accesses go to Qemu only
 		return false, true, data
-	elseif	addr >= 0xf0000000 and addr <= 0xf3ffffff then
+	elseif	addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
 		-- PCIe MMIO config space accesses are
 		-- exclusively handled by the SerialICE
 		-- target
