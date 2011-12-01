@@ -209,6 +209,9 @@ ip_logging = false
 
 SerialICE_pci_device = 0
 
+rom_size = 4 * 1024 * 1024
+rom_base = 0x100000000 - rom_size
+
 -- SerialICE_io_read_filter is the filter function for IO reads.
 --
 -- Parameters:
@@ -456,7 +459,7 @@ function SerialICE_memory_read_filter(addr, size)
 		return false, true, 0
 	end
 
-	if	addr >= 0xfff00000 and addr <= 0xffffffff then
+	if	addr >= rom_base and addr <= 0xffffffff then
 		-- ROM accesses go to Qemu only
 		return false, true, 0
 	elseif	addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
@@ -532,7 +535,7 @@ function SerialICE_memory_write_filter(addr, size, data)
 		return false, true, data
 	end
 
-	if	addr >= 0xfff00000 and addr <= 0xffffffff then
+	if	addr >= rom_base and addr <= 0xffffffff then
 		printf("\nWARNING: write access to ROM?\n")
 		-- ROM accesses go to Qemu only
 		return false, true, data
@@ -671,7 +674,7 @@ function SerialICE_memory_read_log(addr, size, data, target)
 	if addr >= 0xe0000 and addr <= 0xfffff and not log_rom_access then
 		return
 	end
-	if addr >= 0xfff00000 and addr <= 0xffffffff and not log_rom_access then
+	if addr >= rom_base and addr <= 0xffffffff and not log_rom_access then
 		return
 	end
 
