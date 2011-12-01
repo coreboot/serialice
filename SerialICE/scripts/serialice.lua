@@ -97,12 +97,40 @@ function walk_list(list, ...)
 	return false
 end
 
-io_write_hooks = new_list()
-io_write_log_hooks = new_list()
 io_read_hooks = new_list()
+io_write_hooks = new_list()
 io_read_log_hooks = new_list()
-msr_write_hooks = new_list()
+io_write_log_hooks = new_list()
+
 msr_read_hooks = new_list()
+msr_write_hooks = new_list()
+
+mem_read_log_hooks = new_list()
+mem_write_log_hooks = new_list()
+
+prepend_to_list(mem_read_log_hooks, function(addr, size, data, target)
+	if (PCIe_bar ~= 0) and addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
+		printf("PCIe %x:%02x.%x R.%02x => %s\n",
+			bit.band(0xff,bit.rshift(addr, 20)),
+			bit.band(0x1f,bit.rshift(addr, 15)),
+			bit.band(0x7,bit.rshift(addr, 12)),
+			bit.band(0xfff,addr),
+			size_data(size, data))
+		return true
+	end
+end)
+
+prepend_to_list(mem_write_log_hooks, function(addr, size, data, target)
+	if (PCIe_bar ~= 0) and addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
+		printf("PCIe %x:%02x.%x R.%02x <= %s\n",
+			bit.band(0xff,bit.rshift(addr, 20)),
+			bit.band(0x1f,bit.rshift(addr, 15)),
+			bit.band(0x7,bit.rshift(addr, 12)),
+			bit.band(0xfff,addr),
+			size_data(size, data))
+		return true
+	end
+end)
 
 prepend_to_list(io_write_log_hooks, function(port, size, data, target)
 	if port == 0xcf9 then
@@ -646,22 +674,15 @@ function SerialICE_memory_write_log(addr, size, data, target)
 
 	log_cs_ip()
 
+	if walk_list(mem_write_log_hooks, addr, size, data, target) then
+		return
+	end
+
 	printf("MEM: write%s %08x <= %s", size_suffix(size), addr, size_data(size, data))
 	if target then
 		printf(" *")
 	end
 	printf("\n")
-
-	-- **********************************************************
-	--
-
-	if (PCIe_bar ~= 0) and addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
-		printf("PCIe %x:%02x.%x R.%02x\n",
-			bit.band(0xff,bit.rshift(addr, 20)),
-			bit.band(0x1f,bit.rshift(addr, 15)),
-			bit.band(0x7,bit.rshift(addr, 12)),
-			bit.band(0xfff,addr))
-	end
 end
 
 function SerialICE_memory_read_log(addr, size, data, target)
@@ -680,22 +701,15 @@ function SerialICE_memory_read_log(addr, size, data, target)
 
 	log_cs_ip()
 
+	if walk_list(mem_read_log_hooks, addr, size, data, target) then
+		return
+	end
+
 	printf("MEM:  read%s %08x => %s", size_suffix(size), addr, size_data(size, data))
 	if target then
 		printf(" *")
 	end
 	printf("\n")
-
-	-- **********************************************************
-	--
-
-	if (PCIe_bar ~= 0) and addr >= PCIe_bar and addr <= (PCIe_bar + PCIe_size) then
-		printf("PCIe %x:%02x.%x R.%02x\n",
-			bit.band(0xff,bit.rshift(addr, 20)),
-			bit.band(0x1f,bit.rshift(addr, 15)),
-			bit.band(0x7,bit.rshift(addr, 12)),
-			bit.band(0xfff,addr))
-	end
 end
 
 function SerialICE_io_write_log(port, size, data, target)
