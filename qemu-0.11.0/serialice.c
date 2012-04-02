@@ -214,7 +214,11 @@ static int serialice_lua_registers(void)
 
     lua_newuserdata(L, sizeof(void *));
     luaL_newmetatable(L, "registermt");
+#if LUA_VERSION_NUM <= 501
     luaL_register(L, NULL, registermt);
+#elif LUA_VERSION_NUM >= 502
+    luaL_setfuncs(L, registermt, 0);
+#endif
     lua_setmetatable(L, -2);
     lua_setglobal(L, "regs");
 
@@ -235,7 +239,7 @@ static int serialice_lua_init(void)
 
     /* Set global variable SerialICE_mainboard */
     lua_pushstring(L, serialice_mainboard);
-    lua_setfield(L, LUA_GLOBALSINDEX, "SerialICE_mainboard");
+    lua_setglobal(L, "SerialICE_mainboard");
 
     /* Enable Register Access */
     serialice_lua_registers();
@@ -283,7 +287,7 @@ static int serialice_io_read_filter(uint32_t * data, uint16_t port, int size)
 {
     int ret, result;
 
-    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_read_filter");
+    lua_getglobal(L, "SerialICE_io_read_filter");
     lua_pushinteger(L, port);   // port
     lua_pushinteger(L, size);   // datasize
     result = lua_pcall(L, 2, 2, 0);
@@ -303,7 +307,7 @@ static int serialice_io_write_filter(uint32_t * data, uint16_t port, int size)
 {
     int ret, result;
 
-    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_write_filter");
+    lua_getglobal(L, "SerialICE_io_write_filter");
     lua_pushinteger(L, port);   // port
     lua_pushinteger(L, size);   // datasize
     lua_pushinteger(L, *data);  // data
@@ -329,7 +333,7 @@ static int serialice_memory_read_filter(uint32_t addr, uint32_t * data,
 {
     int ret = 0, result;
 
-    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_read_filter");
+    lua_getglobal(L, "SerialICE_memory_read_filter");
     lua_pushinteger(L, addr);   // addr
     lua_pushinteger(L, size);   // datasize
     result = lua_pcall(L, 2, 3, 0);
@@ -359,7 +363,7 @@ static int serialice_memory_write_filter(uint32_t addr, int size,
     int ret = 0, result;
     int write_to_qemu, write_to_serialice;
 
-    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_write_filter");
+    lua_getglobal(L, "SerialICE_memory_write_filter");
     lua_pushinteger(L, addr);   // address
     lua_pushinteger(L, size);   // datasize
     lua_pushinteger(L, *data);  // data
@@ -390,9 +394,9 @@ static int serialice_msr_filter(int flags, uint32_t addr, uint32_t * hi,
     int ret, result;
 
     if (flags & FILTER_WRITE) {
-        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_write_filter");
+        lua_getglobal(L, "SerialICE_msr_write_filter");
     } else {
-        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_read_filter");
+        lua_getglobal(L, "SerialICE_msr_read_filter");
     }
 
     lua_pushinteger(L, addr);   // port
@@ -420,7 +424,7 @@ static int serialice_cpuid_filter(uint32_t eax, uint32_t ecx,
 {
     int ret, result;
 
-    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_cpuid_filter");
+    lua_getglobal(L, "SerialICE_cpuid_filter");
 
     lua_pushinteger(L, eax);    // eax before calling
     lua_pushinteger(L, ecx);    // ecx before calling
@@ -464,13 +468,13 @@ static void serialice_log(int flags, uint32_t data, uint32_t addr, int size)
     int result;
 
     if ((flags & LOG_WRITE) && (flags & LOG_MEMORY)) {
-        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_write_log");
+        lua_getglobal(L, "SerialICE_memory_write_log");
     } else if (!(flags & LOG_WRITE) && (flags & LOG_MEMORY)) {
-        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_memory_read_log");
+        lua_getglobal(L, "SerialICE_memory_read_log");
     } else if ((flags & LOG_WRITE) && !(flags & LOG_MEMORY)) {
-        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_write_log");
+        lua_getglobal(L, "SerialICE_io_write_log");
     } else {                    // if (!(flags & LOG_WRITE) && !(flags & LOG_MEMORY))
-        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_io_read_log");
+        lua_getglobal(L, "SerialICE_io_read_log");
     }
 
     lua_pushinteger(L, addr);   // addr/port
@@ -493,9 +497,9 @@ static void serialice_msr_log(int flags, uint32_t addr, uint32_t hi,
     int result;
 
     if (flags & LOG_WRITE) {
-        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_write_log");
+        lua_getglobal(L, "SerialICE_msr_write_log");
     } else {                    // if (!(flags & LOG_WRITE))
-        lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_msr_read_log");
+        lua_getglobal(L, "SerialICE_msr_read_log");
     }
 
     lua_pushinteger(L, addr);   // addr/port
@@ -515,7 +519,7 @@ static void serialice_cpuid_log(uint32_t eax, uint32_t ecx, cpuid_regs_t res,
 {
     int result;
 
-    lua_getfield(L, LUA_GLOBALSINDEX, "SerialICE_cpuid_log");
+    lua_getglobal(L, "SerialICE_cpuid_log");
 
     lua_pushinteger(L, eax);    // input: eax
     lua_pushinteger(L, ecx);    // input: ecx
