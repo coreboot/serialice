@@ -165,6 +165,7 @@ guest_base=""
 uname_release=""
 io_thread="no"
 mixemu="no"
+serialice="no"
 aix="no"
 blobs="yes"
 pkgversion=""
@@ -712,6 +713,8 @@ for opt do
   ;;
   --enable-mixemu) mixemu="yes"
   ;;
+  --enable-serialice) serialice="yes"
+  ;;
   --disable-linux-aio) linux_aio="no"
   ;;
   --enable-linux-aio) linux_aio="yes"
@@ -962,6 +965,7 @@ echo "                           Available cards: $audio_possible_cards"
 echo "  --block-drv-whitelist=L  set block driver whitelist"
 echo "                           (affects only QEMU, not qemu-img)"
 echo "  --enable-mixemu          enable mixer emulation"
+echo "  --enable-serialice       enable SerialICE debugger support"
 echo "  --disable-xen            disable xen backend driver support"
 echo "  --enable-xen             enable xen backend driver support"
 echo "  --disable-brlapi         disable BrlAPI"
@@ -1715,6 +1719,41 @@ for drv in $audio_drv_list; do
     ;;
     esac
 done
+
+##########################################
+# LUA probe
+
+if test "$serialice" != "no" ; then
+  serialice=no
+  cat > $TMPC << EOF
+#include <stdint.h>
+#include <lua.h>
+#include <lauxlib.h>
+#include <stdlib.h>
+#include <stdio.h>
+static lua_State *L;
+int main(void) { L=luaL_newstate(); return 0; }
+EOF
+
+  lua_cflags="-I/usr/local/include"
+  lua_ldflags="-L/usr/local/lib -llua"
+  if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
+    serialice=yes
+    libs_softmmu="$lua_ldflags $libs_softmmu"
+  else
+    lua_cflags=`$pkg_config --cflags lua`
+    lua_ldflags=`$pkg_config --libs lua`
+    if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
+      serialice=yes
+      libs_softmmu="$lua_ldflags $libs_softmmu"
+    else
+      echo
+      echo "Error LUA not found, can't build with SerialICE support."
+      echo 
+      exit 1
+    fi
+  fi
+fi # test "$serialice"
 
 ##########################################
 # BrlAPI probe
@@ -2675,6 +2714,7 @@ echo "Audio drivers     $audio_drv_list"
 echo "Extra audio cards $audio_card_list"
 echo "Block whitelist   $block_drv_whitelist"
 echo "Mixer emulation   $mixemu"
+echo "SerialICE support $serialice"
 echo "VNC support       $vnc"
 if test "$vnc" = "yes" ; then
     echo "VNC TLS support   $vnc_tls"
@@ -2840,6 +2880,10 @@ if test "$mixemu" = "yes" ; then
 fi
 if test "$vnc" = "yes" ; then
   echo "CONFIG_VNC=y" >> $config_host_mak
+fi
+if test "$serialice" = "yes" ; then
+  echo "CONFIG_SERIALICE=y" >> $config_host_mak
+  echo "SERIALICE_CFLAGS=$lua_cflags" >> $config_host_mak
 fi
 if test "$vnc_tls" = "yes" ; then
   echo "CONFIG_VNC_TLS=y" >> $config_host_mak
@@ -3087,7 +3131,7 @@ echo "HELPER_CFLAGS=$helper_cflags" >> $config_host_mak
 echo "LDFLAGS=$LDFLAGS" >> $config_host_mak
 echo "ARLIBS_BEGIN=$arlibs_begin" >> $config_host_mak
 echo "ARLIBS_END=$arlibs_end" >> $config_host_mak
-echo "LIBS+=$LIBS" >> $config_host_mak
+echo "LIBS+= $LIBS" >> $config_host_mak
 echo "LIBS_TOOLS+=$libs_tools" >> $config_host_mak
 echo "EXESUF=$EXESUF" >> $config_host_mak
 

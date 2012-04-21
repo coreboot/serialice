@@ -180,6 +180,21 @@ STEXI
 Output logs to @var{filename}.
 ETEXI
 
+#ifdef CONFIG_SERIALICE
+    {
+        .name       = "lua",
+        .args_type  = "",
+        .params     = "",
+        .help       = "go to lua shell",
+        .mhandler.cmd_lua = do_lua,
+    },
+#endif
+STEXI
+@item lua
+@findex lua
+go to lua shell.
+ETEXI
+
 #ifdef CONFIG_SIMPLE_TRACE
     {
         .name       = "trace-event",

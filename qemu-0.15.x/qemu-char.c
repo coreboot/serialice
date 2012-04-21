@@ -860,7 +860,7 @@ static void cfmakeraw (struct termios *termios_p)
 
 #if defined(__linux__) || defined(__sun__) || defined(__FreeBSD__) \
     || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) \
-    || defined(__GLIBC__)
+    || defined(__GLIBC__) || defined(__APPLE__)
 
 typedef struct {
     int fd;
@@ -2536,7 +2536,7 @@ static const struct {
 #endif
 #if defined(__linux__) || defined(__sun__) || defined(__FreeBSD__) \
     || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) \
-    || defined(__FreeBSD_kernel__)
+    || defined(__FreeBSD_kernel__) || defined(__APPLE__)
     { .name = "tty",       .open = qemu_chr_open_tty },
 #endif
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__) \

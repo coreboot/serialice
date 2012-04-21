@@ -119,6 +119,12 @@ bt-host.o: QEMU_CFLAGS += $(BLUEZ_CFLAGS)
 version.o: $(SRC_PATH)/version.rc config-host.mak
 	$(call quiet-command,$(WINDRES) -I. -o $@ $<,"  RC    $(TARGET_DIR)$@")
 
+ifdef CONFIG_SERIALICE
+serialice.o: serialice.c serialice.h
+endif
+
+serialice.o: QEMU_CFLAGS += $(SERIALICE_CFLAGS)
+
 version-obj-$(CONFIG_WIN32) += version.o
 ######################################################################
 # Support building shared library libcacard

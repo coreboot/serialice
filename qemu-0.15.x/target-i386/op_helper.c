@@ -24,6 +24,7 @@
 
 //#define DEBUG_PCALL
 
+#include "serialice.h"
 
 #ifdef DEBUG_PCALL
 #  define LOG_PCALL(...) qemu_log_mask(CPU_LOG_PCALL, ## __VA_ARGS__)
@@ -556,31 +557,64 @@ void helper_check_iol(uint32_t t0)
 
 void helper_outb(uint32_t port, uint32_t data)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        serialice_outb(data & 0xff, port);
+        return;
+    }
+#endif
     cpu_outb(port, data & 0xff);
 }
 
 target_ulong helper_inb(uint32_t port)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        return (target_ulong) serialice_inb(port);
+    }
+#endif
     return cpu_inb(port);
 }
 
 void helper_outw(uint32_t port, uint32_t data)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        serialice_outw(data & 0xffff, port);
+        return;
+    }
+#endif
     cpu_outw(port, data & 0xffff);
 }
 
 target_ulong helper_inw(uint32_t port)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        return (target_ulong) serialice_inw(port);
+    }
+#endif
     return cpu_inw(port);
 }
 
 void helper_outl(uint32_t port, uint32_t data)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        serialice_outl(data & 0xffffffff, port);
+        return;
+    }
+#endif
     cpu_outl(port, data);
 }
 
 target_ulong helper_inl(uint32_t port)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        return (target_ulong) serialice_inl(port);
+    }
+#endif
     return cpu_inl(port);
 }
 
@@ -1982,6 +2016,18 @@ void helper_cpuid(void)
 
     helper_svm_check_intercept_param(SVM_EXIT_CPUID, 0);
 
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        cpuid_regs_t ret;
+        ret = serialice_cpuid((uint32_t) EAX, (uint32_t) ECX);
+        EAX = ret.eax;
+        EBX = ret.ebx;
+        ECX = ret.ecx;
+        EDX = ret.edx;
+        return;
+    }
+#endif
+
     cpu_x86_cpuid(env, (uint32_t)EAX, (uint32_t)ECX, &eax, &ebx, &ecx, &edx);
     EAX = eax;
     EBX = ebx;
@@ -3053,6 +3099,13 @@ void helper_wrmsr(void)
 
     val = ((uint32_t)EAX) | ((uint64_t)((uint32_t)EDX) << 32);
 
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        serialice_wrmsr(val, (uint32_t) ECX, (uint32_t) EDI);
+        return;
+    }
+#endif
+
     switch((uint32_t)ECX) {
     case MSR_IA32_SYSENTER_CS:
         env->sysenter_cs = val & 0xffff;
@@ -3185,6 +3238,15 @@ void helper_rdmsr(void)
     uint64_t val;
 
     helper_svm_check_intercept_param(SVM_EXIT_MSR, 0);
+
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        val = serialice_rdmsr((uint32_t) ECX, (uint32_t) EDI);
+        EAX = (uint32_t) (val);
+        EDX = (uint32_t) (val >> 32);
+        return;
+    }
+#endif
 
     switch((uint32_t)ECX) {
     case MSR_IA32_SYSENTER_CS:

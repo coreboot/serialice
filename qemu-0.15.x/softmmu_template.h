@@ -16,7 +16,9 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "qemu-timer.h"
+#include "serialice.h"
 
 #define DATA_SIZE (1 << SHIFT)
 
@@ -91,6 +93,16 @@ DATA_TYPE REGPARM glue(glue(__ld, SUFFIX), MMUSUFFIX)(target_ulong addr,
     unsigned long addend;
     void *retaddr;
 
+#ifdef CONFIG_SERIALICE
+    uint32_t result;
+    int caught = 0;
+    if (serialice_active && serialice_handle_load((uint32_t)addr, &result, (unsigned int) DATA_SIZE)) {
+	res = (DATA_TYPE)result;
+	caught=1;
+	goto leave_ld;
+    }
+#endif
+
     /* test if there is match for unaligned or IO access */
     /* XXX: could done more in memory macro in a non portable way */
     index = (addr >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
@@ -134,6 +146,12 @@ DATA_TYPE REGPARM glue(glue(__ld, SUFFIX), MMUSUFFIX)(target_ulong addr,
         tlb_fill(addr, READ_ACCESS_TYPE, mmu_idx, retaddr);
         goto redo;
     }
+
+#ifdef CONFIG_SERIALICE
+leave_ld:
+    if (serialice_active)
+        serialice_log_load(caught, addr, (uint32_t)res, (unsigned int)DATA_SIZE);
+#endif
     return res;
 }
 
@@ -231,6 +249,20 @@ void REGPARM glue(glue(__st, SUFFIX), MMUSUFFIX)(target_ulong addr,
     target_ulong tlb_addr;
     void *retaddr;
     int index;
+
+#ifdef CONFIG_SERIALICE
+    if (serialice_active && serialice_handle_store((uint32_t)addr, 
+        		    (uint32_t)val, (unsigned int) DATA_SIZE)) {
+        /* The memory catch mechanism does not work particularly well
+         * because of the softmmu is optimizing all accesses to Qemu
+         * "memory". Because of this we need to leave RAM "unassigned"
+         * until RAM init is done, and can't freely switch around.
+         *
+         * It's the right thing, however, to return here.
+         */
+        return;
+    }
+#endif
 
     index = (addr >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
  redo:
