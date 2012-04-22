@@ -711,15 +711,18 @@ uint8_t serialice_inb(uint16_t port)
 {
     uint8_t ret;
     uint32_t data;
+    int filtered;
 
-    if (serialice_io_read_filter(&data, port, 1)) {
-        return data & 0xff;
+    filtered = serialice_io_read_filter(&data, port, 1);
+
+    if (filtered) {
+        ret = data & 0xff;
+    } else {
+        sprintf(s->command, "*ri%04x.b", port);
+        // command read back: "\n00" (3 characters)
+        serialice_command(s->command, 3);
+        ret = (uint8_t) strtoul(s->buffer + 1, (char **)NULL, 16);
     }
-
-    sprintf(s->command, "*ri%04x.b", port);
-    // command read back: "\n00" (3 characters)
-    serialice_command(s->command, 3);
-    ret = (uint8_t) strtoul(s->buffer + 1, (char **)NULL, 16);
 
     serialice_log(LOG_READ | LOG_IO, ret, port, 1);
 
@@ -730,15 +733,18 @@ uint16_t serialice_inw(uint16_t port)
 {
     uint16_t ret;
     uint32_t data;
+    int filtered;
 
-    if (serialice_io_read_filter(&data, port, 2)) {
-        return data & 0xffff;
+    filtered = serialice_io_read_filter(&data, port, 2);
+
+    if (filtered) {
+        ret = data & 0xffff;
+    } else {
+        sprintf(s->command, "*ri%04x.w", port);
+        // command read back: "\n0000" (5 characters)
+        serialice_command(s->command, 5);
+        ret = (uint16_t) strtoul(s->buffer + 1, (char **)NULL, 16);
     }
-
-    sprintf(s->command, "*ri%04x.w", port);
-    // command read back: "\n0000" (5 characters)
-    serialice_command(s->command, 5);
-    ret = (uint16_t) strtoul(s->buffer + 1, (char **)NULL, 16);
 
     serialice_log(LOG_READ | LOG_IO, ret, port, 2);
 
@@ -749,15 +755,18 @@ uint32_t serialice_inl(uint16_t port)
 {
     uint32_t ret;
     uint32_t data;
+    int filtered;
 
-    if (serialice_io_read_filter(&data, port, 4)) {
-        return data;
+    filtered = serialice_io_read_filter(&data, port, 4);
+
+    if (filtered) {
+        ret = data;
+    } else {
+        sprintf(s->command, "*ri%04x.l", port);
+        // command read back: "\n00000000" (9 characters)
+        serialice_command(s->command, 9);
+        ret = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
     }
-
-    sprintf(s->command, "*ri%04x.l", port);
-    // command read back: "\n00000000" (9 characters)
-    serialice_command(s->command, 9);
-    ret = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
 
     serialice_log(LOG_READ | LOG_IO, ret, port, 4);
 
