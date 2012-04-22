@@ -776,46 +776,55 @@ uint32_t serialice_inl(uint16_t port)
 void serialice_outb(uint8_t data, uint16_t port)
 {
     uint32_t filtered_data = (uint32_t) data;
+    int filtered;
 
-    serialice_log(LOG_WRITE | LOG_IO, data, port, 1);
+    filtered = serialice_io_write_filter(&filtered_data, port, 1);
 
-    if (serialice_io_write_filter(&filtered_data, port, 1)) {
-        return;
+    if (filtered) {
+        data = (uint8_t) filtered_data;
+    } else {
+        data = (uint8_t) filtered_data;
+        sprintf(s->command, "*wi%04x.b=%02x", port, data);
+        serialice_command(s->command, 0);
     }
 
-    data = (uint8_t) filtered_data;
-    sprintf(s->command, "*wi%04x.b=%02x", port, data);
-    serialice_command(s->command, 0);
+    serialice_log(LOG_WRITE | LOG_IO, data, port, 1);
 }
 
 void serialice_outw(uint16_t data, uint16_t port)
 {
     uint32_t filtered_data = (uint32_t) data;
+    int filtered;
 
-    serialice_log(LOG_WRITE | LOG_IO, data, port, 2);
+    filtered = serialice_io_write_filter(&filtered_data, port, 2);
 
-    if (serialice_io_write_filter(&filtered_data, port, 2)) {
-        return;
+    if (filtered) {
+        data = (uint16_t) filtered_data;
+    } else {
+        data = (uint16_t) filtered_data;
+        sprintf(s->command, "*wi%04x.w=%04x", port, data);
+        serialice_command(s->command, 0);
     }
 
-    data = (uint16_t) filtered_data;
-    sprintf(s->command, "*wi%04x.w=%04x", port, data);
-    serialice_command(s->command, 0);
+    serialice_log(LOG_WRITE | LOG_IO, data, port, 2);
 }
 
 void serialice_outl(uint32_t data, uint16_t port)
 {
     uint32_t filtered_data = data;
+    int filtered;
 
-    serialice_log(LOG_WRITE | LOG_IO, data, port, 4);
+    filtered = serialice_io_write_filter(&filtered_data, port, 4);
 
-    if (serialice_io_write_filter(&filtered_data, port, 4)) {
-        return;
+    if (filtered) {
+        data = filtered_data;
+    } else {
+        data = filtered_data;
+        sprintf(s->command, "*wi%04x.l=%08x", port, data);
+        serialice_command(s->command, 0);
     }
 
-    data = filtered_data;
-    sprintf(s->command, "*wi%04x.l=%08x", port, data);
-    serialice_command(s->command, 0);
+    serialice_log(LOG_WRITE | LOG_IO, data, port, 4);
 }
 
 uint8_t serialice_readb(uint32_t addr)
