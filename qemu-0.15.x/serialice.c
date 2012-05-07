@@ -42,10 +42,13 @@
 #include "serialice.h"
 #include "sysemu.h"
 
+#define SERIALICE_LUA_SCRIPT "serialice.lua"
+
 #define DEFAULT_RAM_SIZE 128
 #define BIOS_FILENAME "bios.bin"
 
 const SerialICE_target *target;
+const SerialICE_filter *filter;
 
 int serialice_active = 0;
 
@@ -54,52 +57,56 @@ int serialice_active = 0;
 
 uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 {
-    uint32_t hi, lo;
-    uint64_t ret;
-    int filtered;
+    uint32_t hi = 0, lo = 0;
+    uint64_t data;
 
-    filtered = serialice_rdmsr_filter(addr, &hi, &lo);
-    if (!filtered) {
+    int mux = filter->rdmsr_pre(addr);
+
+    if (mux & READ_FROM_SERIALICE)
         target->rdmsr(addr, key, &hi, &lo);
+
+    if (mux & READ_FROM_QEMU) {
+        data = cpu_rdmsr(addr);
+        hi = (data >> 32);
+        lo = (data & 0xffffffff);
     }
 
-    ret = hi;
-    ret <<= 32;
-    ret |= lo;
-
-    serialice_rdmsr_log(addr, hi, lo, filtered);
-
-    return ret;
+    filter->rdmsr_post(&hi, &lo);
+    data = hi;
+    data <<= 32;
+    data |= lo;
+    return data;
 }
 
 void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
 {
-    uint32_t hi, lo;
-    int filtered;
+    uint32_t hi = (data >> 32);
+    uint32_t lo = (data & 0xffffffff);
 
-    hi = (data >> 32);
-    lo = (data & 0xffffffff);
+    int mux = filter->wrmsr_pre(addr, &hi, &lo);
 
-    filtered = serialice_wrmsr_filter(addr, &hi, &lo);
-
-    if (!filtered) {
+    if (mux & WRITE_TO_SERIALICE)
         target->wrmsr(addr, key, hi, lo);
+    if (mux & WRITE_TO_QEMU) {
+        data = lo | ((uint64_t)hi)<<32;
+        cpu_wrmsr(addr, data);
     }
-
-    serialice_wrmsr_log(addr, hi, lo, filtered);
+    filter->wrmsr_post();
 }
 
 cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)
 {
     cpuid_regs_t ret;
-    int filtered;
+    ret.eax = ret.ebx = ret.ecx = ret.edx = 0;
 
-    target->cpuid(eax, ecx, &ret);
+    int mux = filter->cpuid_pre(eax, ecx);
 
-    filtered = serialice_cpuid_filter(eax, ecx, &ret);
+    if (mux & READ_FROM_SERIALICE)
+        target->cpuid(eax, ecx, &ret);
+    if (mux & READ_FROM_QEMU)
+        ret = cpu_cpuid(eax, ecx);
 
-    serialice_cpuid_log(eax, ecx, ret, filtered);
-
+    filter->cpuid_post(&ret);
     return ret;
 }
 
@@ -113,7 +120,7 @@ cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)
 void serialice_log_load(int caught, uint32_t addr, uint32_t result,
                         unsigned int data_size)
 {
-    serialice_memory_read_log(caught, result, addr, data_size);
+    filter->load_post(&result);
 }
 
 /* This function can grab Qemu load ops and forward them to the SerialICE
@@ -121,34 +128,18 @@ void serialice_log_load(int caught, uint32_t addr, uint32_t result,
  *
  * @return 0: pass on to Qemu; 1: handled locally.
  */
-int serialice_handle_load(uint32_t addr, uint32_t * result,
-                          unsigned int data_size)
+int serialice_handle_load(uint32_t addr, uint32_t * data, unsigned int size)
 {
-    int source;
+    int mux = filter->load_pre(addr, size);
 
-    source = serialice_memory_read_filter(addr, result, data_size);
+    if (mux & READ_FROM_SERIALICE)
+        *data = target->load(addr, size);
 
-    if (source & READ_FROM_SERIALICE) {
-        *result = target->load(addr, data_size);
-        return 1;
-    }
-
-    if (source & READ_FROM_QEMU) {
-        return 0;
-    }
-
-    /* No source for load, so the source is the script */
-    return 1;
+    return !(mux & READ_FROM_QEMU);
 }
 
 // **************************************************************************
 // memory store handling
-
-static void serialice_log_store(int caught, uint32_t addr, uint32_t val,
-                                unsigned int data_size)
-{
-    serialice_memory_write_log(caught, val, addr, data_size);
-}
 
 /* This function can grab Qemu store ops and forward them to the SerialICE
  * target
@@ -156,23 +147,15 @@ static void serialice_log_store(int caught, uint32_t addr, uint32_t val,
  * @return 0: Qemu exclusive or shared; 1: SerialICE exclusive.
  */
 
-int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
+int serialice_handle_store(uint32_t addr, uint32_t data, unsigned int size)
 {
-    int write_to_target, write_to_qemu, ret;
-    uint32_t filtered_data = val;
+    int mux = filter->store_pre(addr, size, &data);
 
-    ret = serialice_memory_write_filter(addr, data_size, &filtered_data);
+    if (mux & WRITE_TO_SERIALICE)
+        target->store(addr, size, data);
 
-    write_to_target = ((ret & WRITE_TO_SERIALICE) != 0);
-    write_to_qemu = ((ret & WRITE_TO_QEMU) != 0);
-
-    serialice_log_store(write_to_target, addr, filtered_data, data_size);
-
-    if (write_to_target) {
-        target->store(addr, data_size, filtered_data);
-    }
-
-    return (write_to_qemu == 0);
+    filter->store_post();
+    return !(mux & WRITE_TO_QEMU);
 }
 
 #define mask_data(val,bytes) (val & (((uint64_t)1<<(bytes*8))-1))
@@ -180,33 +163,30 @@ int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
 uint32_t serialice_io_read(uint16_t port, unsigned int size)
 {
     uint32_t data = 0;
-    int filtered;
+    int mux = filter->io_read_pre(port, size);
 
-    filtered = serialice_io_read_filter(&data, port, size);
-    if (!filtered) {
+    if (mux & READ_FROM_QEMU)
+        data = cpu_io_read_wrapper(port, size);
+    if (mux & READ_FROM_SERIALICE)
         data = target->io_read(port, size);
-    }
 
     data = mask_data(data, size);
-    serialice_io_read_log(0, data, port, size);
+    filter->io_read_post(&data);
     return data;
 }
 
 void serialice_io_write(uint16_t port, unsigned int size, uint32 data)
 {
-    uint32_t filtered_data = mask_data(data, size);
-    int filtered;
+    data = mask_data(data, size);
+    int mux = filter->io_write_pre(&data, port, size);
+    data = mask_data(data, size);
 
-    filtered = serialice_io_write_filter(&filtered_data, port, size);
-
-    if (filtered) {
-        data = mask_data(filtered_data, size);
-    } else {
-        data = mask_data(filtered_data, size);
+    if (mux & WRITE_TO_QEMU)
+        cpu_io_write_wrapper(port, size, data);
+    if (mux & WRITE_TO_SERIALICE)
         target->io_write(port, size, data);
-    }
 
-    serialice_io_write_log(0, data, port, size);
+    filter->io_write_post();
 }
 
 // **************************************************************************
@@ -222,7 +202,7 @@ static void serialice_init(void)
     target->mainboard();
 
     printf("SerialICE: LUA init...\n");
-    serialice_lua_init();
+    filter = serialice_lua_init(SERIALICE_LUA_SCRIPT);
 
     /* Let the rest of Qemu know we're alive */
     serialice_active = 1;

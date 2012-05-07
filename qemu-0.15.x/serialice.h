@@ -41,9 +41,6 @@
 extern const char *serialice_device;
 extern int serialice_active;
 
-int serialice_lua_init(void);
-const char *serialice_lua_execute(const char *cmd);
-
 uint32_t serialice_io_read(uint16_t port, unsigned int size);
 void serialice_io_write(uint16_t port, unsigned int size, uint32_t data);
 
@@ -79,20 +76,28 @@ const SerialICE_target *serialice_serial_init(void);
 void serialice_serial_exit(void);
 
 /* serialice LUA */
-int serialice_io_read_filter(uint32_t * data, uint16_t port, int size);
-int serialice_io_write_filter(uint32_t * data, uint16_t port, int size);
-int serialice_memory_read_filter(uint32_t addr, uint32_t * data, int size);
-int serialice_memory_write_filter(uint32_t addr, int size, uint32_t * data);
-int serialice_cpuid_filter(uint32_t eax, uint32_t ecx, cpuid_regs_t * regs);
-int serialice_rdmsr_filter(uint32_t addr, uint32_t * hi, uint32_t * lo);
-int serialice_wrmsr_filter(uint32_t addr, uint32_t * hi, uint32_t * lo);
+typedef struct {
+    int (*io_read_pre) (uint16_t port, int size);
+    void (*io_read_post) (uint32_t * data);
+    int (*io_write_pre) (uint32_t * data, uint16_t port, int size);
+    void (*io_write_post) (void);
 
-void serialice_io_read_log(int caught, uint32_t data, uint32_t addr, int size);
-void serialice_io_write_log(int caught, uint32_t data, uint32_t addr, int size);
-void serialice_memory_read_log(int caught, uint32_t data, uint32_t addr, int size);
-void serialice_memory_write_log(int caught, uint32_t data, uint32_t addr, int size);
-void serialice_rdmsr_log(uint32_t addr, uint32_t hi, uint32_t lo, int filtered);
-void serialice_wrmsr_log(uint32_t addr, uint32_t hi, uint32_t lo, int filtered);
-void serialice_cpuid_log(uint32_t eax, uint32_t ecx, cpuid_regs_t res, int filtered);
+    int (*load_pre) (uint32_t addr, int size);
+    void (*load_post) (uint32_t * data);
+    int (*store_pre) (uint32_t addr, int size, uint32_t * data);
+    void (*store_post) (void);
+
+    int (*rdmsr_pre) (uint32_t addr);
+    void (*rdmsr_post) (uint32_t * hi, uint32_t * lo);
+    int (*wrmsr_pre) (uint32_t addr, uint32_t * hi, uint32_t * lo);
+    void (*wrmsr_post) (void);
+
+    int (*cpuid_pre) (uint32_t eax, uint32_t ecx);
+    void (*cpuid_post) (cpuid_regs_t * res);
+} SerialICE_filter;
+
+const SerialICE_filter *serialice_lua_init(const char *serialice_lua_script);
+void serialice_lua_exit(void);
+const char *serialice_lua_execute(const char *cmd);
 
 #endif
