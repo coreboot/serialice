@@ -61,7 +61,7 @@ CC=$(CROSS)gcc -m32
 OBJCOPY=$(CROSS)objcopy
 NM=$(CROSS)nm
 
-LDFLAGS=-Wa,--divide -nostdlib -nostartfiles -static -T serialice.ld
+LDFLAGS=-Wa,--divide -nostdlib -nostartfiles -static -T serialice.ld -Wl,--defsym,ALIGNED_ROMSIZE=$(CONFIG_ROMSIZE)
 
 SOURCES = serialice.c serialice.h chipset.c serial.c types.h mainboard/*.c
 

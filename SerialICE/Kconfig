@@ -141,6 +141,42 @@ config SUPERIO_INIT
 	string
 	default "superio/winbond-w83627thg.c" if BOARD_KONTRON_986LCD_M
 
+choice
+	prompt "ROM size"
+	default ROM_64K
+
+config ROM_64K
+	boolean "64 KB"
+
+config ROM_128K
+	boolean "128 KB"
+
+config ROM_256K
+	boolean "256 KB"
+
+config ROM_512K
+	boolean "512 KB"
+
+config ROM_1024K
+	boolean "1024 KB"
+
+config ROM_2048K
+	boolean "2048 KB"
+
+config ROM_4096K
+	boolean "4096 KB"
+
+endchoice
+
+config ROMSIZE
+	hex
+	default 0x10000 if ROM_64K
+	default 0x20000 if ROM_128K
+	default 0x40000 if ROM_256K
+	default 0x80000 if ROM_512K
+	default 0x100000 if ROM_1024K
+	default 0x200000 if ROM_2048K
+	default 0x400000 if ROM_4096K
 
 choice
 	prompt "Target communication"

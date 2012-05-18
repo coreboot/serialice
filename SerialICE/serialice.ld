@@ -20,12 +20,17 @@
 OUTPUT_FORMAT("elf32-i386", "elf32-i386", "elf32-i386")
 OUTPUT_ARCH(i386)
 
+ALIGNED_ROMBASE = 0x100000000 - (ALIGNED_ROMSIZE);
+
 _ROMSIZE = (1024 * 64);
 _ROMBASE = 0x100000000 - (_ROMSIZE);
 
 SECTIONS {
-	. = _ROMBASE;
+
+	. = ALIGNED_ROMBASE;
+
 	.rom : {
+		. = ALIGNED_ROMSIZE - _ROMSIZE;
 		_main = . ;
 		*(.rom.text);
 		*(.text);
@@ -33,7 +38,7 @@ SECTIONS {
 		*(.data);
 		*(.rodata);
 		*(.rodata.*);
-	}
+	} =0xff
 
 	. = 0xffffff40;
 	.messages . : {
