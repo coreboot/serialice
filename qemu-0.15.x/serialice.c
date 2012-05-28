@@ -827,54 +827,6 @@ void serialice_outl(uint32_t data, uint16_t port)
     serialice_log(LOG_WRITE | LOG_IO, data, port, 4);
 }
 
-uint8_t serialice_readb(uint32_t addr)
-{
-    uint8_t ret;
-    sprintf(s->command, "*rm%08x.b", addr);
-    // command read back: "\n00" (3 characters)
-    serialice_command(s->command, 3);
-    ret = (uint8_t) strtoul(s->buffer + 1, (char **)NULL, 16);
-    return ret;
-}
-
-uint16_t serialice_readw(uint32_t addr)
-{
-    uint16_t ret;
-    sprintf(s->command, "*rm%08x.w", addr);
-    // command read back: "\n0000" (5 characters)
-    serialice_command(s->command, 5);
-    ret = (uint16_t) strtoul(s->buffer + 1, (char **)NULL, 16);
-    return ret;
-}
-
-uint32_t serialice_readl(uint32_t addr)
-{
-    uint32_t ret;
-    sprintf(s->command, "*rm%08x.l", addr);
-    // command read back: "\n00000000" (9 characters)
-    serialice_command(s->command, 9);
-    ret = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
-    return ret;
-}
-
-void serialice_writeb(uint8_t data, uint32_t addr)
-{
-    sprintf(s->command, "*wm%08x.b=%02x", addr, data);
-    serialice_command(s->command, 0);
-}
-
-void serialice_writew(uint16_t data, uint32_t addr)
-{
-    sprintf(s->command, "*wm%08x.w=%04x", addr, data);
-    serialice_command(s->command, 0);
-}
-
-void serialice_writel(uint32_t data, uint32_t addr)
-{
-    sprintf(s->command, "*wm%08x.l=%08x", addr, data);
-    serialice_command(s->command, 0);
-}
-
 uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 {
     uint32_t hi, lo;
@@ -958,11 +910,20 @@ static uint32_t serialice_load_wrapper(uint32_t addr, unsigned int size)
 {
     switch (size) {
     case 1:
-        return (uint32_t) serialice_readb(addr);
+        sprintf(s->command, "*rm%08x.b", addr);
+        // command read back: "\n00" (3 characters)
+        serialice_command(s->command, 3);
+        return (uint8_t) strtoul(s->buffer + 1, (char **)NULL, 16);
     case 2:
-        return (uint32_t) serialice_readw(addr);
+        sprintf(s->command, "*rm%08x.w", addr);
+        // command read back: "\n0000" (5 characters)
+        serialice_command(s->command, 5);
+        return (uint16_t) strtoul(s->buffer + 1, (char **)NULL, 16);
     case 4:
-        return (uint32_t) serialice_readl(addr);
+        sprintf(s->command, "*rm%08x.l", addr);
+        // command read back: "\n00000000" (9 characters)
+        serialice_command(s->command, 9);
+        return (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
     default:
         printf("WARNING: unknown read access size %d @%08x\n", size, addr);
     }
@@ -1017,13 +978,16 @@ static void serialice_store_wrapper(uint32_t addr, unsigned int size,
 {
     switch (size) {
     case 1:
-        serialice_writeb((uint8_t) data, addr);
+        sprintf(s->command, "*wm%08x.b=%02x", addr, (uint8_t) data);
+        serialice_command(s->command, 0);
         break;
     case 2:
-        serialice_writew((uint16_t) data, addr);
+        sprintf(s->command, "*wm%08x.w=%04x", addr, (uint16_t) data);
+        serialice_command(s->command, 0);
         break;
     case 4:
-        serialice_writel((uint32_t) data, addr);
+        sprintf(s->command, "*wm%08x.l=%08x", addr, data);
+        serialice_command(s->command, 0);
         break;
     default:
         printf("WARNING: unknown write access size %d @%08x\n", size, addr);

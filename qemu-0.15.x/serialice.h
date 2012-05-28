@@ -45,14 +45,6 @@ void serialice_outb(uint8_t data, uint16_t port);
 void serialice_outw(uint16_t data, uint16_t port);
 void serialice_outl(uint32_t data, uint16_t port);
 
-uint8_t serialice_readb(uint32_t addr);
-uint16_t serialice_readw(uint32_t addr);
-uint32_t serialice_readl(uint32_t addr);
-
-void serialice_writeb(uint8_t data, uint32_t addr);
-void serialice_writew(uint16_t data, uint32_t addr);
-void serialice_writel(uint32_t data, uint32_t addr);
-
 uint64_t serialice_rdmsr(uint32_t addr, uint32_t key);
 void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key);
 
