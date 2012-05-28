@@ -18,7 +18,7 @@
 ##
 
 # Qemu version
-VERSION=0.11.0
+VERSION=0.15.x
 # SerialICE revision when plain Qemu $(VERSION) was checked in.
 REVISION=32
 
