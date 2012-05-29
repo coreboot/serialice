@@ -905,29 +905,27 @@ void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
     serialice_msr_log(LOG_WRITE, addr, hi, lo, filtered);
 }
 
+static void serialice_cpuid_wrapper(uint32_t eax, uint32_t ecx, cpuid_regs_t * ret)
+{
+    sprintf(s->command, "*ci%08x.%08x", eax, ecx);
+    // command read back: "\n000006f2.00000000.00001234.12340324"
+    // (36 characters)
+    serialice_command(s->command, 36);
+    s->buffer[9] = 0;           // . -> \0
+    s->buffer[18] = 0;          // . -> \0
+    s->buffer[27] = 0;          // . -> \0
+    ret->eax = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+    ret->ebx = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
+    ret->ecx = (uint32_t) strtoul(s->buffer + 19, (char **)NULL, 16);
+    ret->edx = (uint32_t) strtoul(s->buffer + 28, (char **)NULL, 16);
+}
+
 cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)
 {
     cpuid_regs_t ret;
     int filtered;
 
-    ret.eax = eax;
-    ret.ebx = 0;                // either set by filter or by target
-    ret.ecx = ecx;
-    ret.edx = 0;                // either set by filter or by target
-
-    sprintf(s->command, "*ci%08x.%08x", eax, ecx);
-
-    // command read back: "\n000006f2.00000000.00001234.12340324"
-    // (36 characters)
-    serialice_command(s->command, 36);
-
-    s->buffer[9] = 0;           // . -> \0
-    s->buffer[18] = 0;          // . -> \0
-    s->buffer[27] = 0;          // . -> \0
-    ret.eax = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
-    ret.ebx = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
-    ret.ecx = (uint32_t) strtoul(s->buffer + 19, (char **)NULL, 16);
-    ret.edx = (uint32_t) strtoul(s->buffer + 28, (char **)NULL, 16);
+    serialice_cpuid_wrapper(eax, ecx, &ret);
 
     filtered = serialice_cpuid_filter(eax, ecx, &ret);
 
