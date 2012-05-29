@@ -37,6 +37,12 @@ extern int serialice_active;
 
 const char *serialice_lua_execute(const char *cmd);
 
+void serialice_serial_init(void);
+void serialice_command(const char *command, int reply_len);
+
+void serialice_get_version(void);
+void serialice_get_mainboard(void);
+
 uint8_t serialice_inb(uint16_t port);
 uint16_t serialice_inw(uint16_t port);
 uint32_t serialice_inl(uint16_t port);
@@ -59,5 +65,16 @@ int serialice_handle_load(uint32_t addr, uint32_t * result,
 void serialice_log_load(int caught, uint32_t addr, uint32_t result,
                         unsigned int data_size);
 int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size);
+
+/* serialice protocol */
+uint32_t serialice_io_read_wrapper(uint16_t port, unsigned int size);
+void serialice_io_write_wrapper(uint16_t port, unsigned int size, uint32_t data);
+
+uint32_t serialice_load_wrapper(uint32_t addr, unsigned int size);
+void serialice_store_wrapper(uint32_t addr, unsigned int size, uint32_t data);
+
+void serialice_rdmsr_wrapper(uint32_t addr, uint32_t key, uint32_t *hi, uint32_t *lo);
+void serialice_wrmsr_wrapper(uint32_t addr, uint32_t key, uint32_t hi, uint32_t lo);
+void serialice_cpuid_wrapper(uint32_t eax, uint32_t ecx, cpuid_regs_t * ret);
 
 #endif

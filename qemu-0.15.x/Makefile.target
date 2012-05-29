@@ -226,7 +226,7 @@ ifdef CONFIG_SERIALICE
 QEMU_CFLAGS += $(SERIALICE_CFLAGS)
 LIBS+=-lm
 endif
-obj-$(CONFIG_SERIALICE) += serialice.o
+obj-$(CONFIG_SERIALICE) += serialice.o serialice-com.o
 
 # Hardware support
 obj-i386-y += vga.o
