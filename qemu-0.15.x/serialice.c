@@ -860,6 +860,17 @@ void serialice_outl(uint32_t data, uint16_t port)
     serialice_log(LOG_WRITE | LOG_IO, data, port, 4);
 }
 
+static void serialice_rdmsr_wrapper(uint32_t addr, uint32_t key,
+                             uint32_t * hi, uint32_t * lo)
+{
+    sprintf(s->command, "*rc%08x.%08x", addr, key);
+    // command read back: "\n00000000.00000000" (18 characters)
+    serialice_command(s->command, 18);
+    s->buffer[9] = 0;           // . -> \0
+    *hi = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+    *lo = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
+}
+
 uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 {
     uint32_t hi, lo;
@@ -868,14 +879,7 @@ uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 
     filtered = serialice_msr_filter(FILTER_READ, addr, &hi, &lo);
     if (!filtered) {
-        sprintf(s->command, "*rc%08x.%08x", addr, key);
-
-        // command read back: "\n00000000.00000000" (18 characters)
-        serialice_command(s->command, 18);
-
-        s->buffer[9] = 0;       // . -> \0
-        hi = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
-        lo = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
+        serialice_rdmsr_wrapper(addr, key, &hi, &lo);
     }
 
     ret = hi;
@@ -885,6 +889,13 @@ uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
     serialice_msr_log(LOG_READ, addr, hi, lo, filtered);
 
     return ret;
+}
+
+static void serialice_wrmsr_wrapper(uint32_t addr, uint32_t key,
+                             uint32_t hi, uint32_t lo)
+{
+    sprintf(s->command, "*wc%08x.%08x=%08x.%08x", addr, key, hi, lo);
+    serialice_command(s->command, 0);
 }
 
 void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
@@ -898,8 +909,7 @@ void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
     filtered = serialice_msr_filter(FILTER_WRITE, addr, &hi, &lo);
 
     if (!filtered) {
-        sprintf(s->command, "*wc%08x.%08x=%08x.%08x", addr, key, hi, lo);
-        serialice_command(s->command, 0);
+        serialice_wrmsr_wrapper(addr, key, hi, lo);
     }
 
     serialice_msr_log(LOG_WRITE, addr, hi, lo, filtered);
