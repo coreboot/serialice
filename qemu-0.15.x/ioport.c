@@ -313,3 +313,36 @@ uint32_t cpu_inl(pio_addr_t addr)
     LOG_IOPORT("inl : %04"FMT_pioaddr" %08"PRIx32"\n", addr, val);
     return val;
 }
+
+uint32_t cpu_io_read_wrapper(uint16_t port, unsigned int size)
+{
+    switch (size) {
+    case 1:
+        return cpu_inb(port);
+    case 2:
+        return cpu_inw(port);
+    case 4:
+        return cpu_inl(port);
+    default:
+        break;
+    }
+    return -1;
+}
+
+void cpu_io_write_wrapper(uint16_t port, unsigned int size, uint32_t data)
+{
+    switch (size) {
+    case 1:
+        cpu_outb(port, (uint8_t) data);
+        return;
+    case 2:
+        cpu_outw(port, (uint16_t) data);
+        return;
+    case 4:
+        cpu_outl(port, (uint32_t) data);
+        return;
+    default:
+        break;
+    }
+    return;
+}
