@@ -707,6 +707,51 @@ static void serialice_get_mainboard(void)
     printf("%s\n", serialice_mainboard);
 }
 
+static uint32_t serialice_io_read_wrapper(uint16_t port, unsigned int size)
+{
+    switch (size) {
+    case 1:
+        sprintf(s->command, "*ri%04x.b", port);
+        // command read back: "\n00" (3 characters)
+        serialice_command(s->command, 3);
+        return (uint8_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+    case 2:
+        sprintf(s->command, "*ri%04x.w", port);
+        // command read back: "\n0000" (5 characters)
+        serialice_command(s->command, 5);
+        return (uint16_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+    case 4:
+        sprintf(s->command, "*ri%04x.l", port);
+        // command read back: "\n00000000" (9 characters)
+        serialice_command(s->command, 9);
+        return strtoul(s->buffer + 1, (char **)NULL, 16);
+    default:
+        printf("WARNING: unknown read access size %d @%08x\n", size, port);
+        return -1;
+    }
+}
+
+static void serialice_io_write_wrapper(uint16_t port, unsigned int size, uint32_t data)
+{
+    switch (size) {
+    case 1:
+        sprintf(s->command, "*wi%04x.b=%02x", port, (uint8_t) data);
+        serialice_command(s->command, 0);
+        return;
+    case 2:
+        sprintf(s->command, "*wi%04x.w=%04x", port, (uint16_t) data);
+        serialice_command(s->command, 0);
+        return;
+    case 4:
+        sprintf(s->command, "*wi%04x.l=%08x", port, data);
+        serialice_command(s->command, 0);
+        return;
+    default:
+        printf("WARNING: unknown write access size %d @%08x\n", size, port);
+    }
+    return;
+}
+
 uint8_t serialice_inb(uint16_t port)
 {
     uint8_t ret;
@@ -718,10 +763,7 @@ uint8_t serialice_inb(uint16_t port)
     if (filtered) {
         ret = data & 0xff;
     } else {
-        sprintf(s->command, "*ri%04x.b", port);
-        // command read back: "\n00" (3 characters)
-        serialice_command(s->command, 3);
-        ret = (uint8_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+	return serialice_io_read_wrapper(port, 1);
     }
 
     serialice_log(LOG_READ | LOG_IO, ret, port, 1);
@@ -740,10 +782,7 @@ uint16_t serialice_inw(uint16_t port)
     if (filtered) {
         ret = data & 0xffff;
     } else {
-        sprintf(s->command, "*ri%04x.w", port);
-        // command read back: "\n0000" (5 characters)
-        serialice_command(s->command, 5);
-        ret = (uint16_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+	return serialice_io_read_wrapper(port, 2);
     }
 
     serialice_log(LOG_READ | LOG_IO, ret, port, 2);
@@ -762,10 +801,7 @@ uint32_t serialice_inl(uint16_t port)
     if (filtered) {
         ret = data;
     } else {
-        sprintf(s->command, "*ri%04x.l", port);
-        // command read back: "\n00000000" (9 characters)
-        serialice_command(s->command, 9);
-        ret = (uint32_t) strtoul(s->buffer + 1, (char **)NULL, 16);
+	return serialice_io_read_wrapper(port, 4);
     }
 
     serialice_log(LOG_READ | LOG_IO, ret, port, 4);
@@ -784,8 +820,7 @@ void serialice_outb(uint8_t data, uint16_t port)
         data = (uint8_t) filtered_data;
     } else {
         data = (uint8_t) filtered_data;
-        sprintf(s->command, "*wi%04x.b=%02x", port, data);
-        serialice_command(s->command, 0);
+	serialice_io_write_wrapper(port, 1, data);
     }
 
     serialice_log(LOG_WRITE | LOG_IO, data, port, 1);
@@ -802,8 +837,7 @@ void serialice_outw(uint16_t data, uint16_t port)
         data = (uint16_t) filtered_data;
     } else {
         data = (uint16_t) filtered_data;
-        sprintf(s->command, "*wi%04x.w=%04x", port, data);
-        serialice_command(s->command, 0);
+	serialice_io_write_wrapper(port, 2, data);
     }
 
     serialice_log(LOG_WRITE | LOG_IO, data, port, 2);
@@ -820,8 +854,7 @@ void serialice_outl(uint32_t data, uint16_t port)
         data = filtered_data;
     } else {
         data = filtered_data;
-        sprintf(s->command, "*wi%04x.l=%08x", port, data);
-        serialice_command(s->command, 0);
+	serialice_io_write_wrapper(port, 4, data);
     }
 
     serialice_log(LOG_WRITE | LOG_IO, data, port, 4);
