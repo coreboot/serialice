@@ -1111,16 +1111,8 @@ static void serialice_invalidate(void *opaque)
 // **************************************************************************
 // initialization and exit
 
-void serialice_init(void)
+static void serialice_serial_init(void)
 {
-    s = qemu_mallocz(sizeof(SerialICEState));
-
-    s->ds = graphic_console_init(serialice_refresh, serialice_invalidate,
-                                 NULL, NULL, s);
-    qemu_console_resize(s->ds, 320, 240);
-
-    printf("SerialICE: Open connection to target hardware...\n");
-
     if (serialice_device == NULL) {
         printf("You need to specify a serial device to use SerialICE.\n");
         exit(1);
@@ -1216,6 +1208,18 @@ void serialice_init(void)
     serialice_get_version();
 
     serialice_get_mainboard();
+}
+
+static void serialice_init(void)
+{
+    s = qemu_mallocz(sizeof(SerialICEState));
+
+    s->ds = graphic_console_init(serialice_refresh, serialice_invalidate,
+                                 NULL, NULL, s);
+    qemu_console_resize(s->ds, 320, 240);
+
+    printf("SerialICE: Open connection to target hardware...\n");
+    serialice_serial_init();
 
     printf("SerialICE: LUA init...\n");
     serialice_lua_init();
@@ -1224,7 +1228,7 @@ void serialice_init(void)
     serialice_active = 1;
 }
 
-void serialice_exit(void)
+static void serialice_exit(void)
 {
     serialice_lua_exit();
     qemu_free(s->command);
