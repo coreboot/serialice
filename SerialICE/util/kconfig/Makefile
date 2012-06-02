@@ -300,11 +300,11 @@ endif
 
 $(objk)/qconf: $(patsubst %,$(objk)/%,$(qconf-cxxobjs)) \
 	       $(patsubst %,$(objk)/%,$(qconf-objs))
-	$(Q)$(HOSTCXX) $(HOSTCXXFLAGS) $(HOSTLOADLIBES_qconf) -o $@ $^
+	$(Q)$(HOSTCXX) $(HOSTCXXFLAGS) -o $@ $^ $(HOSTLOADLIBES_qconf)
 $(objk)/gconf: $(patsubst %,$(objk)/%,$(gconf-objs))
-	$(Q)$(HOSTCC) $(HOSTCFLAGS) $(HOSTLOADLIBES_gconf) -o $@ $^
+	$(Q)$(HOSTCC) $(HOSTCFLAGS) -o $@ $^ $(HOSTLOADLIBES_gconf)
 $(objk)/mconf: $(patsubst %,$(objk)/%,$(mconf-objs))
-	$(Q)$(HOSTCC) $(HOSTCFLAGS) $(HOST_EXTRACFLAGS) $(HOST_LOADLIBES) -o $@ $^
+	$(Q)$(HOSTCC) $(HOSTCFLAGS) $(HOST_EXTRACFLAGS) -o $@ $^ $(HOST_LOADLIBES)
 $(objk)/conf: $(patsubst %,$(objk)/%,$(conf-objs))
 	$(Q)$(HOSTCC) $(HOSTCFLAGS) $(HOST_EXTRACFLAGS) -o $@ $^
 
