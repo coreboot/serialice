@@ -105,6 +105,9 @@ config BOARD_ASUS_P4P800_VM
 config BOARD_AOPEN_DXPL_PLUS
 	bool "AOpen DXPL Plus"
 
+config BOARD_VIA_EPIA_M850
+	bool "VIA EPIA M850"
+
 endchoice
 
 config BOARD_INIT
@@ -132,6 +135,7 @@ config BOARD_INIT
 	default "asrock_p4i65gv.c" if BOARD_ASROCK_P4I65GV
 	default "asus_p4p800-vm.c" if BOARD_ASUS_P4P800_VM
 	default "aopen_dxpl-plus.c" if BOARD_AOPEN_DXPL_PLUS
+	default "via_epia_m850.c" if BOARD_VIA_EPIA_M850
 
 config SOUTHBRIDGE_INIT
 	string
