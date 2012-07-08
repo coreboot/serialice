@@ -32,9 +32,27 @@
 #error "SerialICE currently only supports x86 and x64 platforms."
 #endif
 
+#define READ_FROM_QEMU		(1 << 0)
+#define READ_FROM_SERIALICE	(1 << 1)
+
+#define WRITE_TO_QEMU		(1 << 0)
+#define WRITE_TO_SERIALICE	(1 << 1)
+
+#define FILTER_READ	0
+#define FILTER_WRITE	1
+
+#define LOG_IO		0
+#define LOG_MEMORY	1
+#define LOG_READ	0
+#define LOG_WRITE	2
+// these two are separate
+#define LOG_QEMU	4
+#define LOG_TARGET	8
+
 extern const char *serialice_device;
 extern int serialice_active;
 
+int serialice_lua_init(void);
 const char *serialice_lua_execute(const char *cmd);
 
 void serialice_serial_init(void);
@@ -76,5 +94,17 @@ void serialice_store_wrapper(uint32_t addr, unsigned int size, uint32_t data);
 void serialice_rdmsr_wrapper(uint32_t addr, uint32_t key, uint32_t *hi, uint32_t *lo);
 void serialice_wrmsr_wrapper(uint32_t addr, uint32_t key, uint32_t hi, uint32_t lo);
 void serialice_cpuid_wrapper(uint32_t eax, uint32_t ecx, cpuid_regs_t * ret);
+
+/* serialice LUA */
+int serialice_io_read_filter(uint32_t * data, uint16_t port, int size);
+int serialice_io_write_filter(uint32_t * data, uint16_t port, int size);
+int serialice_memory_read_filter(uint32_t addr, uint32_t * data, int size);
+int serialice_memory_write_filter(uint32_t addr, int size, uint32_t * data);
+int serialice_msr_filter(int flags, uint32_t addr, uint32_t * hi, uint32_t * lo);
+int serialice_cpuid_filter(uint32_t eax, uint32_t ecx, cpuid_regs_t * regs);
+
+void serialice_log(int flags, uint32_t data, uint32_t addr, int size);
+void serialice_msr_log(int flags, uint32_t addr, uint32_t hi, uint32_t lo, int filtered);
+void serialice_cpuid_log(uint32_t eax, uint32_t ecx, cpuid_regs_t res, int filtered);
 
 #endif

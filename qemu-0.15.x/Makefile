@@ -122,10 +122,12 @@ version.o: $(SRC_PATH)/version.rc config-host.mak
 ifdef CONFIG_SERIALICE
 serialice.o: serialice.c serialice.h
 serialice-com.o: serialice-com.c serialice.h
+serialice-lua.o: serialice-lua.c serialice.h
 endif
 
 serialice.o: QEMU_CFLAGS += $(SERIALICE_CFLAGS)
 serialice-com.o: QEMU_CFLAGS += $(SERIALICE_CFLAGS)
+serialice-lua.o: QEMU_CFLAGS += $(SERIALICE_CFLAGS)
 
 version-obj-$(CONFIG_WIN32) += version.o
 ######################################################################
