@@ -1,0 +1,20 @@
+diff -ur lua-5.2.0/src/luaconf.h lua-5.2.0-shared/src/luaconf.h
+--- lua-5.2.0/src/luaconf.h	2011-12-06 17:58:36.000000000 +0100
++++ lua-5.2.0-shared/src/luaconf.h	2012-06-12 22:25:20.179943819 +0200
+@@ -10,6 +10,7 @@
+ 
+ #include <limits.h>
+ #include <stddef.h>
++#include <stdint.h>
+ 
+ 
+ /*
+@@ -444,7 +445,7 @@
+ ** CHANGE that if ptrdiff_t is not adequate on your machine. (On most
+ ** machines, ptrdiff_t gives a good choice between int or long.)
+ */
+-#define LUA_INTEGER	ptrdiff_t
++#define LUA_INTEGER	int64_t
+ 
+ /*
+ @@ LUA_UNSIGNED is the integral type used by lua_pushunsigned/lua_tounsigned.
