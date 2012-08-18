@@ -32,14 +32,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
-#ifdef WIN32
-#include <windows.h>
-#include <conio.h>
-#else
-#include <fcntl.h>
-#include <termios.h>
-#include <sys/ioctl.h>
-#endif
 
 /* Local includes */
 #include "hw/hw.h"
@@ -101,6 +93,13 @@ static void serialice_refresh(void *opaque)
 static void serialice_invalidate(void *opaque)
 {
     screen_invalid = 1;
+}
+
+static void serialice_screen(void)
+{
+    ds = graphic_console_init(serialice_refresh, serialice_invalidate,
+                              NULL, NULL, ds);
+    qemu_console_resize(ds, 320, 240);
 }
 
 // **************************************************************************
@@ -352,9 +351,7 @@ int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
 
 static void serialice_init(void)
 {
-    ds = graphic_console_init(serialice_refresh, serialice_invalidate,
-                              NULL, NULL, ds);
-    qemu_console_resize(ds, 320, 240);
+    serialice_screen();
 
     printf("SerialICE: Open connection to target hardware...\n");
     serialice_serial_init();
@@ -371,9 +368,7 @@ static void serialice_init(void)
 static void serialice_exit(void)
 {
     serialice_lua_exit();
-    qemu_free(s->command);
-    qemu_free(s->buffer);
-    qemu_free(s);
+    serialice_serial_exit();
 }
 #endif
 
