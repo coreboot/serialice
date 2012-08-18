@@ -2010,29 +2010,31 @@ void helper_single_step(void)
     raise_exception(EXCP01_DB);
 }
 
+cpuid_regs_t cpu_cpuid(uint32_t in_eax, uint32_t in_ecx)
+{
+    cpuid_regs_t ret;
+    cpu_x86_cpuid(env, in_eax, in_ecx, &ret.eax, &ret.ebx, &ret.ecx, &ret.edx);
+    return ret;
+}
+
 void helper_cpuid(void)
 {
-    uint32_t eax, ebx, ecx, edx;
-
+    cpuid_regs_t ret;
     helper_svm_check_intercept_param(SVM_EXIT_CPUID, 0);
 
 #ifdef CONFIG_SERIALICE
-    if (serialice_active) {
-        cpuid_regs_t ret;
+    if (serialice_active)
         ret = serialice_cpuid((uint32_t) EAX, (uint32_t) ECX);
-        EAX = ret.eax;
-        EBX = ret.ebx;
-        ECX = ret.ecx;
-        EDX = ret.edx;
-        return;
-    }
+    else
+        ret = cpu_cpuid((uint32_t) EAX, (uint32_t) ECX);
+#else
+    cpu_x86_cpuid(env, (uint32_t) EAX, (uint32_t) ECX, &ret.eax, &ret.ebx, &ret.ecx, &ret.edx);
 #endif
 
-    cpu_x86_cpuid(env, (uint32_t)EAX, (uint32_t)ECX, &eax, &ebx, &ecx, &edx);
-    EAX = eax;
-    EBX = ebx;
-    ECX = ecx;
-    EDX = edx;
+    EAX = ret.eax;
+    EBX = ret.ebx;
+    ECX = ret.ecx;
+    EDX = ret.edx;
 }
 
 void helper_enter_level(int level, int data32, target_ulong t1)
