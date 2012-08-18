@@ -1055,6 +1055,8 @@ void do_smm_enter(CPUState *env1);
 
 void svm_check_intercept(CPUState *env1, uint32_t type);
 
+void cpu_wrmsr(uint64_t val, uint32_t addr);
+uint64_t cpu_rdmsr(uint32_t addr);
 cpuid_regs_t cpu_cpuid(uint32_t in_eax, uint32_t in_ecx);
 uint32_t cpu_cc_compute_all(CPUState *env1, int op);
 

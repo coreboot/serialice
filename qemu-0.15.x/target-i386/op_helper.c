@@ -3093,22 +3093,10 @@ void helper_rdmsr(void)
 {
 }
 #else
-void helper_wrmsr(void)
+
+void cpu_wrmsr(uint64_t val, uint32_t addr)
 {
-    uint64_t val;
-
-    helper_svm_check_intercept_param(SVM_EXIT_MSR, 1);
-
-    val = ((uint32_t)EAX) | ((uint64_t)((uint32_t)EDX) << 32);
-
-#ifdef CONFIG_SERIALICE
-    if (serialice_active) {
-        serialice_wrmsr(val, (uint32_t) ECX, (uint32_t) EDI);
-        return;
-    }
-#endif
-
-    switch((uint32_t)ECX) {
+    switch(addr) {
     case MSR_IA32_SYSENTER_CS:
         env->sysenter_cs = val & 0xffff;
         break;
@@ -3178,7 +3166,7 @@ void helper_wrmsr(void)
     case MSR_MTRRphysBase(5):
     case MSR_MTRRphysBase(6):
     case MSR_MTRRphysBase(7):
-        env->mtrr_var[((uint32_t)ECX - MSR_MTRRphysBase(0)) / 2].base = val;
+        env->mtrr_var[(addr - MSR_MTRRphysBase(0)) / 2].base = val;
         break;
     case MSR_MTRRphysMask(0):
     case MSR_MTRRphysMask(1):
@@ -3188,14 +3176,14 @@ void helper_wrmsr(void)
     case MSR_MTRRphysMask(5):
     case MSR_MTRRphysMask(6):
     case MSR_MTRRphysMask(7):
-        env->mtrr_var[((uint32_t)ECX - MSR_MTRRphysMask(0)) / 2].mask = val;
+        env->mtrr_var[(addr - MSR_MTRRphysMask(0)) / 2].mask = val;
         break;
     case MSR_MTRRfix64K_00000:
-        env->mtrr_fixed[(uint32_t)ECX - MSR_MTRRfix64K_00000] = val;
+        env->mtrr_fixed[addr - MSR_MTRRfix64K_00000] = val;
         break;
     case MSR_MTRRfix16K_80000:
     case MSR_MTRRfix16K_A0000:
-        env->mtrr_fixed[(uint32_t)ECX - MSR_MTRRfix16K_80000 + 1] = val;
+        env->mtrr_fixed[addr - MSR_MTRRfix16K_80000 + 1] = val;
         break;
     case MSR_MTRRfix4K_C0000:
     case MSR_MTRRfix4K_C8000:
@@ -3205,7 +3193,7 @@ void helper_wrmsr(void)
     case MSR_MTRRfix4K_E8000:
     case MSR_MTRRfix4K_F0000:
     case MSR_MTRRfix4K_F8000:
-        env->mtrr_fixed[(uint32_t)ECX - MSR_MTRRfix4K_C0000 + 3] = val;
+        env->mtrr_fixed[addr - MSR_MTRRfix4K_C0000 + 3] = val;
         break;
     case MSR_MTRRdefType:
         env->mtrr_deftype = val;
@@ -3222,9 +3210,9 @@ void helper_wrmsr(void)
         env->tsc_aux = val;
         break;
     default:
-        if ((uint32_t)ECX >= MSR_MC0_CTL
-            && (uint32_t)ECX < MSR_MC0_CTL + (4 * env->mcg_cap & 0xff)) {
-            uint32_t offset = (uint32_t)ECX - MSR_MC0_CTL;
+        if (addr >= MSR_MC0_CTL
+            && addr < MSR_MC0_CTL + (4 * env->mcg_cap & 0xff)) {
+            uint32_t offset = addr - MSR_MC0_CTL;
             if ((offset & 0x3) != 0
                 || (val == 0 || val == ~(uint64_t)0))
                 env->mce_banks[offset] = val;
@@ -3235,22 +3223,11 @@ void helper_wrmsr(void)
     }
 }
 
-void helper_rdmsr(void)
+uint64_t cpu_rdmsr(uint32_t addr)
 {
     uint64_t val;
 
-    helper_svm_check_intercept_param(SVM_EXIT_MSR, 0);
-
-#ifdef CONFIG_SERIALICE
-    if (serialice_active) {
-        val = serialice_rdmsr((uint32_t) ECX, (uint32_t) EDI);
-        EAX = (uint32_t) (val);
-        EDX = (uint32_t) (val >> 32);
-        return;
-    }
-#endif
-
-    switch((uint32_t)ECX) {
+    switch(addr) {
     case MSR_IA32_SYSENTER_CS:
         val = env->sysenter_cs;
         break;
@@ -3312,7 +3289,7 @@ void helper_rdmsr(void)
     case MSR_MTRRphysBase(5):
     case MSR_MTRRphysBase(6):
     case MSR_MTRRphysBase(7):
-        val = env->mtrr_var[((uint32_t)ECX - MSR_MTRRphysBase(0)) / 2].base;
+        val = env->mtrr_var[(addr - MSR_MTRRphysBase(0)) / 2].base;
         break;
     case MSR_MTRRphysMask(0):
     case MSR_MTRRphysMask(1):
@@ -3322,14 +3299,14 @@ void helper_rdmsr(void)
     case MSR_MTRRphysMask(5):
     case MSR_MTRRphysMask(6):
     case MSR_MTRRphysMask(7):
-        val = env->mtrr_var[((uint32_t)ECX - MSR_MTRRphysMask(0)) / 2].mask;
+        val = env->mtrr_var[(addr - MSR_MTRRphysMask(0)) / 2].mask;
         break;
     case MSR_MTRRfix64K_00000:
         val = env->mtrr_fixed[0];
         break;
     case MSR_MTRRfix16K_80000:
     case MSR_MTRRfix16K_A0000:
-        val = env->mtrr_fixed[(uint32_t)ECX - MSR_MTRRfix16K_80000 + 1];
+        val = env->mtrr_fixed[addr - MSR_MTRRfix16K_80000 + 1];
         break;
     case MSR_MTRRfix4K_C0000:
     case MSR_MTRRfix4K_C8000:
@@ -3339,7 +3316,7 @@ void helper_rdmsr(void)
     case MSR_MTRRfix4K_E8000:
     case MSR_MTRRfix4K_F0000:
     case MSR_MTRRfix4K_F8000:
-        val = env->mtrr_fixed[(uint32_t)ECX - MSR_MTRRfix4K_C0000 + 3];
+        val = env->mtrr_fixed[addr - MSR_MTRRfix4K_C0000 + 3];
         break;
     case MSR_MTRRdefType:
         val = env->mtrr_deftype;
@@ -3364,9 +3341,9 @@ void helper_rdmsr(void)
         val = env->mcg_status;
         break;
     default:
-        if ((uint32_t)ECX >= MSR_MC0_CTL
-            && (uint32_t)ECX < MSR_MC0_CTL + (4 * env->mcg_cap & 0xff)) {
-            uint32_t offset = (uint32_t)ECX - MSR_MC0_CTL;
+        if (addr >= MSR_MC0_CTL
+            && addr < MSR_MC0_CTL + (4 * env->mcg_cap & 0xff)) {
+            uint32_t offset = addr - MSR_MC0_CTL;
             val = env->mce_banks[offset];
             break;
         }
@@ -3374,10 +3351,39 @@ void helper_rdmsr(void)
         val = 0;
         break;
     }
+    return val;
+}
+
+void helper_wrmsr(void)
+{
+    uint64_t val = ((uint32_t)EAX) | ((uint64_t)((uint32_t)EDX) << 32);
+    helper_svm_check_intercept_param(SVM_EXIT_MSR, 1);
+#ifdef CONFIG_SERIALICE
+    if (serialice_active)
+        serialice_wrmsr(val, (uint32_t)ECX, (uint32_t) EDI);
+    else
+        cpu_wrmsr(val, (uint32_t)ECX);
+#else
+    cpu_wrmsr(val, (uint32_t)ECX);
+#endif
+}
+
+void helper_rdmsr(void)
+{
+    uint64_t val;
+    helper_svm_check_intercept_param(SVM_EXIT_MSR, 0);
+#ifdef CONFIG_SERIALICE
+    if (serialice_active)
+        val = serialice_rdmsr((uint32_t) ECX, (uint32_t) EDI);
+    else
+        val = cpu_rdmsr((uint32_t) ECX);
+#else
+    val = cpu_rdmsr((uint32_t) ECX);
+#endif
     EAX = (uint32_t)(val);
     EDX = (uint32_t)(val >> 32);
 }
-#endif
+#endif /* CONFIG_USER_ONLY */
 
 target_ulong helper_lsl(target_ulong selector1)
 {
