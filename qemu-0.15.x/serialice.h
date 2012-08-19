@@ -61,13 +61,8 @@ void serialice_command(const char *command, int reply_len);
 void serialice_get_version(void);
 void serialice_get_mainboard(void);
 
-uint8_t serialice_inb(uint16_t port);
-uint16_t serialice_inw(uint16_t port);
-uint32_t serialice_inl(uint16_t port);
-
-void serialice_outb(uint8_t data, uint16_t port);
-void serialice_outw(uint16_t data, uint16_t port);
-void serialice_outl(uint32_t data, uint16_t port);
+uint32_t serialice_io_read(uint16_t port, unsigned int size);
+void serialice_io_write(uint16_t port, unsigned int size, uint32_t data);
 
 uint64_t serialice_rdmsr(uint32_t addr, uint32_t key);
 void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key);

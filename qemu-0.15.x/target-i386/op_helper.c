@@ -559,7 +559,7 @@ void helper_outb(uint32_t port, uint32_t data)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-        serialice_outb(data & 0xff, port);
+        serialice_io_write(port, 1, data);
         return;
     }
 #endif
@@ -570,7 +570,7 @@ target_ulong helper_inb(uint32_t port)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-        return (target_ulong) serialice_inb(port);
+        return (target_ulong) serialice_io_read(port, 1);
     }
 #endif
     return cpu_inb(port);
@@ -580,7 +580,7 @@ void helper_outw(uint32_t port, uint32_t data)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-        serialice_outw(data & 0xffff, port);
+        serialice_io_write(port, 2, data);
         return;
     }
 #endif
@@ -591,7 +591,7 @@ target_ulong helper_inw(uint32_t port)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-        return (target_ulong) serialice_inw(port);
+        return (target_ulong) serialice_io_read(port, 2);
     }
 #endif
     return cpu_inw(port);
@@ -601,7 +601,7 @@ void helper_outl(uint32_t port, uint32_t data)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-        serialice_outl(data & 0xffffffff, port);
+        serialice_io_write(port, 4, data);
         return;
     }
 #endif
@@ -612,7 +612,7 @@ target_ulong helper_inl(uint32_t port)
 {
 #ifdef CONFIG_SERIALICE
     if (serialice_active) {
-        return (target_ulong) serialice_inl(port);
+        return (target_ulong) serialice_io_read(port, 4);
     }
 #endif
     return cpu_inl(port);

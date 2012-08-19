@@ -105,114 +105,6 @@ static void serialice_screen(void)
 // **************************************************************************
 // high level communication with the SerialICE shell
 
-uint8_t serialice_inb(uint16_t port)
-{
-    uint8_t ret;
-    uint32_t data;
-    int filtered;
-
-    filtered = serialice_io_read_filter(&data, port, 1);
-
-    if (filtered) {
-        ret = data & 0xff;
-    } else {
-	return serialice_io_read_wrapper(port, 1);
-    }
-
-    serialice_log(LOG_READ | LOG_IO, ret, port, 1);
-
-    return ret;
-}
-
-uint16_t serialice_inw(uint16_t port)
-{
-    uint16_t ret;
-    uint32_t data;
-    int filtered;
-
-    filtered = serialice_io_read_filter(&data, port, 2);
-
-    if (filtered) {
-        ret = data & 0xffff;
-    } else {
-	return serialice_io_read_wrapper(port, 2);
-    }
-
-    serialice_log(LOG_READ | LOG_IO, ret, port, 2);
-
-    return ret;
-}
-
-uint32_t serialice_inl(uint16_t port)
-{
-    uint32_t ret;
-    uint32_t data;
-    int filtered;
-
-    filtered = serialice_io_read_filter(&data, port, 4);
-
-    if (filtered) {
-        ret = data;
-    } else {
-	return serialice_io_read_wrapper(port, 4);
-    }
-
-    serialice_log(LOG_READ | LOG_IO, ret, port, 4);
-
-    return ret;
-}
-
-void serialice_outb(uint8_t data, uint16_t port)
-{
-    uint32_t filtered_data = (uint32_t) data;
-    int filtered;
-
-    filtered = serialice_io_write_filter(&filtered_data, port, 1);
-
-    if (filtered) {
-        data = (uint8_t) filtered_data;
-    } else {
-        data = (uint8_t) filtered_data;
-	serialice_io_write_wrapper(port, 1, data);
-    }
-
-    serialice_log(LOG_WRITE | LOG_IO, data, port, 1);
-}
-
-void serialice_outw(uint16_t data, uint16_t port)
-{
-    uint32_t filtered_data = (uint32_t) data;
-    int filtered;
-
-    filtered = serialice_io_write_filter(&filtered_data, port, 2);
-
-    if (filtered) {
-        data = (uint16_t) filtered_data;
-    } else {
-        data = (uint16_t) filtered_data;
-	serialice_io_write_wrapper(port, 2, data);
-    }
-
-    serialice_log(LOG_WRITE | LOG_IO, data, port, 2);
-}
-
-void serialice_outl(uint32_t data, uint16_t port)
-{
-    uint32_t filtered_data = data;
-    int filtered;
-
-    filtered = serialice_io_write_filter(&filtered_data, port, 4);
-
-    if (filtered) {
-        data = filtered_data;
-    } else {
-        data = filtered_data;
-	serialice_io_write_wrapper(port, 4, data);
-    }
-
-    serialice_log(LOG_WRITE | LOG_IO, data, port, 4);
-}
-
 uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 {
     uint32_t hi, lo;
@@ -344,6 +236,40 @@ int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
     }
 
     return (write_to_qemu == 0);
+}
+
+#define mask_data(val,bytes) (val & (((uint64_t)1<<(bytes*8))-1))
+
+uint32_t serialice_io_read(uint16_t port, unsigned int size)
+{
+    uint32_t data = 0;
+    int filtered;
+
+    filtered = serialice_io_read_filter(&data, port, size);
+    if (!filtered) {
+	return serialice_io_read_wrapper(port, size);
+    }
+
+    data = mask_data(data, size);
+    serialice_log(LOG_READ | LOG_IO, data, port, size);
+    return data;
+}
+
+void serialice_io_write(uint16_t port, unsigned int size, uint32 data)
+{
+    uint32_t filtered_data = mask_data(data, size);
+    int filtered;
+
+    filtered = serialice_io_write_filter(&filtered_data, port, size);
+
+    if (filtered) {
+        data = mask_data(filtered_data, size);
+    } else {
+        data = mask_data(filtered_data, size);
+	serialice_io_write_wrapper(port, size, data);
+    }
+
+    serialice_log(LOG_WRITE | LOG_IO, data, port, size);
 }
 
 // **************************************************************************
