@@ -111,7 +111,7 @@ uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
     uint64_t ret;
     int filtered;
 
-    filtered = serialice_msr_filter(FILTER_READ, addr, &hi, &lo);
+    filtered = serialice_rdmsr_filter(addr, &hi, &lo);
     if (!filtered) {
         serialice_rdmsr_wrapper(addr, key, &hi, &lo);
     }
@@ -120,7 +120,7 @@ uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
     ret <<= 32;
     ret |= lo;
 
-    serialice_msr_log(LOG_READ, addr, hi, lo, filtered);
+    serialice_rdmsr_log(addr, hi, lo, filtered);
 
     return ret;
 }
@@ -133,13 +133,13 @@ void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
     hi = (data >> 32);
     lo = (data & 0xffffffff);
 
-    filtered = serialice_msr_filter(FILTER_WRITE, addr, &hi, &lo);
+    filtered = serialice_wrmsr_filter(addr, &hi, &lo);
 
     if (!filtered) {
         serialice_wrmsr_wrapper(addr, key, hi, lo);
     }
 
-    serialice_msr_log(LOG_WRITE, addr, hi, lo, filtered);
+    serialice_wrmsr_log(addr, hi, lo, filtered);
 }
 
 cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)

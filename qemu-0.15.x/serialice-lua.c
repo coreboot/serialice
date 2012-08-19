@@ -350,26 +350,44 @@ int serialice_memory_write_filter(uint32_t addr, int size,
     return ret;
 }
 
-
-int serialice_msr_filter(int flags, uint32_t addr, uint32_t * hi,
-                                uint32_t * lo)
+int serialice_wrmsr_filter(uint32_t addr, uint32_t * hi, uint32_t * lo)
 {
     int ret, result;
 
-    if (flags & FILTER_WRITE) {
-        lua_getglobal(L, "SerialICE_msr_write_filter");
-    } else {
-        lua_getglobal(L, "SerialICE_msr_read_filter");
-    }
-
+    lua_getglobal(L, "SerialICE_msr_write_filter");
     lua_pushinteger(L, addr);   // port
     lua_pushinteger(L, *hi);    // high
     lua_pushinteger(L, *lo);    // low
     result = lua_pcall(L, 3, 3, 0);
     if (result) {
         fprintf(stderr,
-                "Failed to run function SerialICE_msr_%s_filter: %s\n",
-                (flags & FILTER_WRITE) ? "write" : "read", lua_tostring(L, -1));
+                "Failed to run function SerialICE_msr_write_filter: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
+    }
+    ret = lua_toboolean(L, -3);
+    if (ret) {
+        *hi = lua_tointeger(L, -1);
+        *lo = lua_tointeger(L, -2);
+    }
+    lua_pop(L, 3);
+
+    return ret;
+}
+
+int serialice_rdmsr_filter(uint32_t addr, uint32_t * hi, uint32_t * lo)
+{
+    int ret, result;
+
+    lua_getglobal(L, "SerialICE_msr_read_filter");
+    lua_pushinteger(L, addr);   // port
+    lua_pushinteger(L, *hi);    // high
+    lua_pushinteger(L, *lo);    // low
+    result = lua_pcall(L, 3, 3, 0);
+    if (result) {
+        fprintf(stderr,
+                "Failed to run function SerialICE_msr_read_filter: %s\n",
+                lua_tostring(L, -1));
         exit(1);
     }
     ret = lua_toboolean(L, -3);
@@ -446,25 +464,38 @@ void serialice_log(int flags, uint32_t data, uint32_t addr, int size)
     }
 }
 
-void serialice_msr_log(int flags, uint32_t addr, uint32_t hi,
+void serialice_wrmsr_log(uint32_t addr, uint32_t hi,
                               uint32_t lo, int filtered)
 {
     int result;
 
-    if (flags & LOG_WRITE) {
-        lua_getglobal(L, "SerialICE_msr_write_log");
-    } else {                    // if (!(flags & LOG_WRITE))
-        lua_getglobal(L, "SerialICE_msr_read_log");
-    }
-
+    lua_getglobal(L, "SerialICE_msr_write_log");
     lua_pushinteger(L, addr);   // addr/port
     lua_pushinteger(L, hi);     // datasize
     lua_pushinteger(L, lo);     // data
     lua_pushboolean(L, filtered);       // data
     result = lua_pcall(L, 4, 0, 0);
     if (result) {
-        fprintf(stderr, "Failed to run function SerialICE_msr_%s_log: %s\n",
-                (flags & LOG_WRITE) ? "write" : "read", lua_tostring(L, -1));
+        fprintf(stderr, "Failed to run function SerialICE_msr_write_log: %s\n",
+                lua_tostring(L, -1));
+        exit(1);
+    }
+}
+
+void serialice_rdmsr_log(uint32_t addr, uint32_t hi,
+                              uint32_t lo, int filtered)
+{
+    int result;
+
+    lua_getglobal(L, "SerialICE_msr_read_log");
+    lua_pushinteger(L, addr);   // addr/port
+    lua_pushinteger(L, hi);     // datasize
+    lua_pushinteger(L, lo);     // data
+    lua_pushboolean(L, filtered);       // data
+    result = lua_pcall(L, 4, 0, 0);
+    if (result) {
+        fprintf(stderr, "Failed to run function SerialICE_msr_read_log: %s\n",
+                lua_tostring(L, -1));
         exit(1);
     }
 }
@@ -490,5 +521,3 @@ void serialice_cpuid_log(uint32_t eax, uint32_t ecx, cpuid_regs_t res,
         exit(1);
     }
 }
-
-
