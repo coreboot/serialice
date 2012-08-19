@@ -166,12 +166,7 @@ cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)
 void serialice_log_load(int caught, uint32_t addr, uint32_t result,
                         unsigned int data_size)
 {
-    if (caught) {
-        serialice_read_log(LOG_MEMORY | LOG_TARGET, result, addr,
-                      data_size);
-    } else {
-        serialice_read_log(LOG_MEMORY, result, addr, data_size);
-    }
+    serialice_memory_read_log(caught, result, addr, data_size);
 }
 
 /* This function can grab Qemu load ops and forward them to the SerialICE
@@ -205,12 +200,7 @@ int serialice_handle_load(uint32_t addr, uint32_t * result,
 static void serialice_log_store(int caught, uint32_t addr, uint32_t val,
                                 unsigned int data_size)
 {
-    if (caught) {
-        serialice_write_log(LOG_MEMORY | LOG_TARGET, val, addr,
-                      data_size);
-    } else {
-        serialice_write_log(LOG_MEMORY, val, addr, data_size);
-    }
+    serialice_memory_write_log(caught, val, addr, data_size);
 }
 
 /* This function can grab Qemu store ops and forward them to the SerialICE
@@ -251,7 +241,7 @@ uint32_t serialice_io_read(uint16_t port, unsigned int size)
     }
 
     data = mask_data(data, size);
-    serialice_read_log(LOG_IO, data, port, size);
+    serialice_io_read_log(0, data, port, size);
     return data;
 }
 
@@ -269,7 +259,7 @@ void serialice_io_write(uint16_t port, unsigned int size, uint32 data)
         serialice_io_write_wrapper(port, size, data);
     }
 
-    serialice_write_log(LOG_IO, data, port, size);
+    serialice_io_write_log(0, data, port, size);
 }
 
 // **************************************************************************

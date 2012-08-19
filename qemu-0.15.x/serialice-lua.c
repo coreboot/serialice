@@ -41,6 +41,10 @@
 #include "serialice.h"
 #include "sysemu.h"
 
+#define LOG_IO		1
+#define LOG_MEMORY	2
+#define LOG_TARGET	4
+
 static lua_State *L;
 
 extern const char *serialice_mainboard;
@@ -436,7 +440,7 @@ int serialice_cpuid_filter(uint32_t eax, uint32_t ecx,
 
 /* SerialICE output loggers */
 
-void serialice_read_log(int flags, uint32_t data, uint32_t addr, int size)
+static void __read_log(int flags, uint32_t data, uint32_t addr, int size)
 {
     int result;
 
@@ -459,7 +463,7 @@ void serialice_read_log(int flags, uint32_t data, uint32_t addr, int size)
     }
 }
 
-void serialice_write_log(int flags, uint32_t data, uint32_t addr, int size)
+static void __write_log(int flags, uint32_t data, uint32_t addr, int size)
 {
     int result;
 
@@ -480,6 +484,27 @@ void serialice_write_log(int flags, uint32_t data, uint32_t addr, int size)
                 (flags & LOG_MEMORY) ? "memory" : "io", lua_tostring(L, -1));
         exit(1);
     }
+}
+
+void serialice_memory_read_log(int caught, uint32_t data, uint32_t addr, int size)
+{
+    __read_log(LOG_MEMORY | (caught ? LOG_TARGET : 0), data, addr, size);
+}
+
+void serialice_memory_write_log(int caught, uint32_t data, uint32_t addr, int size)
+{
+    __write_log(LOG_MEMORY | (caught ? LOG_TARGET : 0), data, addr, size);
+}
+
+
+void serialice_io_read_log(int caught, uint32_t data, uint32_t addr, int size)
+{
+    __read_log(LOG_IO | (caught ? LOG_TARGET : 0), data, addr, size);
+}
+
+void serialice_io_write_log(int caught, uint32_t data, uint32_t addr, int size)
+{
+    __write_log(LOG_IO | (caught ? LOG_TARGET : 0), data, addr, size);
 }
 
 void serialice_wrmsr_log(uint32_t addr, uint32_t hi,

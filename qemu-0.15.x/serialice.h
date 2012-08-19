@@ -38,14 +38,6 @@
 #define WRITE_TO_QEMU		(1 << 0)
 #define WRITE_TO_SERIALICE	(1 << 1)
 
-#define LOG_IO		0
-#define LOG_MEMORY	1
-#define LOG_READ	0
-#define LOG_WRITE	2
-// these two are separate
-#define LOG_QEMU	4
-#define LOG_TARGET	8
-
 extern const char *serialice_device;
 extern int serialice_active;
 
@@ -96,8 +88,10 @@ int serialice_cpuid_filter(uint32_t eax, uint32_t ecx, cpuid_regs_t * regs);
 int serialice_rdmsr_filter(uint32_t addr, uint32_t * hi, uint32_t * lo);
 int serialice_wrmsr_filter(uint32_t addr, uint32_t * hi, uint32_t * lo);
 
-void serialice_read_log(int flags, uint32_t data, uint32_t addr, int size);
-void serialice_write_log(int flags, uint32_t data, uint32_t addr, int size);
+void serialice_io_read_log(int caught, uint32_t data, uint32_t addr, int size);
+void serialice_io_write_log(int caught, uint32_t data, uint32_t addr, int size);
+void serialice_memory_read_log(int caught, uint32_t data, uint32_t addr, int size);
+void serialice_memory_write_log(int caught, uint32_t data, uint32_t addr, int size);
 void serialice_rdmsr_log(uint32_t addr, uint32_t hi, uint32_t lo, int filtered);
 void serialice_wrmsr_log(uint32_t addr, uint32_t hi, uint32_t lo, int filtered);
 void serialice_cpuid_log(uint32_t eax, uint32_t ecx, cpuid_regs_t res, int filtered);
