@@ -167,10 +167,10 @@ void serialice_log_load(int caught, uint32_t addr, uint32_t result,
                         unsigned int data_size)
 {
     if (caught) {
-        serialice_log(LOG_READ | LOG_MEMORY | LOG_TARGET, result, addr,
+        serialice_read_log(LOG_MEMORY | LOG_TARGET, result, addr,
                       data_size);
     } else {
-        serialice_log(LOG_READ | LOG_MEMORY, result, addr, data_size);
+        serialice_read_log(LOG_MEMORY, result, addr, data_size);
     }
 }
 
@@ -206,10 +206,10 @@ static void serialice_log_store(int caught, uint32_t addr, uint32_t val,
                                 unsigned int data_size)
 {
     if (caught) {
-        serialice_log(LOG_WRITE | LOG_MEMORY | LOG_TARGET, val, addr,
+        serialice_write_log(LOG_MEMORY | LOG_TARGET, val, addr,
                       data_size);
     } else {
-        serialice_log(LOG_WRITE | LOG_MEMORY, val, addr, data_size);
+        serialice_write_log(LOG_MEMORY, val, addr, data_size);
     }
 }
 
@@ -247,11 +247,11 @@ uint32_t serialice_io_read(uint16_t port, unsigned int size)
 
     filtered = serialice_io_read_filter(&data, port, size);
     if (!filtered) {
-	return serialice_io_read_wrapper(port, size);
+        return serialice_io_read_wrapper(port, size);
     }
 
     data = mask_data(data, size);
-    serialice_log(LOG_READ | LOG_IO, data, port, size);
+    serialice_read_log(LOG_IO, data, port, size);
     return data;
 }
 
@@ -266,10 +266,10 @@ void serialice_io_write(uint16_t port, unsigned int size, uint32 data)
         data = mask_data(filtered_data, size);
     } else {
         data = mask_data(filtered_data, size);
-	serialice_io_write_wrapper(port, size, data);
+        serialice_io_write_wrapper(port, size, data);
     }
 
-    serialice_log(LOG_WRITE | LOG_IO, data, port, size);
+    serialice_write_log(LOG_IO, data, port, size);
 }
 
 // **************************************************************************

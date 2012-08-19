@@ -436,17 +436,13 @@ int serialice_cpuid_filter(uint32_t eax, uint32_t ecx,
 
 /* SerialICE output loggers */
 
-void serialice_log(int flags, uint32_t data, uint32_t addr, int size)
+void serialice_read_log(int flags, uint32_t data, uint32_t addr, int size)
 {
     int result;
 
-    if ((flags & LOG_WRITE) && (flags & LOG_MEMORY)) {
-        lua_getglobal(L, "SerialICE_memory_write_log");
-    } else if (!(flags & LOG_WRITE) && (flags & LOG_MEMORY)) {
+    if (flags & LOG_MEMORY) {
         lua_getglobal(L, "SerialICE_memory_read_log");
-    } else if ((flags & LOG_WRITE) && !(flags & LOG_MEMORY)) {
-        lua_getglobal(L, "SerialICE_io_write_log");
-    } else {                    // if (!(flags & LOG_WRITE) && !(flags & LOG_MEMORY))
+    } else {
         lua_getglobal(L, "SerialICE_io_read_log");
     }
 
@@ -457,9 +453,31 @@ void serialice_log(int flags, uint32_t data, uint32_t addr, int size)
 
     result = lua_pcall(L, 4, 0, 0);
     if (result) {
-        fprintf(stderr, "Failed to run function SerialICE_%s_%s_log: %s\n",
-                (flags & LOG_MEMORY) ? "memory" : "io",
-                (flags & LOG_WRITE) ? "write" : "read", lua_tostring(L, -1));
+        fprintf(stderr, "Failed to run function SerialICE_%s_read_log: %s\n",
+                (flags & LOG_MEMORY) ? "memory" : "io", lua_tostring(L, -1));
+        exit(1);
+    }
+}
+
+void serialice_write_log(int flags, uint32_t data, uint32_t addr, int size)
+{
+    int result;
+
+    if (flags & LOG_MEMORY) {
+        lua_getglobal(L, "SerialICE_memory_write_log");
+    } else  {
+        lua_getglobal(L, "SerialICE_io_write_log");
+    }
+
+    lua_pushinteger(L, addr);   // addr/port
+    lua_pushinteger(L, size);   // datasize
+    lua_pushinteger(L, data);   // data
+    lua_pushboolean(L, ((flags & LOG_TARGET) != 0));
+
+    result = lua_pcall(L, 4, 0, 0);
+    if (result) {
+        fprintf(stderr, "Failed to run function SerialICE_%s_write_log: %s\n",
+                (flags & LOG_MEMORY) ? "memory" : "io", lua_tostring(L, -1));
         exit(1);
     }
 }

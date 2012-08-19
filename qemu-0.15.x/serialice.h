@@ -96,7 +96,8 @@ int serialice_cpuid_filter(uint32_t eax, uint32_t ecx, cpuid_regs_t * regs);
 int serialice_rdmsr_filter(uint32_t addr, uint32_t * hi, uint32_t * lo);
 int serialice_wrmsr_filter(uint32_t addr, uint32_t * hi, uint32_t * lo);
 
-void serialice_log(int flags, uint32_t data, uint32_t addr, int size);
+void serialice_read_log(int flags, uint32_t data, uint32_t addr, int size);
+void serialice_write_log(int flags, uint32_t data, uint32_t addr, int size);
 void serialice_rdmsr_log(uint32_t addr, uint32_t hi, uint32_t lo, int filtered);
 void serialice_wrmsr_log(uint32_t addr, uint32_t hi, uint32_t lo, int filtered);
 void serialice_cpuid_log(uint32_t eax, uint32_t ecx, cpuid_regs_t res, int filtered);
