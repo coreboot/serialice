@@ -52,12 +52,15 @@ typedef struct {
 } SerialICEState;
 
 static SerialICEState *s;
+static const SerialICE_target serialice_protocol;
 const char *serialice_mainboard = NULL;
 
 #ifndef WIN32
 static struct termios options;
 #endif
 
+// **************************************************************************
+// low level communication with the SerialICE shell (serial communication)
 static int handshake_mode = 0;
 
 static void *mallocz(unsigned int size)
@@ -157,7 +160,7 @@ static int serialice_wait_prompt(void)
     return 0;
 }
 
-void serialice_serial_init(void)
+const SerialICE_target *serialice_serial_init(void)
 {
     s = mallocz(sizeof(SerialICEState));
 
@@ -252,13 +255,17 @@ void serialice_serial_init(void)
     serialice_write(s, "@", 1);
 
     handshake_mode = 0;         // from now on, warn about readback errors.
-
-    serialice_get_version();
-
-    serialice_get_mainboard();
+    return &serialice_protocol;
 }
 
-void serialice_command(const char *command, int reply_len)
+void serialice_serial_exit(void)
+{
+    free(s->command);
+    free(s->buffer);
+    free(s);
+}
+
+static void serialice_command(const char *command, int reply_len)
 {
 #if SERIALICE_DEBUG > 5
     int i;
@@ -296,7 +303,10 @@ void serialice_command(const char *command, int reply_len)
 #endif
 }
 
-void serialice_get_version(void)
+// **************************************************************************
+// high level communication with the SerialICE shell
+
+static void msg_version(void)
 {
     int len = 0;
     printf("SerialICE: Version.....: ");
@@ -313,7 +323,7 @@ void serialice_get_version(void)
     printf("%s\n", s->buffer);
 }
 
-void serialice_get_mainboard(void)
+static void msg_mainboard(void)
 {
     int len = 31;
 
@@ -326,7 +336,7 @@ void serialice_get_mainboard(void)
     printf("%s\n", serialice_mainboard);
 }
 
-uint32_t serialice_io_read_wrapper(uint16_t port, unsigned int size)
+static uint32_t msg_io_read(uint16_t port, unsigned int size)
 {
     switch (size) {
     case 1:
@@ -350,7 +360,7 @@ uint32_t serialice_io_read_wrapper(uint16_t port, unsigned int size)
     }
 }
 
-void serialice_io_write_wrapper(uint16_t port, unsigned int size, uint32_t data)
+static void msg_io_write(uint16_t port, unsigned int size, uint32_t data)
 {
     switch (size) {
     case 1:
@@ -371,7 +381,7 @@ void serialice_io_write_wrapper(uint16_t port, unsigned int size, uint32_t data)
     return;
 }
 
-uint32_t serialice_load_wrapper(uint32_t addr, unsigned int size)
+static uint32_t msg_load(uint32_t addr, unsigned int size)
 {
     switch (size) {
     case 1:
@@ -395,7 +405,7 @@ uint32_t serialice_load_wrapper(uint32_t addr, unsigned int size)
     return 0;
 }
 
-void serialice_store_wrapper(uint32_t addr, unsigned int size, uint32_t data)
+static void msg_store(uint32_t addr, unsigned int size, uint32_t data)
 {
     switch (size) {
     case 1:
@@ -415,8 +425,7 @@ void serialice_store_wrapper(uint32_t addr, unsigned int size, uint32_t data)
     }
 }
 
-void serialice_rdmsr_wrapper(uint32_t addr, uint32_t key,
-                             uint32_t * hi, uint32_t * lo)
+static void msg_rdmsr(uint32_t addr, uint32_t key, uint32_t * hi, uint32_t * lo)
 {
     sprintf(s->command, "*rc%08x.%08x", addr, key);
     // command read back: "\n00000000.00000000" (18 characters)
@@ -426,14 +435,13 @@ void serialice_rdmsr_wrapper(uint32_t addr, uint32_t key,
     *lo = (uint32_t) strtoul(s->buffer + 10, (char **)NULL, 16);
 }
 
-void serialice_wrmsr_wrapper(uint32_t addr, uint32_t key,
-                             uint32_t hi, uint32_t lo)
+static void msg_wrmsr(uint32_t addr, uint32_t key, uint32_t hi, uint32_t lo)
 {
     sprintf(s->command, "*wc%08x.%08x=%08x.%08x", addr, key, hi, lo);
     serialice_command(s->command, 0);
 }
 
-void serialice_cpuid_wrapper(uint32_t eax, uint32_t ecx, cpuid_regs_t * ret)
+static void msg_cpuid(uint32_t eax, uint32_t ecx, cpuid_regs_t * ret)
 {
     sprintf(s->command, "*ci%08x.%08x", eax, ecx);
     // command read back: "\n000006f2.00000000.00001234.12340324"
@@ -447,3 +455,15 @@ void serialice_cpuid_wrapper(uint32_t eax, uint32_t ecx, cpuid_regs_t * ret)
     ret->ecx = (uint32_t) strtoul(s->buffer + 19, (char **)NULL, 16);
     ret->edx = (uint32_t) strtoul(s->buffer + 28, (char **)NULL, 16);
 }
+
+static const SerialICE_target serialice_protocol = {
+    .version = msg_version,
+    .mainboard = msg_mainboard,
+    .io_read = msg_io_read,
+    .io_write = msg_io_write,
+    .load = msg_load,
+    .store = msg_store,
+    .rdmsr = msg_rdmsr,
+    .wrmsr = msg_wrmsr,
+    .cpuid = msg_cpuid,
+};

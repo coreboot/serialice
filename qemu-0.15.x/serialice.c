@@ -50,6 +50,8 @@
 #define DEFAULT_RAM_SIZE 128
 #define BIOS_FILENAME "bios.bin"
 
+const SerialICE_target *target;
+
 int serialice_active = 0;
 
 static DisplayState *ds;
@@ -113,7 +115,7 @@ uint64_t serialice_rdmsr(uint32_t addr, uint32_t key)
 
     filtered = serialice_rdmsr_filter(addr, &hi, &lo);
     if (!filtered) {
-        serialice_rdmsr_wrapper(addr, key, &hi, &lo);
+        target->rdmsr(addr, key, &hi, &lo);
     }
 
     ret = hi;
@@ -136,7 +138,7 @@ void serialice_wrmsr(uint64_t data, uint32_t addr, uint32_t key)
     filtered = serialice_wrmsr_filter(addr, &hi, &lo);
 
     if (!filtered) {
-        serialice_wrmsr_wrapper(addr, key, hi, lo);
+        target->wrmsr(addr, key, hi, lo);
     }
 
     serialice_wrmsr_log(addr, hi, lo, filtered);
@@ -147,7 +149,7 @@ cpuid_regs_t serialice_cpuid(uint32_t eax, uint32_t ecx)
     cpuid_regs_t ret;
     int filtered;
 
-    serialice_cpuid_wrapper(eax, ecx, &ret);
+    target->cpuid(eax, ecx, &ret);
 
     filtered = serialice_cpuid_filter(eax, ecx, &ret);
 
@@ -182,7 +184,7 @@ int serialice_handle_load(uint32_t addr, uint32_t * result,
     source = serialice_memory_read_filter(addr, result, data_size);
 
     if (source & READ_FROM_SERIALICE) {
-        *result = serialice_load_wrapper(addr, data_size);
+        *result = target->load(addr, data_size);
         return 1;
     }
 
@@ -222,7 +224,7 @@ int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size)
     serialice_log_store(write_to_target, addr, filtered_data, data_size);
 
     if (write_to_target) {
-        serialice_store_wrapper(addr, data_size, filtered_data);
+        target->store(addr, data_size, filtered_data);
     }
 
     return (write_to_qemu == 0);
@@ -237,7 +239,7 @@ uint32_t serialice_io_read(uint16_t port, unsigned int size)
 
     filtered = serialice_io_read_filter(&data, port, size);
     if (!filtered) {
-        return serialice_io_read_wrapper(port, size);
+        return target->io_read(port, size);
     }
 
     data = mask_data(data, size);
@@ -256,7 +258,7 @@ void serialice_io_write(uint16_t port, unsigned int size, uint32 data)
         data = mask_data(filtered_data, size);
     } else {
         data = mask_data(filtered_data, size);
-        serialice_io_write_wrapper(port, size, data);
+        target->io_write(port, size, data);
     }
 
     serialice_io_write_log(0, data, port, size);
@@ -270,7 +272,9 @@ static void serialice_init(void)
     serialice_screen();
 
     printf("SerialICE: Open connection to target hardware...\n");
-    serialice_serial_init();
+    target = serialice_serial_init();
+    target->version();
+    target->mainboard();
 
     printf("SerialICE: LUA init...\n");
     serialice_lua_init();

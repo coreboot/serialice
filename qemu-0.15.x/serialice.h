@@ -44,12 +44,6 @@ extern int serialice_active;
 int serialice_lua_init(void);
 const char *serialice_lua_execute(const char *cmd);
 
-void serialice_serial_init(void);
-void serialice_command(const char *command, int reply_len);
-
-void serialice_get_version(void);
-void serialice_get_mainboard(void);
-
 uint32_t serialice_io_read(uint16_t port, unsigned int size);
 void serialice_io_write(uint16_t port, unsigned int size, uint32_t data);
 
@@ -69,15 +63,20 @@ void serialice_log_load(int caught, uint32_t addr, uint32_t result,
 int serialice_handle_store(uint32_t addr, uint32_t val, unsigned int data_size);
 
 /* serialice protocol */
-uint32_t serialice_io_read_wrapper(uint16_t port, unsigned int size);
-void serialice_io_write_wrapper(uint16_t port, unsigned int size, uint32_t data);
+typedef struct {
+    void (*version) (void);
+    void (*mainboard) (void);
+    uint32_t (*io_read) (uint16_t port, unsigned int size);
+    void (*io_write) (uint16_t port, unsigned int size, uint32_t data);
+    uint32_t (*load) (uint32_t addr, unsigned int size);
+    void (*store) (uint32_t addr, unsigned int size, uint32_t data);
+    void (*rdmsr) (uint32_t addr, uint32_t key, uint32_t * hi, uint32_t * lo);
+    void (*wrmsr) (uint32_t addr, uint32_t key, uint32_t hi, uint32_t lo);
+    void (*cpuid) (uint32_t eax, uint32_t ecx, cpuid_regs_t * ret);
+} SerialICE_target;
 
-uint32_t serialice_load_wrapper(uint32_t addr, unsigned int size);
-void serialice_store_wrapper(uint32_t addr, unsigned int size, uint32_t data);
-
-void serialice_rdmsr_wrapper(uint32_t addr, uint32_t key, uint32_t *hi, uint32_t *lo);
-void serialice_wrmsr_wrapper(uint32_t addr, uint32_t key, uint32_t hi, uint32_t lo);
-void serialice_cpuid_wrapper(uint32_t eax, uint32_t ecx, cpuid_regs_t * ret);
+const SerialICE_target *serialice_serial_init(void);
+void serialice_serial_exit(void);
 
 /* serialice LUA */
 int serialice_io_read_filter(uint32_t * data, uint16_t port, int size);
