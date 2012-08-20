@@ -239,6 +239,9 @@ obj-i386-y += pc_piix.o
 obj-i386-$(CONFIG_KVM) += kvmclock.o
 obj-i386-$(CONFIG_SPICE) += qxl.o qxl-logger.o qxl-render.o
 
+# Dummy VNC output
+obj-i386-y += dumb_screen.o
+
 # shared objects
 obj-ppc-y = ppc.o
 obj-ppc-y += vga.o

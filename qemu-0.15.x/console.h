@@ -352,6 +352,7 @@ void vga_hw_invalidate(void);
 void vga_hw_screen_dump(const char *filename);
 void vga_hw_text_update(console_ch_t *chardata);
 
+void dumb_screen(void);
 int is_graphic_console(void);
 int is_fixedsize_console(void);
 int text_console_init(QemuOpts *opts, CharDriverState **_chr);
