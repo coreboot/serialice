@@ -184,7 +184,7 @@ uint32_t serialice_io_read(uint16_t port, unsigned int size)
 
     filtered = serialice_io_read_filter(&data, port, size);
     if (!filtered) {
-        return target->io_read(port, size);
+        data = target->io_read(port, size);
     }
 
     data = mask_data(data, size);
