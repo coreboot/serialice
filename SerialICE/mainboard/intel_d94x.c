@@ -24,6 +24,8 @@
 const char boardname[33]="Intel D945GCLF                  ";
 #elif defined(CONFIG_BOARD_INTEL_D945GNT)
 const char boardname[33]="Intel D945GNT                   ";
+#elif defined(CONFIG_BOARD_INTEL_D946GZIS)
+const char boardname[33]="Intel D946GZIS                  ";
 #else
 #error "Unsupported board"
 #endif
@@ -81,11 +83,13 @@ static void superio_init(u8 cfg_port, u8 com_port, u8 pm)
 	pnp_set_irq0(cfg_port, 4);
 	pnp_set_enable(cfg_port, 1);
 
-	pnp_set_logical_device(cfg_port, pm);
-	pnp_set_enable(cfg_port, 0);
-	pnp_set_iobase0(cfg_port, 0x680);
-	pnp_set_irq0(cfg_port, 3);
-	pnp_set_enable(cfg_port, 1);
+	if (pm != 0) {
+		pnp_set_logical_device(cfg_port, pm);
+		pnp_set_enable(cfg_port, 0);
+		pnp_set_iobase0(cfg_port, 0x680);
+		pnp_set_irq0(cfg_port, 3);
+		pnp_set_enable(cfg_port, 1);
+	}
 
 	pnp_exit_ext_func_mode(cfg_port);
 }
@@ -97,6 +101,8 @@ static void chipset_init(void)
 	superio_init(0x2e, 4, 10);
 #elif defined(CONFIG_BOARD_INTEL_D945GNT)
 	superio_init(0x2e, 3, 4); // LPC47M182
+#elif defined(CONFIG_BOARD_INTEL_D946GZIS)
+	superio_init(0x2e, 3, 0); // PC8374
 #endif
 }
 
