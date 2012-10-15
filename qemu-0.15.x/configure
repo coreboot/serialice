@@ -1741,8 +1741,8 @@ EOF
     serialice=yes
     libs_softmmu="$lua_ldflags $libs_softmmu"
   else
-    lua_cflags=`$pkg_config --cflags lua || $pkg_config --cflags lua5.2 || $pkg_config --cflags lua5.1`
-    lua_ldflags=`$pkg_config --libs lua || $pkg_config --libs lua5.2 || $pkg_config --libs lua5.1`
+    lua_cflags=`$pkg_config --cflags lua 2> /dev/null || $pkg_config --cflags lua5.2 2> /dev/null || $pkg_config --cflags lua5.1 2> /dev/null`
+    lua_ldflags=`$pkg_config --libs lua 2> /dev/null || $pkg_config --libs lua5.2 2> /dev/null || $pkg_config --libs lua5.1 2> /dev/null`
     if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
       serialice=yes
       libs_softmmu="$lua_ldflags $libs_softmmu"
