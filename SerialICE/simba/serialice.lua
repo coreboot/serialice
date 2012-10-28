@@ -27,6 +27,8 @@ io.write("SerialICE: Starting LUA script\n")
 
 -- Set to "false" to show undecoded access for the specified class
 hide_rom_access = true
+hide_pci_io_cfg = true
+hide_pci_mm_cfg = true
 
 -- Set to "true" to log every memory and IO access
 log_everything = false
@@ -46,6 +48,7 @@ dofile("hooks.lua")
 dofile("core_io.lua")
 dofile("memory.lua")
 dofile("cpu.lua")
+dofile("pci_cfg.lua")
 
 function do_minimal_setup()
 	enable_hook(io_hooks, filter_io_fallback)
@@ -58,6 +61,7 @@ end
 
 function do_default_setup()
 	enable_ram()
+	enable_hook(io_hooks, filter_pci_io_cfg)
 end
 
 do_minimal_setup()
