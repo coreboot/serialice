@@ -35,6 +35,7 @@ hide_i8237_io = true
 hide_i8254_io = true
 hide_i8259_io = true
 hide_superio_cfg = true
+hide_smbus_io = true
 
 -- Set to "true" to log every memory and IO access
 log_everything = false
