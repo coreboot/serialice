@@ -34,6 +34,7 @@ hide_i8042_io = false
 hide_i8237_io = true
 hide_i8254_io = true
 hide_i8259_io = true
+hide_superio_cfg = true
 
 -- Set to "true" to log every memory and IO access
 log_everything = false
@@ -42,6 +43,9 @@ log_everything = false
 -- Use lua table for NVram
 -- RTC registers 0x0-0xd go to HW
 cache_nvram = false
+
+-- SMSC 0x07, Winbond 0x06 ?
+DEFAULT_SUPERIO_LDN_REGISTER = 0x07
 
 rom_size = 4 * 1024 * 1024
 rom_base = 0x100000000 - rom_size
@@ -59,6 +63,7 @@ dofile("memory.lua")
 dofile("cpu.lua")
 dofile("pci_cfg.lua")
 dofile("pc80.lua")
+dofile("superio.lua")
 
 function do_minimal_setup()
 	enable_hook(io_hooks, filter_io_fallback)
@@ -73,6 +78,12 @@ function do_default_setup()
 	enable_ram()
 	enable_hook(io_hooks, filter_pci_io_cfg)
 	enable_hook_pc80()
+	enable_hook_superio(0x2e, DEFAULT_SUPERIO_LDN_REGISTER)
+	enable_hook_superio(0x4e, DEFAULT_SUPERIO_LDN_REGISTER)
+	enable_hook(io_hooks, filter_com1)
+	if superio_initialization then
+		superio_initialization()
+	end
 end
 
 do_minimal_setup()
