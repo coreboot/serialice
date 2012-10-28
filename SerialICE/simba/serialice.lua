@@ -29,10 +29,19 @@ io.write("SerialICE: Starting LUA script\n")
 hide_rom_access = true
 hide_pci_io_cfg = true
 hide_pci_mm_cfg = true
+hide_nvram_io = true
+hide_i8042_io = false
+hide_i8237_io = true
+hide_i8254_io = true
+hide_i8259_io = true
 
 -- Set to "true" to log every memory and IO access
 log_everything = false
 
+
+-- Use lua table for NVram
+-- RTC registers 0x0-0xd go to HW
+cache_nvram = false
 
 rom_size = 4 * 1024 * 1024
 rom_base = 0x100000000 - rom_size
@@ -49,6 +58,7 @@ dofile("core_io.lua")
 dofile("memory.lua")
 dofile("cpu.lua")
 dofile("pci_cfg.lua")
+dofile("pc80.lua")
 
 function do_minimal_setup()
 	enable_hook(io_hooks, filter_io_fallback)
@@ -62,6 +72,7 @@ end
 function do_default_setup()
 	enable_ram()
 	enable_hook(io_hooks, filter_pci_io_cfg)
+	enable_hook_pc80()
 end
 
 do_minimal_setup()
