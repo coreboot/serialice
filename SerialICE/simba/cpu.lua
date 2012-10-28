@@ -75,3 +75,57 @@ filter_cpuid_fallback = {
 	post = cpuid_post,
 }
 
+
+
+function multicore_pre(f, action)
+	return skip_filter(f, action)
+end
+
+function multicore_post(f, action)
+	local rout = action.rout
+	local rin = action.rin
+	-- Set number of cores to 1 on Core Duo and Atom to trick the
+	-- firmware into not trying to wake up non-BSP nodes.
+	if not action.write and rin.eax == 0x01 then
+		rout.ebx = bit32.band(0xff00ffff, rout.ebx);
+		rout.ebx = bit32.bor(0x00010000, rout.ebx);
+		fake_action(f, action, 0)
+	end
+	return skip_filter(f, action)
+end
+
+filter_multiprocessor = {
+	id = -1,
+	name = "Multiprocessor Count",
+	pre = multicore_pre,
+	post = multicore_post,
+}
+
+-- Intel CPU microcode update
+function intel_microcode_pre(f, action)
+	if action.rin.ecx == 0x79 then
+		--action.dropped = true
+		--action.rout.edx = 0
+		--action.rout.eax = 0xffff0000
+		return drop_action(f, action)
+	end
+	return skip_filter(f, action)
+end
+
+-- Intel CPU microcode revision check
+-- Fakes microcode revision of my 0x6f6 Core 2 Duo Mobile
+function intel_microcode_post(f, action)
+	if action.rin.ecx == 0x8b then
+		action.rout.edx = 0xc7
+		action.rout.eax = 0
+		return fake_action(f, action, 0)
+	end
+	return skip_filter(f, action)
+end
+
+filter_intel_microcode = {
+	id = -1,
+	name = "Microcode Update",
+	pre = intel_microcode_pre,
+	post = intel_microcode_post,
+}
