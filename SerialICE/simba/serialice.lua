@@ -36,6 +36,7 @@ hide_i8254_io = true
 hide_i8259_io = true
 hide_superio_cfg = true
 hide_smbus_io = true
+hide_mainboard_io = true
 
 -- Set to "true" to log every memory and IO access
 log_everything = false
@@ -90,8 +91,18 @@ function do_default_setup()
 	end
 end
 
-do_minimal_setup()
-do_default_setup()
+mainboard_file = string.format("%s.lua", string.lower(string.gsub(SerialICE_mainboard, "[ -]", "_")))
+local mainboard_lua = loadfile(mainboard_file)
+if (mainboard_lua) then
+	mainboard_lua()
+	printks(froot, "Mainboard script %s initialized.\n", mainboard_file)
+	do_minimal_setup()
+	do_mainboard_setup()
+else
+	printks(froot, "Mainboard script %s not found.\n", mainboard_file)
+	do_minimal_setup()
+	do_default_setup()
+end
 
 printks(froot, "LUA script initialized.\n")
 
