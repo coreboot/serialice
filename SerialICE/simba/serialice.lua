@@ -64,6 +64,7 @@ dofile("cpu.lua")
 dofile("pci_cfg.lua")
 dofile("pc80.lua")
 dofile("superio.lua")
+dofile("mmio.lua")
 
 function do_minimal_setup()
 	enable_hook(io_hooks, filter_io_fallback)
@@ -76,6 +77,8 @@ end
 
 function do_default_setup()
 	enable_ram()
+	enable_hook(mem_hooks, filter_lapic)
+	enable_hook(mem_hooks, filter_ioapic)
 	enable_hook(io_hooks, filter_pci_io_cfg)
 	enable_hook_pc80()
 	enable_hook_superio(0x2e, DEFAULT_SUPERIO_LDN_REGISTER)
