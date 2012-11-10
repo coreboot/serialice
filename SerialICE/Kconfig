@@ -70,6 +70,9 @@ config BOARD_ASROCK_939A785GMH
 config BOARD_MSI_MS6178
 	bool "MSI MS6178"
 
+config BOARD_MSI_MS7133
+	bool "MSI MS-7133"
+
 config BOARD_RCA_RM4100
 	bool "RCA RM4100"
 
@@ -132,6 +135,7 @@ config BOARD_INIT
 	default "asus_m2v-mx_se.c" if BOARD_ASUS_M2V_MX_SE
 	default "asus_k8v-x.c" if BOARD_ASUS_K8V_X
 	default "msi_ms6178.c" if BOARD_MSI_MS6178
+	default "msi_ms7133.c" if BOARD_MSI_MS7133
 	default "rca_rm4100.c" if BOARD_RCA_RM4100
 	default "thomson_ip1000.c" if BOARD_THOMSON_IP1000
 	default "asus_p2b.c" if BOARD_ASUS_P2B
