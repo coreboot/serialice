@@ -45,6 +45,10 @@ config BOARD_INTEL_D945GCLF
 config BOARD_DELL_S1850
 	bool "Dell PowerEdge S1850"
 
+config BOARD_ASUS_F2A85_M
+	bool "ASUS F2A85-M"
+	select BUILD_XMMSTACK
+
 config BOARD_ASUS_M2V_MX_SE
 	bool "ASUS M2V-MX SE"
 	select VIA_ROMSTRAP
@@ -124,6 +128,7 @@ config BOARD_INIT
 	default "roda_rk886ex.c" if BOARD_RODA_RK886EX
 	default "intel_d945gclf.c" if BOARD_INTEL_D945GCLF
 	default "dell_s1850.c" if BOARD_DELL_S1850
+	default "asus_f2a85-m.c" if BOARD_ASUS_F2A85_M
 	default "asus_m2v-mx_se.c" if BOARD_ASUS_M2V_MX_SE
 	default "asus_k8v-x.c" if BOARD_ASUS_K8V_X
 	default "msi_ms6178.c" if BOARD_MSI_MS6178
@@ -148,6 +153,7 @@ config BOARD_INIT
 config SOUTHBRIDGE_INIT
 	string
 	default "southbridge/intel-ich7.c" if BOARD_KONTRON_986LCD_M
+	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_F2A85_M
 
 config SUPERIO_INIT
 	string
