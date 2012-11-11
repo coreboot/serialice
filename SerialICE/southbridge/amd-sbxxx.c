@@ -23,6 +23,8 @@
  * o enables POST card (see #if 0)
  */
 
+#include "config.h"
+
 #define MMIO_NON_POSTED_START 0xfed00000
 #define MMIO_NON_POSTED_END   0xfedfffff
 #define SB_MMIO 0xFED80000
@@ -44,7 +46,7 @@ static void sbxxx_enable_48mhzout(void)
 
 static void southbridge_init(void)
 {
-	u16 reg16;
+	u8 reg8;
 	u32 reg32;
 
 	/* route FED00000 - FEDFFFFF as non-posted to SB */
@@ -65,4 +67,43 @@ static void southbridge_init(void)
 	/* Enable LPC decoding of 0x2e/0x2f, 0x4e/0x4f 0x3f8  */
 	pci_write_config8(PCI_ADDR(0, 0x14, 3, 0x44), (1<<6));
 	pci_write_config8(PCI_ADDR(0, 0x14, 3, 0x48), (1 << 1) | (1 << 0));
+
+#if defined(CONFIG_POST_PCI)
+	/* Chip Control: Enable subtractive decoding */
+	reg8 = pci_read_config8(PCI_ADDR(0, 0x14, 4, 0x40));
+	reg8 |= 1 << 5;
+	pci_write_config8(PCI_ADDR(0, 0x14, 4, 0x40), reg8);
+
+	/* Misc Control: Enable subtractive decoding if 0x40 bit 5 is set */
+	reg8 = pci_read_config8(PCI_ADDR(0, 0x14, 4, 0x4b));
+	reg8 |= 1 << 7;
+	pci_write_config8(PCI_ADDR(0, 0x14, 4, 0x4b), reg8);
+
+	/* The same IO Base and IO Limit here is meaningful because we set the
+	 * bridge to be subtractive. During early setup stage, we have to make
+	 * sure that data can go through port 0x80.
+	 */
+	/* IO Base: 0xf000 */
+	reg8 = pci_read_config8(PCI_ADDR(0, 0x14, 4, 0x1c));
+	reg8 |= 0xf << 4;
+	pci_write_config8(PCI_ADDR(0, 0x14, 4, 0x1c), reg8);
+
+	/* IO Limit: 0xf000 */
+	reg8 = pci_read_config8(PCI_ADDR(0, 0x14, 4, 0x1d));
+	reg8 |= 0xf << 4;
+	pci_write_config8(PCI_ADDR(0, 0x14, 4, 0x1d), reg8);
+
+	/* PCI Command: Enable IO response */
+	reg8 = pci_read_config8(PCI_ADDR(0, 0x14, 4, 0x4));
+	reg8 |= 1 << 0;
+	pci_write_config8(PCI_ADDR(0, 0x14, 4, 0x4) , reg8);
+
+	reg8 = pci_read_config8(PCI_ADDR(0, 0x14, 3, 0x4a));
+	reg8 &= ~(1 << 5);	/* disable lpc port 80 */
+	pci_write_config8(PCI_ADDR(0, 0x14, 3, 0x4a), reg8);
+#elif defined(CONFIG_POST_LPC)
+	reg8 = pci_read_config8(PCI_ADDR(0, 0x14, 3, 0x4a));
+	reg8 |= (1 << 5);	/* enable lpc port 80 */
+	pci_write_config8(PCI_ADDR(0, 0x14, 3, 0x4a), reg8);
+#endif
 }

@@ -20,6 +20,8 @@
 /*
  * This is an example chipset init file for the Roda RK886EX (Rocky 3+)
  */
+#include "config.h"
+
 const char boardname[33]="Roda RK886EX (Rocky III+)       ";
 
 /* Hardware specific functions */
@@ -36,12 +38,11 @@ static void southbridge_init(void)
 	// Set up RCBA
 	pci_write_config32(PCI_ADDR(0, 0x1f, 0, 0xf0), RCBA | 1);
 
-#if 0
+#if defined(CONFIG_POST_LPC)
 	// port80 writes go to LPC:
 	reg32 = RCBA32(GCS);
 	reg32 = reg32 & ~0x04;
 	RCBA32(GCS) = reg32;
-	outb(0x23, 0x80);
 #endif
 
 	// Set up SuperIO LPC forwards

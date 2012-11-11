@@ -323,6 +323,21 @@ config EXPERIMENTAL
 	  We do not make any guarantees about anything that is marked
 	  as EXPERIMENTAL! You have been warned!
 
+choice
+	prompt "POST card"
+	default POST_NONE
+
+config POST_NONE
+	boolean "None"
+
+config POST_PCI
+	boolean "PCI POST card"
+
+config POST_LPC
+	boolean "LPC POST card"
+
+endchoice
+
 config EXPERT
 	bool "Expert mode"
 	help

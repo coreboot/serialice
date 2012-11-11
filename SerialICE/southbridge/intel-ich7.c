@@ -23,6 +23,8 @@
  * o the watchdog is turned off
  */
 
+#include "config.h"
+
 #define RCBA	0xfed1c000
 #define   GCS	0x3410
 #define RCBA32(x) *((volatile u32 *)(RCBA + x))
@@ -35,7 +37,7 @@ static void southbridge_init(void)
 	// Set up RCBA
 	pci_write_config32(PCI_ADDR(0, 0x1f, 0, 0xf0), RCBA | 1);
 
-#if 0
+#if defined(CONFIG_POST_LPC)
 	// port80 writes go to LPC:
 	reg32 = RCBA32(GCS);
 	reg32 = reg32 & ~0x04;
