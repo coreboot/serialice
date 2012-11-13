@@ -111,6 +111,9 @@ config BOARD_VIA_EPIA_M850
 config BOARD_INTEL_D845GBV2
 	bool "Intel D845GBV2"
 
+config BOARD_ASROCK_775I65G
+	bool "ASRock 775i65G"
+
 endchoice
 
 config BOARD_INIT
@@ -140,6 +143,7 @@ config BOARD_INIT
 	default "aopen_dxpl-plus.c" if BOARD_AOPEN_DXPL_PLUS
 	default "via_epia_m850.c" if BOARD_VIA_EPIA_M850
 	default "intel_d845gbv2.c" if BOARD_INTEL_D845GBV2
+	default "asrock_775i65g.c" if BOARD_ASROCK_775I65G
 
 config SOUTHBRIDGE_INIT
 	string
