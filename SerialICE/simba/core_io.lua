@@ -39,13 +39,8 @@ filter_io_fallback = {
 --
 
 function mem_undefined(f, action)
-	if (action.write) then
-		action.to_hw = true
-		action.to_qemu = false
-	else
-		action.to_hw = false
-		action.to_qemu = true
-	end
+	action.to_hw = true
+	action.to_qemu = false
 	action.undefined = true
 	return true
 end
