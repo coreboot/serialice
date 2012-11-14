@@ -19,9 +19,9 @@ end
 
 function io_base_post(f, action)
 	if (action.write) then
-		printk(f, action, "[%04x] <= %s\n", bit32.band(action.addr, (f.size - 1)), size_data(action.size, action.data))
+		printk(f, action, "[%04x] <= %s\n", action.addr - f.base, size_data(action.size, action.data))
 	else
-		printk(f, action, "[%04x] => %s\n", bit32.band(action.addr, (f.size - 1)), size_data(action.size, action.data))
+		printk(f, action, "[%04x] => %s\n", action.addr - f.base, size_data(action.size, action.data))
 	end
 	return true
 end
