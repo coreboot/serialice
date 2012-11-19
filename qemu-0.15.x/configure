@@ -1725,6 +1725,7 @@ done
 
 if test "$serialice" != "no" ; then
   serialice=no
+  got_lua=no
   cat > $TMPC << EOF
 #include <stdint.h>
 #include <lua.h>
@@ -1735,24 +1736,35 @@ static lua_State *L;
 int main(void) { L=luaL_newstate(); return 0; }
 EOF
 
-  lua_cflags="-I/usr/local/include"
-  lua_ldflags="-L/usr/local/lib -llua -lm"
-  if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
-    serialice=yes
-    libs_softmmu="$lua_ldflags $libs_softmmu"
-  else
-    lua_cflags=`$pkg_config --cflags lua 2> /dev/null || $pkg_config --cflags lua5.2 2> /dev/null || $pkg_config --cflags lua5.1 2> /dev/null`
-    lua_ldflags=`$pkg_config --libs lua 2> /dev/null || $pkg_config --libs lua5.2 2> /dev/null || $pkg_config --libs lua5.1 2> /dev/null`
+  if test "$got_lua" != "yes" ; then
+    lua_cflags="-I/usr/local/include"
+    lua_ldflags="-L/usr/local/lib -llua -lm"
     if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
-      serialice=yes
-      libs_softmmu="$lua_ldflags $libs_softmmu"
-    else
-      echo
-      echo "Error LUA not found, can't build with SerialICE support."
-      echo 
-      exit 1
+      got_lua=yes
     fi
   fi
+  if test "$got_lua" != "yes" && $pkg_config --atleast-version=5.2 lua ; then
+    lua_cflags=`$pkg_config --cflags lua 2> /dev/null`
+    lua_ldflags=`$pkg_config --libs lua 2> /dev/null`
+    if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
+      got_lua=yes
+    fi
+  fi
+  if test "$got_lua" != "yes" && $pkg_config --exists lua5.2 ; then
+    lua_cflags=`$pkg_config --cflags lua5.2 2> /dev/null`
+    lua_ldflags=`$pkg_config --libs lua5.2 2> /dev/null`
+    if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
+      got_lua=yes
+    fi
+  fi
+  if test "$got_lua" != "yes" ; then
+    echo
+    echo "Error LUA version >= 5.2 not found, can't build with SerialICE support."
+    echo
+    exit 1
+  fi
+  serialice=yes
+  libs_softmmu="$lua_ldflags $libs_softmmu"
 fi # test "$serialice"
 
 ##########################################
