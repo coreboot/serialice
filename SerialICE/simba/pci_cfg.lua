@@ -151,7 +151,7 @@ function pci_cfg_print(f, action, bdfr)
 		dir_str = "<="
 	end
 
-	printk(f, action, "%x:%02x.%x [%02x] %s %s\n",
+	printk(f, action, "%x:%02x.%x [%03x] %s %s\n",
 		bit32.band(0xff,bit32.rshift(bdfr, 20)), bit32.band(0x1f,bit32.rshift(bdfr, 15)),
 		bit32.band(0x7,bit32.rshift(bdfr, 12)), bit32.band(0xfff,bdfr),
 		dir_str, size_data(action.size, action.data))
@@ -239,8 +239,14 @@ function pci_io_cfg_pre(f, action)
 				new_parent_action()
 			end
 			local bdfr = 0
+			-- BDFR is like normal BDF but reg has 12 bits to cover all extended space
+			-- Copy bus/device/function
 			bdfr = bit32.lshift(action.data, 4)
-			bdfr = bit32.band(bdfr, 0xfffff000)
+			bdfr = bit32.band(bdfr, 0x0ffff000)
+			-- Some chipsets allows (on request) performing extended register space access
+			-- Usually using bits 27:24, copy that to right place
+			bdfr = bit32.bor(bdfr, bit32.band(0xf00, bit32.rshift(action.data, 24 - 8)))
+			-- Add the classic PCI register
 			bdfr = bit32.bor(bdfr, bit32.band(action.data, 0xfc))
 			pci_cfg_select(f, bdfr)
 		end
