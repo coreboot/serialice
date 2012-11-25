@@ -92,8 +92,11 @@ function do_default_setup()
 end
 
 mainboard_file = string.format("%s.lua", string.lower(string.gsub(SerialICE_mainboard, "[ -]", "_")))
-local mainboard_lua = loadfile(mainboard_file)
-if (mainboard_lua) then
+local mainboard_lua, ferr = loadfile(mainboard_file)
+local mainboard_script = io.open(mainboard_file)
+if mainboard_script then
+	io.close(mainboard_script)
+	assert(mainboard_lua, ferr)
 	mainboard_lua()
 	printks(froot, "Mainboard script %s initialized.\n", mainboard_file)
 	do_minimal_setup()
