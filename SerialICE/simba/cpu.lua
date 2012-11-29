@@ -129,3 +129,31 @@ filter_intel_microcode = {
 	pre = intel_microcode_pre,
 	post = intel_microcode_post,
 }
+
+-- AMD CPU microcode update
+function amd_microcode_pre(f, action)
+	if action.rin.ecx == 0xc0010020 then
+		--action.dropped = true
+		--action.rout.edx = 0
+		--action.rout.eax = 0xffff0000
+		return drop_action(f, action)
+	end
+	return skip_filter(f, action)
+end
+
+-- AMD CPU microcode revision check
+-- Fakes microcode revision.
+function amd_microcode_post(f, action)
+	if action.rin.ecx == 0x8b then
+		action.rout.eax = 0x010000b7
+		return fake_action(f, action, 0)
+	end
+	return skip_filter(f, action)
+end
+
+filter_amd_microcode = {
+	id = -1,
+	name = "Microcode Update",
+	pre = amd_microcode_pre,
+	post = amd_microcode_post,
+}
