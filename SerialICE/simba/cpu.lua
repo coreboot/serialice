@@ -57,6 +57,9 @@ filter_cpumsr_fallback = {
 -- **********************************************************
 -- CPUID filters
 
+microcode_patchlevel_eax = 0
+microcode_patchlevel_edx = 0
+
 function cpuid_pre(f, action)
 	return handle_action(f, action)
 end
@@ -116,8 +119,8 @@ end
 -- Fakes microcode revision of my 0x6f6 Core 2 Duo Mobile
 function intel_microcode_post(f, action)
 	if action.rin.ecx == 0x8b then
-		action.rout.edx = 0xc7
-		action.rout.eax = 0
+		action.rout.edx = microcode_patchlevel_edx
+		action.rout.eax = microcode_patchlevel_eax
 		return fake_action(f, action, 0)
 	end
 	return skip_filter(f, action)
@@ -145,7 +148,8 @@ end
 -- Fakes microcode revision.
 function amd_microcode_post(f, action)
 	if action.rin.ecx == 0x8b then
-		action.rout.eax = 0x010000b7
+		action.rout.eax = microcode_patchlevel_eax
+		action.rout.edx = microcode_patchlevel_edx
 		return fake_action(f, action, 0)
 	end
 	return skip_filter(f, action)
