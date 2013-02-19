@@ -12,6 +12,35 @@ function northbridge_e7505()
 	add_mem_bar(dev_e7505_mch, 0x14, "RCOMP", 0x1000)
 end
 
+
+-- **********************************************************
+-- Intel 82915 PCIe BAR
+
+dev_i915 = {
+	pci_dev = pci_bdf(0,0,0,0),
+	name = "i915",
+	bar = {},
+}
+
+function i915_pcie_bar(f, action)
+	local baseaddr = bit32.band(action.data, 0xf0000000)
+	local size = 256*1024*1024
+
+	-- enable is 0:00.0 [054] .31
+	if true then
+		pcie_mm_enable(f.dev, f.reg, baseaddr, size)
+	else
+		pcie_mm_disable(f.dev, f.reg, baseaddr, size)
+	end
+end
+
+function northbridge_i915()
+	add_mem_bar(dev_i915, 0x40, "EPBAR", 4*1024)
+	add_mem_bar(dev_i915, 0x44, "MCHBAR", 16*1024)
+	add_mem_bar(dev_i915, 0x4c, "DMIBAR", 4*1024)
+	pci_cfg32_hook(dev_i915, 0x48, "PCI", i915_pcie_bar)
+end
+
 -- **********************************************************
 -- Intel 82945 PCIe BAR
 
