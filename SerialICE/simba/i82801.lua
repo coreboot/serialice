@@ -116,6 +116,31 @@ end
 
 -- **********************************************************
 --
+-- i82801fx
+
+function enable_fx_power_bars()
+	pci_cfg16_hook(dev_power, 0x40, "PM", pm_io_bar)
+	add_io_bar(dev_power, 0x48, "GPIO", 0x40)
+end
+
+function enable_fx_lpc_bars()
+	add_mem_bar(dev_power, 0xf0, "RCBA", 0x4000)
+
+	pci_cfg8_hook(dev_power, 0x80, "LPC", lpc_protect_serial_port)
+	pci_cfg8_hook(dev_power, 0x82, "LPC", lpc_protect_serial_port)
+
+	add_io_bar(dev_power, 0x84, "LPC1", 0x80)
+	add_io_bar(dev_power, 0x88, "LPC2", 0x40)
+end
+
+function enable_hook_i82801fx()
+	enable_smbus_host_bar()
+	enable_fx_power_bars()
+	enable_fx_lpc_bars()
+end
+
+-- **********************************************************
+--
 -- i82801gx
 
 -- ICH7 TPM
