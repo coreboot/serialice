@@ -162,7 +162,7 @@ end
 
 function enable_gx_lpc_bars()
 	pci_cfg8_hook(dev_power, 0x80, "LPC", lpc_protect_serial_port)
-	pci_cfg16_hook(dev_power, 0x82, "LPC", lpc_protect_serial_port)
+	pci_cfg8_hook(dev_power, 0x82, "LPC", lpc_protect_serial_port)
 
 	pci_cfg32_hook(dev_power, 0x84, "LPC", lpc_io_bar)
 	pci_cfg32_hook(dev_power, 0x88, "LPC", lpc_io_bar)
@@ -176,8 +176,6 @@ function enable_hook_i82801gx()
 	enable_smbus_host_bar()
 	enable_gx_power_bars()
 	enable_gx_lpc_bars()
-	enable_audio_bars()
-	enable_modem_bars()
 end
 
 
