@@ -149,7 +149,8 @@ function generic_io_bar(bar)
 		local f = {}
 		f.id = -1
 		f.pre = handle_action
-		f.post = io_base_post
+		f.post = io_post
+		f.decode = F_RANGE
 		f.hide = true
 		f.name = bar.name
 		f.size = bar.size

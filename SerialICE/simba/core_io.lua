@@ -13,19 +13,19 @@ function io_undefined(f, action)
 end
 
 function io_post(f, action)
-	if (action.write) then
-		printk(f, action, "out%s %04x <= %s\n", size_suffix(action.size), action.addr, size_data(action.size, action.data))
-	else
-		printk(f, action, " in%s %04x => %s\n", size_suffix(action.size), action.addr, size_data(action.size, action.data))
-	end
-	return true
-end
-
-function io_base_post(f, action)
-	if (action.write) then
-		printk(f, action, "[%04x] <= %s\n", action.addr - f.base, size_data(action.size, action.data))
-	else
-		printk(f, action, "[%04x] => %s\n", action.addr - f.base, size_data(action.size, action.data))
+	local size = size_data(action.size, action.data)
+	if not f.decode or f.decode == F_FIXED then
+		if (action.write) then
+			printk(f, action, "out%s %04x <= %s\n", size_suffix(action.size), action.addr, size)
+		else
+			printk(f, action, " in%s %04x => %s\n", size_suffix(action.size), action.addr, size)
+		end
+	elseif f.decode == F_RANGE then
+		if (action.write) then
+			printk(f, action, "[%04x] <= %s\n", action.addr - f.base, size)
+		else
+			printk(f, action, "[%04x] => %s\n", action.addr - f.base, size)
+		end
 	end
 	return true
 end
@@ -35,6 +35,7 @@ filter_io_fallback = {
 	name = "IO",
 	pre = io_undefined,
 	post = io_post,
+	decode = F_FIXED,
 	base = 0x0,
 	size = 0x10000,
 }
