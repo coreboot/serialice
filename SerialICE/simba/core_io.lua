@@ -1,3 +1,7 @@
+
+F_FIXED = 1
+F_RANGE = 2
+
 -- **********************************************************
 --
 
@@ -46,10 +50,19 @@ function mem_undefined(f, action)
 end
 
 function mem_post(f, action)
-	if (action.write) then
-		printk(f, action, "write%s %08x <= %s", size_suffix(action.size), action.addr, size_data(action.size, action.data))
-	else
-		printk(f, action, " read%s %08x => %s", size_suffix(action.size), action.addr, size_data(action.size, action.data))
+	local size = size_data(action.size, action.data)
+	if not f.decode or f.decode == F_FIXED then
+		if (action.write) then
+			printk(f, action, "write%s %08x <= %s", size_suffix(action.size), action.addr, size)
+		else
+			printk(f, action, " read%s %08x => %s", size_suffix(action.size), action.addr, size)
+		end
+	elseif f.decode == F_RANGE then
+		if (action.write) then
+			printk(f, action, "[%08x] <= %s", bit32.band(action.addr, (f.size - 1)), size)
+		else
+			printk(f, action, "[%08x] => %s", bit32.band(action.addr, (f.size - 1)), size)
+		end
 	end
 	if action.to_hw then
 		printf(" *")
@@ -58,21 +71,12 @@ function mem_post(f, action)
 	return true
 end
 
-function mem_base_post(f, action)
-	if (action.write) then
-		printk(f, action, "[%08x] <= %s\n", bit32.band(action.addr, (f.size - 1)), size_data(action.size, action.data))
-	else
-		printk(f, action, "[%08x] => %s\n", bit32.band(action.addr, (f.size - 1)), size_data(action.size, action.data))
-	end
-	return true
-end
-
-
 filter_mem_fallback = {
 	id = -1,
 	name = "MEM",
 	pre = mem_undefined,
 	post = mem_post,
+	decode = F_FIXED,
 	base = 0x0,
 	size = 0x100000000
 }

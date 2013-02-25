@@ -168,7 +168,8 @@ function generic_mmio_bar(bar)
 		local f = {}
 		f.id = -1
 		f.pre = handle_action
-		f.post = mem_base_post
+		f.post = mem_post
+		f.decode = F_RANGE
 		f.hide = true
 		f.name = bar.name
 		f.size = bar.size
