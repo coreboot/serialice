@@ -2401,7 +2401,10 @@ fi
 cat > $TMPC <<EOF
 #include <signal.h>
 #include <time.h>
-int main(void) { clockid_t id; return clock_gettime(id, NULL); }
+int main(void) {
+	timer_t timer; struct itimerspec timeout; timer_settime(timer, 0, &timeout, NULL);
+	clockid_t id; return clock_gettime(id, NULL);
+}
 EOF
 
 if compile_prog "" "" ; then
