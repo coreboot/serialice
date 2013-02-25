@@ -11,6 +11,10 @@ SerialICE_mainboard = "undetected"
 regs = { eax, ebc, ecx, edx, cs=0, eip=0, ds, es, ss, gs, fs, }
 ids = { parent, this, }
 
+function pci_bdf_noext(bus, dev, func, reg)
+	return bus*65536 + dev*2048 + func*256 + reg
+end
+
 function replay_io(dir_wr, addr, size, data)
 	pre_action(io_action, dir_wr, addr, size, data)
 	walk_pre_hooks(io_hooks, io_action)
@@ -102,7 +106,7 @@ function parse_pci(line)
 	local ndata = tonumber(data,16)
 	local nsize = string.len(data)/2
 
-	replay_io(true, 0xcf8, 4, pci_bdf(tonumber(bus,16), tonumber(dev,16), tonumber(fn,16), nreg))
+	replay_io(true, 0xcf8, 4, pci_bdf_noext(tonumber(bus,16), tonumber(dev,16), tonumber(fn,16), nreg))
 	if string.find("<=", dir) then
 		replay_io(true, 0xcfc + noff, nsize, ndata)
 	else
