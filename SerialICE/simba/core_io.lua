@@ -54,21 +54,17 @@ function mem_post(f, action)
 	local size = size_data(action.size, action.data)
 	if not f.decode or f.decode == F_FIXED then
 		if (action.write) then
-			printk(f, action, "write%s %08x <= %s", size_suffix(action.size), action.addr, size)
+			printk(f, action, "write%s %08x <= %s\n", size_suffix(action.size), action.addr, size)
 		else
-			printk(f, action, " read%s %08x => %s", size_suffix(action.size), action.addr, size)
+			printk(f, action, " read%s %08x => %s\n", size_suffix(action.size), action.addr, size)
 		end
 	elseif f.decode == F_RANGE then
 		if (action.write) then
-			printk(f, action, "[%08x] <= %s", bit32.band(action.addr, (f.size - 1)), size)
+			printk(f, action, "[%08x] <= %s\n", bit32.band(action.addr, (f.size - 1)), size)
 		else
-			printk(f, action, "[%08x] => %s", bit32.band(action.addr, (f.size - 1)), size)
+			printk(f, action, "[%08x] => %s\n", bit32.band(action.addr, (f.size - 1)), size)
 		end
 	end
-	if action.to_hw then
-		printf(" *")
-	end
-	printf("\n")
 	return true
 end
 

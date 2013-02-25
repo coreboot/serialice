@@ -35,8 +35,9 @@ function replay_unknown(str)
 	local dummy = {}
 	pre_action(dummy, false, 0, 0, 0)
 	post_action(dummy, 0)
-	io.write(string.format("[%04x:%04x] %04x.%04x   %s\n",
-			regs.cs, regs.eip, ids.parent, ids.this, str))
+	print_address(ids.parent, ids.this, "...", regs.cs, regs.eip)
+	printf(str)
+	printf("\n")
 end
 
 function parse_cpu(line)

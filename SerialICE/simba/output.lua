@@ -17,31 +17,51 @@ function printf(s,...)
 	return io.write(s:format(...))
 end
 
-function printk(f, action, fmt, ...)
-	printf("[%04x:%04x] ", action.cs, action.eip)
-	printf("%04x.%04x ", action.parent_id, action.my_id)
+function print_address(pid, id, flags, cs, eip)
+	printf("%04x.%04x    %s    [%04x:%04x]   ",pid,id,flags,cs,eip)
+end
 
-	local str = " "
-	if action.dropped or action.faked then
-		str = "!"
+function printk(f, action, fmt, ...)
+	local str = ""
+	if action.undefined or action.f or action == cpu_action then
+		str = str .. "R"
+	else
+		str = str .. "."
+	end
+	if action.to_hw then
+		str = str .. "H"
+	elseif action.to_qemu then
+		str = str .. "Q"
+	else
+		str = str .. "."
 	end
 	if action.undefined then
-		str = "#"
+		str = str .. "U"
+	else
+		str = str .. "."
+	end
+	if action.dropped then
+		str = str .. "D"
+	elseif action.faked then
+		str = str .. "F"
+	else
+		str = str .. "."
 	end
 
+	print_address(action.parent_id, action.my_id, str, action.cs, action.eip)
+
 	if action.f then
-		printf("%s %s,%s: ", str, f.name, action.f.name)
+		printf("%s,%s: ", f.name, action.f.name)
 		printf(fmt, ...)
 	else
-		printf("%s %s: ", str, f.name)
+		printf("%s: ", f.name)
 		printf(fmt, ...)
 	end
 end
 
 function printks(f, fmt, ...)
-	printf("[%04x:%04x] ", 0, 0)
-	printf("%04x.%04x ", 0, 0)
-	printf("  %s: ", f.name)
+	print_address(0,0,"I...",0,0)
+	printf("%s: ", f.name)
 	printf(fmt, ...)
 end
 
