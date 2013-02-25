@@ -1,4 +1,5 @@
 
+local verbose_log = false
 
 function SerialICE_register_physical()
 end
@@ -9,7 +10,7 @@ end
 SerialICE_mainboard = "undetected"
 
 regs = { eax, ebc, ecx, edx, cs=0, eip=0, ds, es, ss, gs, fs, }
-ids = { parent, this, }
+ids = { parent, this, flags}
 
 function pci_bdf_noext(bus, dev, func, reg)
 	return bus*65536 + dev*2048 + func*256 + reg
@@ -35,23 +36,10 @@ function replay_unknown(str)
 	local dummy = {}
 	pre_action(dummy, false, 0, 0, 0)
 	post_action(dummy, 0)
-	print_address(ids.parent, ids.this, "...", regs.cs, regs.eip)
+	print_address(ids.parent, ids.this, ids.flags, regs.cs, regs.eip)
 	printf(str)
 	printf("\n")
 end
-
-function parse_cpu(line)
-	if string.find(line, "CPUID") then
-		replay_unknown(line)
-		return true
-	end
-	if string.find(line, "CPU MSR") then
-		replay_unknown(line)
-		return true
-	end
-	return false
-end
-
 
 function parse_io(line)
 	local io_op = "IO[^:]*:?%s+%a+%s+(%x+)%s+(<?=>?)%s+(%x+)"
@@ -125,10 +113,10 @@ function parse_headers()
 			found, _, board = string.find(line, "SerialICE: Mainboard...:%s+(.+)")
 			if found then
 				SerialICE_mainboard = board
+				io.write(line)
+				io.write("\n")
 			end
 		end
---		io.write(line)
---		io.write("\n")
 		if string.find(line, "LUA script initialized.") then
 			return
 		end
@@ -139,43 +127,73 @@ function parse_file()
 	while true do
 		local iplog = false
 		local found = false
-		local line, str, cs, eip, a, b
+		local line, str, cs, eip, a, b, f
 
 		line = io.read("*line")
 		if not line then
 			return
 		end
 
-		regs.cs = 0
-		regs.eip = 0
-		ids.parent = 0
-		ids.this = 0
-		iplog, _, cs, eip, a, b, str = string.find(line, "%[(%x+):(%x+)%]%s+(%x+)[%.:](%x+)...(.*)")
+		if not iplog then
+			iplog, _, a, b, f, cs, eip, str = 
+				string.find(line, "(%x+)[%.:](%x+)%s+([^ ]*)%s+%[(%x+):(%x+)%]...(.*)")
+			if iplog and not f then
+				f = "R###"
+			end
+		end
+
+		-- Output format of 1st modular scripts
+		if not iplog then
+			iplog, _, cs, eip, a, b, str =
+				string.find(line, "%[(%x+):(%x+)%]%s+(%x+)[%.:](%x+)...(.*)")
+			if iplog and str then
+				if string.find(str,"IO[,:]") or string.find(str,"MEM[,:]") or string.find(str,"CPU") then
+					f = "R..."
+				else
+					f = "...."
+				end
+			end
+		end
+
+		-- Parse logfiles from before modular scripts
+		if not iplog then
+			regs.cs = 0
+			regs.eip = 0
+			ids.parent = 0
+			ids.this = 0
+			str = line
+			if string.find(str,"IO:") or string.find(str,"MEM:") or string.find(str,"CPU") then
+				f = "R..."
+			else
+				f = "...."
+			end
+			ids.flags = f
+			found = parse_pci(str)
+		end
+
 		if iplog then
 			regs.cs = tonumber(cs, 16)
 			regs.eip = tonumber(eip, 16)
 			ids.parent = tonumber(a, 16)
 			ids.this = tonumber(b, 16)
+			ids.flags = f
 		end
 
-		if not iplog then
-			str = line
+		-- Drop rows that are not raw input
+		if not string.find(ids.flags,"R.*") then
+			found = true
+			--printf("%s --- deleted\n", line)
 		end
 
 		if not found then
 			found = parse_io(str)
 		end
 		if not found then
-			found = parse_pci(str)
-		end
-		if not found then
 			found = parse_mem(str)
 		end
+		-- TODO: replay CPU MSR and CPUID lines
 		if not found then
-			found = parse_cpu(str)
-		end
-		if not found then
-			--replay_unknown(str)
+			found = replay_unknown(str)
 		end
 	end
 end
@@ -184,8 +202,8 @@ parse_headers()
 
 dofile("serialice.lua")
 
+-- set logging
+log_everything = verbose_log
+
 parse_file()
-
-
-
 

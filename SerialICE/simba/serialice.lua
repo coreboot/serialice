@@ -39,7 +39,7 @@ hide_smbus_io = true
 hide_mainboard_io = true
 
 -- Set to "true" to log every memory and IO access
-log_everything = false
+log_everything = true
 
 
 -- Use lua table for NVram
