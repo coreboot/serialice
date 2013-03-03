@@ -62,8 +62,11 @@ function superio_try_enable_io(f, idx)
 			if not ldn.bar0.name then
 				ldn.bar0.name = superio_pnpdev(f)
 			end
-			ldn.bar0.val = iobase
-			generic_io_bar(ldn.bar0)
+			if iobase ~= 0x60 then
+				ldn.bar0.val = iobase
+				generic_io_bar(ldn.bar0)
+				ldn.bar0.f.decode = F_FIXED
+			end
 		end
 		if idx == 1 and ldn.set[0x62] and ldn.set[0x63] then
 			local iobase = bit32.bor(bit32.lshift(ldn.data[0x62], 8), ldn.data[0x63])
@@ -73,8 +76,11 @@ function superio_try_enable_io(f, idx)
 			if not ldn.bar1.name then
 				ldn.bar1.name = superio_pnpdev(f)
 			end
-			ldn.bar1.val = iobase
-			generic_io_bar(ldn.bar1)
+			if iobase ~= 0x64 then
+				ldn.bar1.val = iobase
+				generic_io_bar(ldn.bar1)
+				ldn.bar1.f.decode = F_FIXED
+			end
 		end
 	end
 end

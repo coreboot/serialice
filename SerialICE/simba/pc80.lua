@@ -323,6 +323,7 @@ end
 
 filter_i8042 = {
 	id = -1,
+	decode = F_FIXED,
 	name = "i8042",
 	pre = i8042_pre,
 	post = i8042_post,
