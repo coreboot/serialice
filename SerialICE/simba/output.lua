@@ -6,7 +6,6 @@ froot = {
 }
 
 fresource = {
-	id = -1,
 	name = "Resource",
 }
 

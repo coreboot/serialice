@@ -47,7 +47,6 @@ end
 
 
 filter_cpumsr_fallback = {
-	id = -1,
 	name = "CPU MSR",
 	pre = cpumsr_pre,
 	post = cpumsr_post,
@@ -72,7 +71,6 @@ function cpuid_post(f, action)
 end
 
 filter_cpuid_fallback = {
-	id = -1,
 	name = "CPUID",
 	pre = cpuid_pre,
 	post = cpuid_post,
@@ -98,7 +96,6 @@ function multicore_post(f, action)
 end
 
 filter_multiprocessor = {
-	id = -1,
 	name = "Multiprocessor Count",
 	pre = multicore_pre,
 	post = multicore_post,
@@ -127,7 +124,6 @@ function intel_microcode_post(f, action)
 end
 
 filter_intel_microcode = {
-	id = -1,
 	name = "Microcode Update",
 	pre = intel_microcode_pre,
 	post = intel_microcode_post,
@@ -156,7 +152,6 @@ function amd_microcode_post(f, action)
 end
 
 filter_amd_microcode = {
-	id = -1,
 	name = "Microcode Update",
 	pre = amd_microcode_pre,
 	post = amd_microcode_post,

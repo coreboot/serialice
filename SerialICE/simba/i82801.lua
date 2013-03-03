@@ -146,7 +146,6 @@ end
 -- ICH7 TPM
 -- Phoenix "Secure" Core bails out if we don't pass the read on ;-)
 filter_ich7_tpm = {
-	id = -1,
 	name = "ICH7 TPM",
 	pre = mem_target_only,
 	post = mem_post,

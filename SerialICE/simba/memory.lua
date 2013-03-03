@@ -22,7 +22,6 @@ function mem_rom_post(f, action)
 end
 
 filter_rom_low = {
-	id = -1,
 	name = "ROM_LO",
 	pre = mem_qemu_rom_pre,
 	post = mem_rom_post,
@@ -31,7 +30,6 @@ filter_rom_low = {
 	size = 0x20000
 }
 filter_rom_high = {
-	id = -1,
 	name = "ROM_HI",
 	pre = mem_qemu_rom_pre,
 	post = mem_rom_post,
@@ -55,7 +53,6 @@ end
 
 function new_car_region(start, size)
 	f = {}
-	f.id = -1
 	f.name = "CAR"
 	f.base = start
 	f.size = size
@@ -121,7 +118,6 @@ function mem_post_pre_ram_only(f, action)
 end
 
 filter_ram_low = {
-	id = -1,
 	name = "MEM",
 	pre = mem_ram_low,
 	post = mem_post_pre_ram_only,
@@ -131,7 +127,6 @@ filter_ram_low = {
 }
 
 filter_smi_vga = {
-	id = -1,
 	name = "SMI_VGA",
 	pre = mem_smi_vga,
 	post = mem_post,
@@ -141,7 +136,6 @@ filter_smi_vga = {
 }
 
 filter_ram_low_2 = {
-	id = -1,
 	name = "MEM",
 	pre = mem_ram_low,
 	post = mem_post_pre_ram_only,
@@ -164,7 +158,6 @@ end
 -- need lots of ram on the host and firmware usually does not intensively
 -- use high memory anyways.
 filter_ram_high = {
-	id = -1,
 	name = "MEM",
 	pre = mem_target_only,
 	post = mem_post_pre_ram_only,

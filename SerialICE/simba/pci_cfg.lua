@@ -16,7 +16,6 @@ function add_pci_cfg_hook(dev, reg, size, func)
 		bit32.band(0xff,bit32.rshift(bdfr, 20)), bit32.band(0x1f,bit32.rshift(bdfr, 15)),
 		bit32.band(0x7,bit32.rshift(bdfr, 12)), bit32.band(0xfff,bdfr))
 	local filter = {
-		id = -1,
 		base = bdfr,
 		dev = dev,
 		reg = reg,
@@ -272,7 +271,6 @@ function pci_io_cfg_post(f, action)
 end
 
 filter_pci_io_cfg = {
-	id = -1,
 	name = "PCI",
 	pre = pci_io_cfg_pre,
 	post = pci_io_cfg_post,
@@ -305,7 +303,6 @@ function pci_mm_cfg_post(f, action)
 end
 
 filter_pci_mm_cfg = {
-	id = -1,
 	pre = pci_mm_cfg_pre,
 	post = pci_mm_cfg_post,
 	hide = hide_pci_mm_cfg,

@@ -181,7 +181,6 @@ end
 
 
 filter_superio_2e = {
-	id = -1,
 	name = "PnP",
 	pre = superio_pre,
 	post = superio_post,
@@ -193,7 +192,6 @@ filter_superio_2e = {
 	ldn = {},
 }
 filter_superio_4e = {
-	id = -1,
 	name = "PnP",
 	pre = superio_pre,
 	post = superio_post,
@@ -255,7 +253,6 @@ function com_pre(f, action)
 end
 
 filter_com1 = {
-	id = -1,
 	name = "COM1",
 	pre = com_pre,
 	post = io_post,

@@ -11,7 +11,6 @@ function debugport_post(f, action)
 end
 
 filter_debugport = {
-	id = -1,
 	name = "POST",
 	pre = handle_action,
 	post = debugport_post,
@@ -52,7 +51,6 @@ function i8259_edge_post(f,action)
 end
 
 filter_i8259_master = {
-	id = -1,
 	name = "i8259 A",
 	pre = i8259_pre,
 	post = i8259_post,
@@ -62,7 +60,6 @@ filter_i8259_master = {
 }
 
 filter_i8259_slave = {
-	id = -1,
 	name = "i8259 B",
 	pre = i8259_pre,
 	post = i8259_post,
@@ -72,7 +69,6 @@ filter_i8259_slave = {
 }
 
 filter_i8259_edge = {
-	id = -1,
 	name = "i8259 C",
 	pre = i8259_edge_pre,
 	post = i8259_edge_post,
@@ -101,7 +97,6 @@ end
 
 
 filter_i8237_a = {
-	id = -1,
 	name = "i8237 A",
 	pre = i8237_pre,
 	post = i8237_post,
@@ -110,7 +105,6 @@ filter_i8237_a = {
 	size = 0x20
 }
 filter_i8237_b = {
-	id = -1,
 	name = "i8237 B",
 	pre = i8237_pre,
 	post = i8237_post,
@@ -119,7 +113,6 @@ filter_i8237_b = {
 	size = 0x20
 }
 filter_i8237_c = {
-	id = -1,
 	name = "i8237 C",
 	pre = i8237_pre,
 	post = i8237_post,
@@ -243,7 +236,6 @@ i8254_counters[0x1] = { init=0, current=0, latch, readback, status=0 }
 i8254_counters[0x2] = { init=0, current=0, latch, readback, status=0 }
 
 filter_i8254_a = {
-	id = -1,
 	name = "i8254 A",
 	pre = i8254_pre,
 	post = i8254_post,
@@ -253,7 +245,6 @@ filter_i8254_a = {
 	counter = i8254_counters,
 }
 filter_i8254_b = {
-	id = -1,
 	name = "i8254 B",
 	pre = i8254_pre,
 	post = i8254_post,
@@ -322,7 +313,6 @@ function i8042_post(f, action)
 end
 
 filter_i8042 = {
-	id = -1,
 	decode = F_FIXED,
 	name = "i8042",
 	pre = i8042_pre,
@@ -455,7 +445,6 @@ function nvram_post(f, action)
 end
 
 filter_nvram = {
-	id = -1,
 	name = "NVram",
 	pre = nvram_pre,
 	post = nvram_post,
@@ -493,7 +482,6 @@ function sys_rst_post(f, action)
 end
 
 filter_reset = {
-	id = -1,
 	name = "Reset",
 	pre = sys_rst_pre,
 	post = sys_rst_post,
@@ -515,7 +503,6 @@ function vga_io_post(f, action)
 end
 
 filter_vga_io = {
-	id = -1,
 	name = "VGA",
 	pre = vga_io_pre,
 	post = vga_io_post,

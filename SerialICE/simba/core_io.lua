@@ -31,7 +31,6 @@ function io_post(f, action)
 end
 
 filter_io_fallback = {
-	id = -1,
 	name = "IO",
 	pre = io_undefined,
 	post = io_post,
@@ -69,7 +68,6 @@ function mem_post(f, action)
 end
 
 filter_mem_fallback = {
-	id = -1,
 	name = "MEM",
 	pre = mem_undefined,
 	post = mem_post,

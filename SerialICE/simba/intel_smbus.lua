@@ -236,7 +236,6 @@ end
 
 
 local intel_smbus_host = {
-	id = -1,
 	name = "i801-smbus",
 	pre = intel_smbus_host_pre,
 	post = intel_smbus_host_post,

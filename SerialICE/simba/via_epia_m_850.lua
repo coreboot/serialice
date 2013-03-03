@@ -96,7 +96,6 @@ function mainboard_io_post(f, action)
 end
 
 filter_mainboard = {
-	id = -1,
 	name = "VIA",
 	pre = mainboard_io_pre,
 	post = mainboard_io_post,

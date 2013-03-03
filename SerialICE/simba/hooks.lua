@@ -39,10 +39,8 @@ function enable_hook(list, filter)
 		l = l.next
 	end
 	if not found then
-		if (filter.id < 0) then
-			filter.id = next_filter_id
-			next_filter_id = next_filter_id + 1
-		end
+		filter.id = next_filter_id
+		next_filter_id = next_filter_id + 1
 		list.list = { next = list.list, hook = filter }
 	end
 	if (list == io_hooks) then
@@ -71,7 +69,7 @@ function disable_hook(list, filter)
 		printks(froot, "id=%04x disabled\n", filter.id)
 		filter.enable = false
 	else
-		printks(filter, "disabled\n", filter.id)
+		printks(filter, "disabled\n")
 		filter.enable = false
 	end
 end
@@ -147,7 +145,6 @@ end
 function generic_io_bar(bar)
 	if not bar.f then
 		local f = {}
-		f.id = -1
 		f.pre = handle_action
 		f.post = io_post
 		f.decode = F_RANGE
@@ -167,7 +164,6 @@ end
 function generic_mmio_bar(bar)
 	if not bar.f then
 		local f = {}
-		f.id = -1
 		f.pre = handle_action
 		f.post = mem_post
 		f.decode = F_RANGE

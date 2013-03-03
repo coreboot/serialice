@@ -17,7 +17,6 @@ function mem_lapic(f, action)
 end
 
 filter_lapic = {
-	id = -1,
 	name = "LAPIC",
 	pre = mem_lapic,
 	post = mem_post,
@@ -29,7 +28,6 @@ filter_lapic = {
 
 -- IOAPIC
 filter_ioapic = {
-	id = -1,
 	name = "IOAPIC",
 	pre = mem_target_only,
 	post = mem_post,
