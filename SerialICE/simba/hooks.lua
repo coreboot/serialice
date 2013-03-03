@@ -1,10 +1,13 @@
 
 
-function new_list()
-	return { list = nil }
+froot = { id = 0, name = "SerialICE" }
+fresource = { id = 1, name = "Resource" }
+
+function new_hooks(str)
+	return { list = nil, name = str }
 end
 
-next_filter_id = 1
+next_filter_id = 2
 next_action_id = 1
 current_parent_id = 0
 
@@ -19,16 +22,15 @@ function new_parent_action()
 end
 
 
-io_hooks = new_list()
-mem_hooks = new_list()
+io_hooks = new_hooks("IO")
+mem_hooks = new_hooks("MEM")
 
-cpumsr_hooks = new_list()
-cpuid_hooks = new_list()
-
+cpumsr_hooks = new_hooks("CPU MSR")
+cpuid_hooks = new_hooks("CPUID")
 
 function enable_hook(list, filter)
 	if not filter then
-		printks(froot, "Enable_hook called with filter==nil\n")
+		root_info("Attempted to call enable_hook()  with filter==nil\n")
 		return
 	end
 
@@ -40,37 +42,27 @@ function enable_hook(list, filter)
 	end
 	if not found then
 		filter.id = next_filter_id
+		filter.list = list
 		next_filter_id = next_filter_id + 1
 		list.list = { next = list.list, hook = filter }
 	end
-	if (list == io_hooks) then
-		printks(fresource, "[%04x] IO [%04x-%04x] = %s\n",
-				filter.id, filter.base, filter.base + filter.size - 1, filter.name)
-	elseif (list == mem_hooks) then
-		printks(fresource, "[%04x] MEM [%08x-%08x] = %s\n",
-				filter.id, filter.base, filter.base + filter.size - 1, filter.name)
-	else
-		printks(fresource, "[%04x] %s\n", filter.id, filter.name)
-	end
+	update_hook(filter)
 	filter.enable = true
 end
 
-function disable_hook(list, filter)
-	if not filter then
-		return
+function disable_hook(f)
+	if f.id and f.enable and f.enable == true then
+		resource_info(f, "disabled")
 	end
-	local l = list.list
-	local found = false
-	while l and not found do
-		found = (l.hook == filter)
-		l = l.next
-	end
-	if found then
-		printks(froot, "id=%04x disabled\n", filter.id)
-		filter.enable = false
+	f.enable = false
+end
+
+function update_hook(f)
+	if f.list == io_hooks or f.list == mem_hooks then
+		resource_info(f, "[%04x-%04x] = %s",
+				f.base, f.base + f.size - 1, f.name)
 	else
-		printks(filter, "disabled\n")
-		filter.enable = false
+		resource_info(f, "%s", f.name)
 	end
 end
 
@@ -157,7 +149,7 @@ function generic_io_bar(bar)
 	if (bar.f.base ~= 0) then
 		enable_hook(io_hooks, bar.f)
 	else
-		disable_hook(io_hooks, bar.f)
+		disable_hook(bar.f)
 	end
 end
 
@@ -176,7 +168,7 @@ function generic_mmio_bar(bar)
 	if bar.f.base ~= 0 then
 		enable_hook(mem_hooks, bar.f)
 	else
-		disable_hook(mem_hooks, bar.f)
+		disable_hook(bar.f)
 	end
 end
 
@@ -233,6 +225,7 @@ function pre_action(action, dir_wr, addr, size, data)
 	action.dropped = false
 	action.to_hw = false
 	action.to_qemu = false
+	action.info_only = false
 
 	action.write = dir_wr
 	action.addr = addr

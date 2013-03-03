@@ -8,11 +8,11 @@ pci_cfg_action = {}
 PCI_CFG_READ = false
 PCI_CFG_WRITE = true
 
-pci_cfg_hooks = new_list()
+pci_cfg_hooks = new_hooks("PCI")
 
 function add_pci_cfg_hook(dev, reg, size, func)
 	local bdfr = bit32.bor(dev.pci_dev, reg)
-	local name = string.format("PCI %x:%02x.%x [%04x]",
+	local name = string.format("%x:%02x.%x [%03x]",
 		bit32.band(0xff,bit32.rshift(bdfr, 20)), bit32.band(0x1f,bit32.rshift(bdfr, 15)),
 		bit32.band(0x7,bit32.rshift(bdfr, 12)), bit32.band(0xfff,bdfr))
 	local filter = {
@@ -327,6 +327,6 @@ end
 
 function pcie_mm_disable(dev, reg, base, size)
 	if dev.bar and dev.bar[reg] and dev.bar[reg].f then
-		disable_hook(mem_hooks, dev.bar[reg].f)
+		disable_hook(dev.bar[reg].f)
 	end
 end

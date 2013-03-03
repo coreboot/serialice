@@ -1,14 +1,4 @@
 
-
-froot = {
-	id = 0,
-	name = "SerialICE",
-}
-
-fresource = {
-	name = "Resource",
-}
-
 -- -------------------------------------------------------------------
 -- logging functions
 
@@ -24,6 +14,8 @@ function printk(f, action, fmt, ...)
 	local str = ""
 	if action.undefined or action.f or action == cpu_action then
 		str = str .. "R"
+	elseif action.info_only then
+		str = str .. "I"
 	else
 		str = str .. "."
 	end
@@ -58,10 +50,24 @@ function printk(f, action, fmt, ...)
 	end
 end
 
-function printks(f, fmt, ...)
-	print_address(0,0,"I...",0,0)
-	printf("%s: ", f.name)
-	printf(fmt, ...)
+info_action = {}
+
+function print_info(f, str)
+	pre_action(info_action)
+	info_action.info_only = true
+	info_action.parent_id = current_parent_id
+	info_action.my_id = next_action_id
+	printk(f, info_action, "%s", str)
+end
+
+function root_info(fmt, ...)
+	print_info(froot, string.format(fmt, ...))
+end
+
+function resource_info(f, fmt, ...)
+	print_info(fresource,
+		string.format("[%04x] %s ", f.id, f.list.name) ..
+		string.format(fmt, ...) .. "\n")
 end
 
 function trim (s)

@@ -98,16 +98,16 @@ if mainboard_script then
 	io.close(mainboard_script)
 	assert(mainboard_lua, ferr)
 	mainboard_lua()
-	printks(froot, "Mainboard script %s initialized.\n", mainboard_file)
+	root_info("Mainboard script %s initialized.\n", mainboard_file)
 	do_minimal_setup()
 	do_mainboard_setup()
 else
-	printks(froot, "Mainboard script %s not found.\n", mainboard_file)
+	root_info("Mainboard script %s not found.\n", mainboard_file)
 	do_minimal_setup()
 	do_default_setup()
 end
 
-printks(froot, "LUA script initialized.\n")
+root_info("LUA script initialized.\n")
 
 return true
 
