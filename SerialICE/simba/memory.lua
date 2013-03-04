@@ -13,12 +13,7 @@ function mem_qemu_rom_pre(f, action)
 end
 
 function mem_rom_post(f, action)
-	if not action.write then
-		return true
-	end
-	-- Writes to ROM space fall-thru to the fallback filter,
-	-- so they get logged there.
-	return false
+	return true
 end
 
 filter_rom_low = {
@@ -81,21 +76,15 @@ end
 
 ram_is_initialized = false
 
--- This is handled by SerialICE but *NOT* exclusively.
--- Writes end up in Qemu memory, too
-function mem_ram_low(f, action)
-	if ram_is_initialized then
-		-- RAM init is done. Send all RAM accesses
-		-- to Qemu. Using the target as storage would
-		-- only slow execution down.
-		action.to_hw = false
-		action.to_qemu = true
-	else
-		-- RAM init has not been marked done yet.
-		-- so send reads to the target only.
-		action.to_hw = true
-		action.to_qemu = action.write
-	end
+function mem_qemu_only(f, action)
+	action.to_hw = false
+	action.to_qemu = true
+	return true
+end
+
+function mem_target_only(f, action)
+	action.to_hw = true
+	action.to_qemu = false
 	return true
 end
 
@@ -113,14 +102,10 @@ function mem_smi_vga(f, action)
 end
 
 
-function mem_post_pre_ram_only(f, action)
-	return ram_is_initialized
-end
-
 filter_ram_low = {
 	name = "MEM",
 	pre = mem_ram_low,
-	post = mem_post_pre_ram_only,
+	post = mem_post,
 	hide = true,
 	base = 0x0,
 	size = 0xa0000
@@ -138,18 +123,11 @@ filter_smi_vga = {
 filter_ram_low_2 = {
 	name = "MEM",
 	pre = mem_ram_low,
-	post = mem_post_pre_ram_only,
+	post = mem_post,
 	hide = true,
 	base = 0xc0000,
 	size = 0x20000
 }
-
-
-function mem_target_only(f, action)
-	action.to_hw = true
-	action.to_qemu = false
-	return true
-end
 
 -- 3.25GB RAM. This is handled by SerialICE.
 -- FIXME: use TOLM here
@@ -160,7 +138,7 @@ end
 filter_ram_high = {
 	name = "MEM",
 	pre = mem_target_only,
-	post = mem_post_pre_ram_only,
+	post = mem_post,
 	hide = true,
 	base = 0x100000,
 	size = 0xd0000000 - 0x100000
@@ -172,7 +150,6 @@ function ram_enabled()
 end
 
 function enable_ram()
-
 	enable_hook(mem_hooks, filter_ram_low)
 	enable_hook(mem_hooks, filter_smi_vga)
 	enable_hook(mem_hooks, filter_ram_low_2)

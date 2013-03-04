@@ -78,7 +78,6 @@ function do_minimal_setup()
 end
 
 function do_default_setup()
-	enable_ram()
 	enable_hook(mem_hooks, filter_lapic)
 	enable_hook(mem_hooks, filter_ioapic)
 	enable_hook(io_hooks, filter_pci_io_cfg)
