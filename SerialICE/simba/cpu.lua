@@ -72,6 +72,7 @@ end
 
 filter_cpumsr_fallback = {
 	name = "CPU MSR",
+	raw = true,
 	pre = cpumsr_pre,
 	post = cpumsr_post,
 }
@@ -96,6 +97,7 @@ end
 
 filter_cpuid_fallback = {
 	name = "CPUID",
+	raw = true,
 	pre = cpuid_pre,
 	post = cpuid_post,
 }
@@ -114,7 +116,7 @@ function multicore_post(f, action)
 	if not action.write and rin.eax == 0x01 then
 		rout.ebx = bit32.band(0xff00ffff, rout.ebx);
 		rout.ebx = bit32.bor(0x00010000, rout.ebx);
-		fake_action(f, action, 0)
+		return fake_action(f, action, 0)
 	end
 	return skip_filter(f, action)
 end

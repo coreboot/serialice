@@ -12,7 +12,21 @@ end
 
 function printk(f, action, fmt, ...)
 	local str = ""
-	if action.undefined or action.f or action == cpu_action then
+
+	-- For Qemu runs only Raw actions are logged
+	if not replaying and not f.raw then
+		return
+	end
+
+	-- For replays, a post filter prevents further lines for the
+	-- same action from printing if it has property hide set.
+	if replaying and not log_everything then
+		if action.logged_post and action.logged_post.hide then
+			return
+		end
+	end
+
+	if f.raw then
 		str = str .. "R"
 	elseif action.info_only then
 		str = str .. "I"
@@ -29,7 +43,7 @@ function printk(f, action, fmt, ...)
 	else
 		str = str .. "."
 	end
-	if action.undefined then
+	if f.raw and not (action.logged_pre or action.logged_post) then
 		str = str .. "U"
 	elseif action.dropped then
 		str = str .. "D"
@@ -41,12 +55,23 @@ function printk(f, action, fmt, ...)
 
 	print_address(action.parent_id, action.my_id, str, action.cs, action.eip)
 
-	if action.f then
-		printf("%s,%s: ", f.name, action.f.name)
-		printf(fmt, ...)
-	else
+	if not replaying then
 		printf("%s: ", f.name)
 		printf(fmt, ...)
+	else
+		if not f.raw then
+			printf("%s: ", f.name)
+			printf(fmt, ...)
+		elseif action.logged_post then
+			printf("%s: ", action.logged_post.name)
+			printf(fmt, ...)
+		elseif action.logged_pre then
+			printf("%s: ", action.logged_pre.name)
+			printf(fmt, ...)
+		else
+			printf("%s: ", f.name)
+			printf(fmt, ...)
+		end
 	end
 end
 

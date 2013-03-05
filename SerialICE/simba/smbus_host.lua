@@ -186,7 +186,6 @@ local function dump_transaction(f, action)
 	end
 
 	if signal_in(f, SIG_TIMEOUT) then
-		action.undefined = true
 		dump = dump .. " (TIMEOUT) "
 	end
 

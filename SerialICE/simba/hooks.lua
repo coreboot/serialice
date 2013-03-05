@@ -85,12 +85,16 @@ function walk_pre_hooks(list, action)
 		f = l.hook
 		if no_base_check or action.addr >= f.base and action.addr < f.base + f.size then
 			if f.enable and f.pre then
-				logged = f.pre(f, action)
+				if f.pre(f, action) then
+					if not f.raw then
+						action.logged_pre = f
+					end
+					logged = true
+				end
 			end
 		end
 		l = l.next
 	end
-
 	if prev_filter ~= f and not action.ignore then
 		prev_filter = f
 		new_parent_action()
@@ -118,15 +122,11 @@ function walk_post_hooks(list, action)
 		f = l.hook
 		if no_base_check or action.addr >= f.base and action.addr < f.base + f.size then
 			if f.enable and f.post then
-				if no_base_check then
-					-- cpuid or cpumsr
-					logged = f.post(f, action)
-				else
-					-- io or mem
-					if f.post(f, action) then
-						action.f = f
-						logged = f.hide and not log_everything
+				if f.post(f, action) then
+					if not f.raw then
+						action.logged_post = f
 					end
+					logged = false
 				end
 			end
 		end
@@ -218,9 +218,9 @@ function pre_action(action, dir_wr, addr, size, data)
 	action.my_id = 0
 
 	-- no filter, not filtered
-	action.f = nil
+	action.logged_pre = nil
+	action.logged_post = nil
 	action.ignore = false
-	action.undefined = false
 	action.faked = false
 	action.dropped = false
 	action.to_hw = false

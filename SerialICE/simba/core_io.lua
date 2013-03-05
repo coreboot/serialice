@@ -8,7 +8,6 @@ F_RANGE = 2
 function io_undefined(f, action)
 	action.to_hw = true
 	action.to_qemu = false
-	action.undefined = true
 	return true
 end
 
@@ -32,6 +31,7 @@ end
 
 filter_io_fallback = {
 	name = "IO",
+	raw = true,
 	pre = io_undefined,
 	post = io_post,
 	decode = F_FIXED,
@@ -45,7 +45,6 @@ filter_io_fallback = {
 function mem_undefined(f, action)
 	action.to_hw = true
 	action.to_qemu = false
-	action.undefined = true
 	return true
 end
 
@@ -69,6 +68,7 @@ end
 
 filter_mem_fallback = {
 	name = "MEM",
+	raw = true,
 	pre = mem_undefined,
 	post = mem_post,
 	decode = F_FIXED,

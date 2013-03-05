@@ -68,6 +68,8 @@ dofile("pc80.lua")
 dofile("superio.lua")
 dofile("mmio.lua")
 
+io.write("SerialICE: LUA script initialized.\n")
+
 function do_minimal_setup()
 	enable_hook(io_hooks, filter_io_fallback)
 	enable_hook(mem_hooks, filter_mem_fallback)
@@ -105,8 +107,6 @@ else
 	do_minimal_setup()
 	do_default_setup()
 end
-
-root_info("LUA script initialized.\n")
 
 return true
 

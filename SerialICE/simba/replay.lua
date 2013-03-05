@@ -1,5 +1,5 @@
 
-local verbose_log = false
+replaying = true
 
 function SerialICE_register_physical()
 end
@@ -176,8 +176,6 @@ function parse_headers()
 			found, _, board = string.find(line, "SerialICE: Mainboard...:%s+(.+)")
 			if found then
 				SerialICE_mainboard = board
-				io.write(line)
-				io.write("\n")
 			end
 		end
 		if string.find(line, "LUA script initialized.") then
@@ -267,11 +265,6 @@ function parse_file()
 end
 
 parse_headers()
-
 dofile("serialice.lua")
-
--- set logging
-log_everything = verbose_log
-
 parse_file()
 
