@@ -132,16 +132,6 @@ filter_ram_low_2 = {
 	size = 0x20000
 }
 
--- 3.25GB RAM. This is handled by SerialICE.
--- FIXME: use TOLM here
-
-tolm = 0xd0000000
-top_of_qemu_ram = 0x800000
-
--- We refrain from backing up most of memory in Qemu because Qemu would
--- need lots of ram on the host and firmware usually does not intensively
--- use high memory anyways.
-
 filter_ram_high_qemu = {
 	name = "RAM",
 	pre = mem_qemu_only,

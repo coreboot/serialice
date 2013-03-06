@@ -24,42 +24,11 @@
 
 io.write("SerialICE: Starting LUA script\n")
 
-
--- Set to "false" to show undecoded access for the specified class
-hide_rom_access = true
-hide_ram_low = true
-hide_ram_high = true
-hide_smi_vga = true
-hide_pci_io_cfg = true
-hide_pci_mm_cfg = true
-hide_nvram_io = true
-hide_i8042_io = false
-hide_i8237_io = true
-hide_i8254_io = true
-hide_i8259_io = true
-hide_superio_cfg = true
-hide_smbus_io = true
-hide_mainboard_io = true
-
--- Set to "true" to log every memory and IO access
-log_everything = true
-
-
--- Use lua table for NVram
--- RTC registers 0x0-0xd go to HW
-cache_nvram = false
-
--- SMSC 0x07, Winbond 0x06 ?
-DEFAULT_SUPERIO_LDN_REGISTER = 0x07
-
-rom_size = 4 * 1024 * 1024
-rom_base = 0x100000000 - rom_size
-
-
 -- --------------------------------------------------------------------
 -- This initialization is executed right after target communication
 -- has been established
 
+dofile("user_env.lua")
 dofile("interface.lua")
 dofile("output.lua")
 dofile("hooks.lua")
