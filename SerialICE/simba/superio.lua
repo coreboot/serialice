@@ -32,21 +32,25 @@ function superio_pnpdev(f)
 	return string.format("%s %02x:%02x", f.name, f.base, f.pnp.active_ldn)
 end
 
-function superio_dev_post(f, action)
+function superio_string(f)
 	if f.pnp.reg < 0x30 then
-		printk(f, action, "%02x: ", f.base)
+		return string.format("%02x: ", f.base)
 	else
-		printk(f, action, "%02x:%02x ", f.base, f.pnp.active_ldn)
+		return string.format("%02x:%02x ", f.base, f.pnp.active_ldn)
 	end
 end
 
 function superio_register_post(f, action)
-	superio_dev_post(f, action)
+	local str = superio_string(f)
 	if action.write then
-		printf("[%02x] <= %02x\n", f.pnp.reg, action.data)
+		printk(f, action, "%s [%02x] <= %02x\n", str, f.pnp.reg, action.data)
 	else
-		printf("[%02x] => %02x\n", f.pnp.reg, action.data)
+		printk(f, action, "%s [%02x] => %02x\n", str, f.pnp.reg, action.data)
 	end
+end
+
+function superio_string_post(f, action, str2)
+	printk(f, action, "%s %s\n", superio_string(f), str2)
 end
 
 function superio_try_enable_io(f, idx)
@@ -89,11 +93,9 @@ function superio_try_enable_ldn(f, action)
 	local ldn = f.ldn[f.pnp.active_ldn]
 
 	if ldn.set[0x30] and ldn.data[0x30] == 0x0 then
-		superio_dev_post(f, action)
-		printf("disabled\n")
+		superio_string_post(f, action, "disabled")
 	else
-		superio_dev_post(f, action)
-		printf("enabled\n")
+		superio_string_post(f, action, "enabled")
 	end
 end
 
@@ -165,13 +167,11 @@ function superio_post(f, action)
 	end
 
 	if f.pnp.reg == 0x70 then
-		superio_dev_post(f, action)
-		printf("irq = %d\n", ldn.data[0x70])
+		superio_string_post(f, action, string.format("irq = %d", ldn.data[0x70]))
 		return true
 	end
 	if f.pnp.reg == 0x72 then
-		superio_dev_post(f, action)
-		printf("irq2 = %d\n", ldn.data[0x72])
+		superio_string_post(f, action, string.format("irq2 = %d", ldn.data[0x72]))
 		return true
 	end
 
