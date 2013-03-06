@@ -32,6 +32,25 @@ function replay_mem(dir_wr, addr, size, data)
 	walk_post_hooks(mem_hooks, mem_action)
 end
 
+function replay_msr(dir_wr, addr, hi, lo)
+	pre_action(cpu_action, dir_wr, 0, 0, 0)
+	load_regs(cpu_action.rin, lo, 0, addr, hi)
+	walk_pre_hooks(cpumsr_hooks, cpu_action)
+	post_action(cpu_action, 0)
+	load_regs(cpu_action.rout, lo, 0, addr, hi)
+	walk_post_hooks(cpumsr_hooks, cpu_action)
+end
+
+function replay_cpuid(idx0, idx1, eax, ebx, ecx, edx)
+	pre_action(cpu_action, CPUID, 0, 0, 0)
+	load_regs(cpu_action.rin, idx0, 0, idx1, 0)
+	walk_pre_hooks(cpuid_hooks, cpu_action)
+	post_action(cpu_action, 0)
+	load_regs(cpu_action.rout, eax, ebx, ecx, edx)
+	walk_post_hooks(cpuid_hooks, cpu_action)
+end
+
+
 function replay_unknown(str)
 	local dummy = {}
 	pre_action(dummy, false, 0, 0, 0)
@@ -76,6 +95,50 @@ function parse_mem(line)
 	end
 	return true
 end
+
+function parse_cpumsr(line)
+	local msr_op = "CPU MSR%:%s+%[(%x+)%]%s+(<?=>?)%s+(%x+).(%x+)"
+	local msr_op_old = "CPU%:%s+[:rdw:]*msr%s+(%x+)%s+(<?=>?)%s+(%x+).(%x+)"
+	local found, ecx, dir, edx, eax
+	found, _, ecx, dir, edx, eax = string.find(line, msr_op)
+	if not found then
+		found, _, ecx, dir, edx, eax = string.find(line, msr_op_old)
+	end
+	if not found then
+		return false
+	end
+	local necx = tonumber(ecx, 16)
+	local nedx = tonumber(edx, 16)
+	local neax = tonumber(eax, 16)
+	if string.find("<=", dir) then
+		replay_msr(true, necx, nedx, neax)
+	else
+		replay_msr(false, necx, nedx, neax)
+	end
+	return true
+end
+
+function parse_cpuid(line)
+	local id_op = "CPUID%: eax%: (%x+)%; ecx%: (%x+) => (%x+).(%x+).(%x+).(%x+)"
+	local id_op_old = "CPU%: CPUID eax%: (%x+)%; ecx%: (%x+) => (%x+).(%x+).(%x+).(%x+)"
+	local found, idx0, idx1, eax, ebx, ecx, edx 
+	found, _, idx0, idx1, eax, ebx, ecx, edx = string.find(line, id_op)
+	if not found then
+		found, _, idx0, idx1, eax, ebx, ecx, edx = string.find(line, id_op_old)
+	end
+	if not found then
+		return false
+	end
+	local nidx0 = tonumber(idx0, 16)
+	local nidx1 = tonumber(idx1, 16)
+	local neax = tonumber(eax, 16)
+	local nebx = tonumber(ebx, 16)
+	local necx = tonumber(ecx, 16)
+	local nedx = tonumber(edx, 16)
+	replay_cpuid(nidx0, nidx1, neax, nebx, necx, nedx)
+	return true
+end
+
 
 -- Old script already parsed PCI config, synthesize those IOs back.
 function parse_pci(line)
@@ -191,7 +254,12 @@ function parse_file()
 		if not found then
 			found = parse_mem(str)
 		end
-		-- TODO: replay CPU MSR and CPUID lines
+		if not found then
+			found = parse_cpuid(str)
+		end
+		if not found then
+			found = parse_cpumsr(str)
+		end
 		if not found then
 			found = replay_unknown(str)
 		end
