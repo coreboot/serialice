@@ -3,8 +3,8 @@
 froot = { id = 0, name = "SerialICE" }
 fresource = { id = 1, name = "Resource" }
 
-function new_hooks(str)
-	return { list = nil, name = str }
+function new_hooks(str, rule)
+	return { list = nil, name = str, match_filter = rule }
 end
 
 next_filter_id = 2
@@ -21,16 +21,26 @@ function new_parent_action()
 	current_parent_id = action_id()
 end
 
+function filter_in_range(f, action)
+	if f.enable and action.addr >= f.base and action.addr < f.base + f.size then
+		return true
+	end
+	return false
+end
 
-io_hooks = new_hooks("IO")
-mem_hooks = new_hooks("MEM")
+function filter_enabled(f, action)
+	return f.enable
+end
 
-cpumsr_hooks = new_hooks("CPU MSR")
-cpuid_hooks = new_hooks("CPUID")
+io_hooks = new_hooks("IO", filter_in_range)
+mem_hooks = new_hooks("MEM", filter_in_range)
+
+cpumsr_hooks = new_hooks("CPU MSR", filter_enabled)
+cpuid_hooks = new_hooks("CPUID", filter_enabled)
 
 function enable_hook(list, filter)
 	if not filter then
-		root_info("Attempted to call enable_hook()  with filter==nil\n")
+		root_info("Attempted to call enable_hook() with filter==nil\n")
 		return
 	end
 
@@ -76,21 +86,14 @@ function walk_pre_hooks(list, action)
 	local l = list.list
 	local f = nil
 
-	local no_base_check = true
-	if list == io_hooks or list == mem_hooks then
-		no_base_check = false
-	end
-
 	while l and not logged do
 		f = l.hook
-		if no_base_check or action.addr >= f.base and action.addr < f.base + f.size then
-			if f.enable and f.pre then
-				if f.pre(f, action) then
-					if not f.raw then
-						action.logged_pre = f
-					end
-					logged = true
+		if list.match_filter(f, action) then
+			if f.pre and f.pre(f, action) then
+				if not f.raw then
+					action.logged_pre = f
 				end
+				logged = true
 			end
 		end
 		l = l.next
@@ -113,21 +116,14 @@ function walk_post_hooks(list, action)
 	local l = list.list
 	local f = nil
 
-	local no_base_check = true
-	if list == io_hooks or list == mem_hooks then
-		no_base_check = false
-	end
-
 	while l and not logged do
 		f = l.hook
-		if no_base_check or action.addr >= f.base and action.addr < f.base + f.size then
-			if f.enable and f.post then
-				if f.post(f, action) then
-					if not f.raw then
-						action.logged_post = f
-					end
-					logged = false
+		if list.match_filter(f, action) then
+			if f.post and f.post(f, action) then
+				if not f.raw then
+					action.logged_post = f
 				end
+				logged = false
 			end
 		end
 		l = l.next
