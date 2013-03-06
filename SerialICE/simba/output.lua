@@ -21,17 +21,17 @@ function printk(f, action, fmt, ...)
 	end
 	if action.to_hw then
 		str = str .. "H"
-	elseif action.to_qemu then
+	else
+		str = str .. "."
+	end
+	if action.to_qemu then
 		str = str .. "Q"
 	else
 		str = str .. "."
 	end
 	if action.undefined then
 		str = str .. "U"
-	else
-		str = str .. "."
-	end
-	if action.dropped then
+	elseif action.dropped then
 		str = str .. "D"
 	elseif action.faked then
 		str = str .. "F"
