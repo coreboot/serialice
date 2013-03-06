@@ -2,10 +2,13 @@
 -- CPU MSR filters
 
 function var_mtrr_post(f, action)
-
 	local addr = action.rin.ecx
 	local hi = action.rin.edx
 	local lo = action.rin.eax
+
+	if not action.write then
+		return true
+	end
 
 	if addr % 2 == 0 then
 		mt = lo % 0x100
@@ -25,7 +28,31 @@ function var_mtrr_post(f, action)
 		end
 		printk(f, action, "Set MTRR %x mask to %08x.%08x (%s)\n", (addr - 0x200) / 2, hi, bit32.band(lo, 0xfffff000), valid)
 	end
+	return true
 end
+
+function mtrr_pre(f, action)
+	local addr = action.rin.ecx
+	if addr >= 0x200 and addr < 0x210 then
+		return handle_action(f, action)
+	end
+	return false
+end
+
+function mtrr_post(f, action)
+	local addr = action.rin.ecx
+	if addr >= 0x200 and addr < 0x210 then
+		return var_mtrr_post(f, action)
+	end
+	return false
+end
+
+filter_mtrr = {
+	name = "MTRR",
+	pre = mtrr_pre,
+	post = mtrr_post,
+	hide = true,
+}
 
 function cpumsr_pre(f, action)
 	return handle_action(f, action)
@@ -35,9 +62,6 @@ function cpumsr_post(f, action)
 	if action.write then
 		printk(f, action, "[%08x] <= %08x.%08x\n",
 			action.rin.ecx,	action.rin.edx, action.rin.eax)
-		if action.addr >= 0x200 and action.addr < 0x210 then
-			var_mtrr_post(f, action)
-		end
 	else
 		printk(f, action, "[%08x] => %08x.%08x\n",
 			action.rin.ecx,	action.rout.edx, action.rout.eax)
