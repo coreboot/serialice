@@ -21,27 +21,20 @@
 -- THE SOFTWARE.
 --
 
-dofile("i82801.lua")
-dofile("intel_bars.lua")
 
 -- **********************************************************
 --
 
 function mainboard_io_read(f, action)
-	-- Some timer loop
-	if ( action.addr == 0x61 ) then
-		if ( regs.eip == 0x1634 ) then
-			regs.ecx = 0x01
-			return fake_action(f, action, 0x20)
-		end
-		if ( regs.eip == 0x163a ) then
-			regs.ecx = 0x01
-			return fake_action(f, action, 0x30)
-		end
-	end
 
 	-- IO slowdown
 	if action.addr == 0xed then
+		ignore_action(f, action)
+		return drop_action(f, action, 0)
+	end
+
+	-- IO slowdown
+	if action.addr == 0xeb then
 		ignore_action(f, action)
 		return drop_action(f, action, 0)
 	end
@@ -62,24 +55,17 @@ function mainboard_io_write(f, action)
 		enable_ram()
 	end
 
-	if action.addr == 0xcfb then
+--	if action.addr == 0xcfb then
+--		ignore_action(f, action)
+--		return drop_action(f, action, 0)
+--	end
+
+	if action.addr == 0xeb then
 		ignore_action(f, action)
-		return drop_action(f, action, 0)
+		return drop_action(f, action, action.data)
 	end
 
 	if action.addr == 0xed then
-		if ( regs.eip == 0x1792 ) then
-			regs.ecx = 0x01
-		end
-if false then
-		-- SIPI delay
-		if ( regs.eip == 0xb3bc or regs.eip == 0xb3bf ) then
-			regs.ecx = 0x01
-		end
-		if ( regs.eip == 0xb4ad or regs.eip == 0xb4af ) then
-			regs.ecx = 0x01
-		end
-end
 		ignore_action(f, action)
 		return drop_action(f, action, action.data)
 	end
@@ -96,7 +82,7 @@ function mainboard_io_pre(f, action)
 end
 
 function mainboard_io_post(f, action)
-	if action.addr == 0xed or action.addr == 0xcfb then
+	if action.addr == 0xeb or action.addr == 0xed then
 		return true
 	end
 
@@ -110,7 +96,7 @@ function mainboard_io_post(f, action)
 end
 
 filter_mainboard = {
-	name = "AOpen",
+	name = "VIA",
 	pre = mainboard_io_pre,
 	post = mainboard_io_post,
 	hide = hide_mainboard_io,
@@ -118,6 +104,41 @@ filter_mainboard = {
 	size = 0x10000
 }
 
+
+
+-- MOVE THIS TO CHIPSET FILE
+
+load_filter("intel_smbus")
+load_filter("via_bars")
+
+function smbus_bar_hook(dev, reg, base)
+	intel_smbus_setup(base, 0x20)
+end
+
+dev_sb_lpc = {
+	pci_dev = pci_bdf(0x0,0x1f,0x3,0x0),
+	name = "Smbus",
+	bar = {},
+}
+
+dev_power = {
+	pci_dev = pci_bdf(0x0,0x11,0x0,0x0),
+	name = "SYS",
+	bar = {},
+	acpi = { f = nil },
+	tco = { f = nil },
+}
+
+function pm_io_bar(dev, reg, base)
+	dev.acpi.name = "ACPI"
+	dev.acpi.base = base
+	dev.acpi.size = 0x60
+	generic_io_bar(dev.acpi)
+end
+
+
+
+-- ****************
 
 function do_mainboard_setup()
 	enable_hook(io_hooks, filter_pci_io_cfg)
@@ -132,10 +153,11 @@ function do_mainboard_setup()
 	--enable_ram()
 
 	enable_hook_pc80()
-	enable_hook_superio(0x2e, 0x07)
-	--enable_hook(io_hooks, filter_com1)
-	enable_hook_i82801dx()
-	northbridge_e7505()
+	enable_hook_superio(0x4e, 0x07)
+
+	northbridge_vx900()
+	pci_cfg16_hook(dev_power, 0x88, "PM", pm_io_bar)
+	pci_cfg16_hook(dev_power, 0xd0, "SMBus", smbus_bar_hook)
 
 	-- Apply mainboard hooks last, so they are the first ones to check
 	enable_hook(io_hooks, filter_mainboard)

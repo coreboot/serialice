@@ -36,11 +36,17 @@ dofile("core_io.lua")
 dofile("memory.lua")
 dofile("cpu.lua")
 dofile("pci_cfg.lua")
-dofile("pc80.lua")
-dofile("superio.lua")
 dofile("mmio.lua")
 
 io.write("SerialICE: LUA script initialized.\n")
+
+function load_filter(str)
+	local filename = "chipset/" .. str .. ".lua"
+	dofile(filename)
+end
+
+load_filter("pc80")
+load_filter("superio")
 
 function do_minimal_setup()
 	enable_hook(io_hooks, filter_io_fallback)
@@ -64,18 +70,19 @@ function do_default_setup()
 	end
 end
 
-mainboard_file = string.format("%s.lua", string.lower(string.gsub(SerialICE_mainboard, "[ -]", "_")))
+root_info("Mainboard %s connected.\n", SerialICE_mainboard)
+local mainboard_file = string.format("mainboard/%s.lua", string.lower(string.gsub(SerialICE_mainboard, "[ -]", "_")))
 local mainboard_lua, ferr = loadfile(mainboard_file)
 local mainboard_script = io.open(mainboard_file)
 if mainboard_script then
 	io.close(mainboard_script)
 	assert(mainboard_lua, ferr)
 	mainboard_lua()
-	root_info("Mainboard script %s initialized.\n", mainboard_file)
+	root_info("Using script %s.\n", mainboard_file)
 	do_minimal_setup()
 	do_mainboard_setup()
 else
-	root_info("Mainboard script %s not found.\n", mainboard_file)
+	root_info("Script %s not found.\n", mainboard_file)
 	do_minimal_setup()
 	do_default_setup()
 end

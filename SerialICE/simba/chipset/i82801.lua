@@ -3,7 +3,7 @@
 -- SMBus controller handling
 
 
-dofile("intel_smbus.lua")
+load_filter("intel_smbus")
 
 function smbus_bar_hook(f, action)
 	intel_smbus_setup(action.data, 0x20)

@@ -1,6 +1,6 @@
 
-dofile("i82801.lua")
-dofile("intel_bars.lua")
+load_filter("i82801")
+load_filter("intel_bars")
 
 function do_mainboard_setup()
 	do_default_setup()

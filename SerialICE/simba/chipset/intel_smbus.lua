@@ -1,6 +1,6 @@
 
 
-dofile("smbus_host.lua")
+load_filter("smbus_host")
 
 -- ********************************************
 -- Intel 82801 SMBus Host controller
