@@ -275,9 +275,9 @@ local function host_change_state(f, prev_state, new_state)
 			host_jump(f, HOST_ACTIVE)
 		end
 
---	elseif smbus.state(f, HOST_FAIL) then
---		dump_transaction(f, f.host.action)
---		host_jump(f, HOST_ACTIVE)
+	elseif smbus.state(f, HOST_FAIL) then
+		dump_transaction(f, f.host.action)
+		host_jump(f, HOST_ACTIVE)
 	end
 
 end
