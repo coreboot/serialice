@@ -53,7 +53,7 @@ function new_car_region(start, size)
 	f.size = size
 	f.pre = car_qemu_only
 	f.post = car_post
-	f.hide = true
+	f.hide = hide_car
 	enable_hook(mem_hooks, f)
 	SerialICE_register_physical(start, size)
 end
@@ -101,12 +101,15 @@ function mem_smi_vga(f, action)
 	return true
 end
 
+function mem_ram_post(f, action)
+	return true
+end
 
 filter_ram_low = {
-	name = "MEM",
-	pre = mem_ram_low,
-	post = mem_post,
-	hide = true,
+	name = "RAM",
+	pre = mem_qemu_only,
+	post = mem_ram_post,
+	hide = hide_ram_low,
 	base = 0x0,
 	size = 0xa0000
 }
@@ -114,17 +117,17 @@ filter_ram_low = {
 filter_smi_vga = {
 	name = "SMI_VGA",
 	pre = mem_smi_vga,
-	post = mem_post,
-	hide = true,
+	post = mem_ram_post,
+	hide = hide_smi_vga,
 	base = 0x000a0000,
 	size = 0x00010000,
 }
 
 filter_ram_low_2 = {
-	name = "MEM",
-	pre = mem_ram_low,
-	post = mem_post,
-	hide = true,
+	name = "RAM",
+	pre = mem_qemu_only,
+	post = mem_ram_post,
+	hide = hide_ram_low,
 	base = 0xc0000,
 	size = 0x20000
 }
@@ -132,18 +135,30 @@ filter_ram_low_2 = {
 -- 3.25GB RAM. This is handled by SerialICE.
 -- FIXME: use TOLM here
 
--- We refrain from backing up this memory in Qemu because Qemu would
+tolm = 0xd0000000
+top_of_qemu_ram = 0x800000
+
+-- We refrain from backing up most of memory in Qemu because Qemu would
 -- need lots of ram on the host and firmware usually does not intensively
 -- use high memory anyways.
-filter_ram_high = {
-	name = "MEM",
-	pre = mem_target_only,
-	post = mem_post,
-	hide = true,
+
+filter_ram_high_qemu = {
+	name = "RAM",
+	pre = mem_qemu_only,
+	post = mem_ram_post,
+	hide = hide_ram_high,
 	base = 0x100000,
-	size = 0xd0000000 - 0x100000
+	size = top_of_qemu_ram - 0x100000,
 }
 
+filter_ram_high = {
+	name = "RAM",
+	pre = mem_target_only,
+	post = mem_ram_post,
+	hide = hide_ram_high,
+	base = top_of_qemu_ram,
+	size = tolm - top_of_qemu_ram
+}
 
 function ram_enabled()
 	return ram_is_initialized
@@ -153,6 +168,7 @@ function enable_ram()
 	enable_hook(mem_hooks, filter_ram_low)
 	enable_hook(mem_hooks, filter_smi_vga)
 	enable_hook(mem_hooks, filter_ram_low_2)
+	enable_hook(mem_hooks, filter_ram_high_qemu)
 	enable_hook(mem_hooks, filter_ram_high)
 
 	-- Register low RAM 0x00000000 - 0x000dffff
@@ -160,9 +176,9 @@ function enable_ram()
 	-- SMI/VGA memory should go to the target...
 	SerialICE_register_physical(0x000c0000, 0x20000)
 	--printf("Low RAM accesses are now directed to Qemu.\n")
+
+	-- Register high RAM
+	SerialICE_register_physical(0x100000, top_of_qemu_ram - 0x100000)
 	ram_is_initialized = true
 end
-
-
-
 

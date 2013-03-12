@@ -27,6 +27,9 @@ io.write("SerialICE: Starting LUA script\n")
 
 -- Set to "false" to show undecoded access for the specified class
 hide_rom_access = true
+hide_ram_low = true
+hide_ram_high = true
+hide_smi_vga = true
 hide_pci_io_cfg = true
 hide_pci_mm_cfg = true
 hide_nvram_io = true
