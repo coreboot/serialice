@@ -1738,7 +1738,7 @@ EOF
 
   if test "$got_lua" != "yes" ; then
     lua_cflags="-I/usr/local/include"
-    lua_ldflags="-L/usr/local/lib -llua -lm"
+    lua_ldflags="-L/usr/local/lib -llua"
     if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
       got_lua=yes
     fi
