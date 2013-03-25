@@ -17,10 +17,16 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-/* This is a chipset init file for the Intel D945GCLF mainboard */
+/* This is a chipset init file for the Intel D945GCLF/D945GNT mainboards */
 #include "config.h"
 
+#if defined(CONFIG_BOARD_INTEL_D945GCLF)
 const char boardname[33]="Intel D945GCLF                  ";
+#elif defined(CONFIG_BOARD_INTEL_D945GNT)
+const char boardname[33]="Intel D945GNT                   ";
+#else
+#error "Unsupported board"
+#endif
 
 /* Hardware specific functions */
 
@@ -65,28 +71,32 @@ static void southbridge_init(void)
 	outw(0x0002, TCOBASE + 0x06);
 }
 
-static void superio_init(void)
+static void superio_init(u8 cfg_port, u8 com_port, u8 pm)
 {
-	pnp_enter_ext_func_mode_alt(0x2e);
+	pnp_enter_ext_func_mode_alt(cfg_port);
 
-	pnp_set_logical_device(0x2e, 4); // COM-A
-	pnp_set_enable(0x2e, 0);
-	pnp_set_iobase0(0x2e, 0x3f8);
-	pnp_set_irq0(0x2e, 4);
-	pnp_set_enable(0x2e, 1);
+	pnp_set_logical_device(cfg_port, com_port);
+	pnp_set_enable(cfg_port, 0);
+	pnp_set_iobase0(cfg_port, 0x3f8);
+	pnp_set_irq0(cfg_port, 4);
+	pnp_set_enable(cfg_port, 1);
 
-	pnp_set_logical_device(0x2e, 10); // PM
-	pnp_set_enable(0x2e, 0);
-	pnp_set_iobase0(0x2e, 0x680);
-	pnp_set_irq0(0x2e, 3);
-	pnp_set_enable(0x2e, 1);
+	pnp_set_logical_device(cfg_port, pm);
+	pnp_set_enable(cfg_port, 0);
+	pnp_set_iobase0(cfg_port, 0x680);
+	pnp_set_irq0(cfg_port, 3);
+	pnp_set_enable(cfg_port, 1);
 
-	pnp_exit_ext_func_mode(0x2e);
+	pnp_exit_ext_func_mode(cfg_port);
 }
 
 static void chipset_init(void)
 {
 	southbridge_init();
-	superio_init();
+#if defined(CONFIG_BOARD_INTEL_D945GCLF)
+	superio_init(0x2e, 4, 10);
+#elif defined(CONFIG_BOARD_INTEL_D945GNT)
+	superio_init(0x2e, 3, 4); // LPC47M182
+#endif
 }
 

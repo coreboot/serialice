@@ -42,6 +42,9 @@ config BOARD_RODA_RK886EX
 config BOARD_INTEL_D945GCLF
 	bool "Intel D945GCLF"
 
+config BOARD_INTEL_D945GNT
+	bool "Intel D945GNT"
+
 config BOARD_DELL_S1850
 	bool "Dell PowerEdge S1850"
 
@@ -132,7 +135,7 @@ config BOARD_INIT
 	default "amd_serengeti-cheetah.c" if BOARD_AMD_SERENGETI_CHEETAH
 	default "kontron_986lcd-m.c" if BOARD_KONTRON_986LCD_M
 	default "roda_rk886ex.c" if BOARD_RODA_RK886EX
-	default "intel_d945gclf.c" if BOARD_INTEL_D945GCLF
+	default "intel_d94x.c" if BOARD_INTEL_D945GCLF || BOARD_INTEL_D945GNT
 	default "dell_s1850.c" if BOARD_DELL_S1850
 	default "asus_f2a85-m.c" if BOARD_ASUS_F2A85_M
 	default "asus_m2v-mx_se.c" if BOARD_ASUS_M2V_MX_SE
