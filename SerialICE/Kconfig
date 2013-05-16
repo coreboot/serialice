@@ -137,6 +137,9 @@ config BOARD_VIA_EPIA_M850
 config BOARD_WYSE_S50
 	bool "WYSE S50"
 
+config BOARD_LENOVO_X60
+	bool "Lenovo X60"
+
 endchoice
 
 config BOARD_INIT
@@ -172,6 +175,7 @@ config BOARD_INIT
 	default "asrock_775i65g.c" if BOARD_ASROCK_775I65G
 	default "commell_lv_672.c" if BOARD_COMMELL_LV_672
 	default "jetway_nf81_t56n_lf.c" if BOARD_JETWAY_NF81_T56N_LF
+	default "lenovo_x60.c" if BOARD_LENOVO_X60
 
 config SOUTHBRIDGE_INIT
 	string
