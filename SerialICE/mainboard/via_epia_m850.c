@@ -17,9 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const char boardname[33]="VIA EPIA M-850                  ";
+const char boardname[33] = "VIA EPIA M-850                  ";
 
 #define SUPERIO_CONFIG_PORT		0x2e
+
+#define LPC(x)		PCI_ADDR(0, 0x11, 0, x)
 
 static inline void pnp_enter_conf_state(u16 port)
 {
@@ -32,8 +34,17 @@ static inline void pnp_exit_conf_state(u16 port)
 	outb(0xaa, port);
 }
 
+static inline void vx900_disable_auto_reboot(void)
+{
+	/* Disable the GP3 timer, which is the root of all evil */
+	pci_write_config8(LPC(0x98), 0);
+	/* Yep, that's all it takes */
+}
+
 static void superio_init(void)
 {
+	vx900_disable_auto_reboot();
+
 	pnp_enter_conf_state(SUPERIO_CONFIG_PORT);
 	pnp_set_logical_device(SUPERIO_CONFIG_PORT, 0);
 	pnp_set_enable(SUPERIO_CONFIG_PORT, 0);
