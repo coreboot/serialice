@@ -47,7 +47,6 @@ static void sbxxx_enable_48mhzout(void)
 static void southbridge_init(void)
 {
 	u8 reg8;
-	u32 reg32;
 
 	/* route FED00000 - FEDFFFFF as non-posted to SB */
 	pci_write_config32(PCI_ADDR(0, 0x18, 1, 0x84),
