@@ -129,11 +129,11 @@ dev_power = {
 	tco = { f = nil },
 }
 
-function pm_io_bar(dev, reg, base)
-	dev.acpi.name = "ACPI"
-	dev.acpi.base = base
-	dev.acpi.size = 0x60
-	generic_io_bar(dev.acpi)
+function pm_io_bar(f, action)
+	f.dev.acpi.name = "ACPI"
+	f.dev.acpi.val = bit32.band(action.data, 0xff80)
+	f.dev.acpi.size = 0x80
+	generic_io_bar(f.dev.acpi)
 end
 
 
