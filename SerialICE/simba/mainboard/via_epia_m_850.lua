@@ -111,8 +111,9 @@ filter_mainboard = {
 load_filter("intel_smbus")
 load_filter("via_bars")
 
-function smbus_bar_hook(dev, reg, base)
-	intel_smbus_setup(base, 0x20)
+function smbus_bar_hook(f, action)
+	local base = bit32.band(action.data, 0xfff0)
+	intel_smbus_setup(base, 0x10)
 end
 
 dev_sb_lpc = {
