@@ -1,6 +1,7 @@
 -- SerialICE
 --
 -- Copyright (c) 2012 Kyösti Mälkki <kyosti.malkki@gmail.com>
+-- Copyright (c) 2013 Alexandru Gagniuc <mr.nuke.me@gmail.com>
 --
 -- Permission is hereby granted, free of charge, to any person obtaining a copy
 -- of this software and associated documentation files (the "Software"), to deal
@@ -104,42 +105,7 @@ filter_mainboard = {
 	size = 0x10000
 }
 
-
-
--- MOVE THIS TO CHIPSET FILE
-
-load_filter("intel_smbus")
 load_filter("via_bars")
-
-function smbus_bar_hook(f, action)
-	local base = bit32.band(action.data, 0xfff0)
-	intel_smbus_setup(base, 0x10)
-end
-
-dev_sb_lpc = {
-	pci_dev = pci_bdf(0x0,0x1f,0x3,0x0),
-	name = "Smbus",
-	bar = {},
-}
-
-dev_power = {
-	pci_dev = pci_bdf(0x0,0x11,0x0,0x0),
-	name = "SYS",
-	bar = {},
-	acpi = { f = nil },
-	tco = { f = nil },
-}
-
-function pm_io_bar(f, action)
-	f.dev.acpi.name = "ACPI"
-	f.dev.acpi.val = bit32.band(action.data, 0xff80)
-	f.dev.acpi.size = 0x80
-	generic_io_bar(f.dev.acpi)
-end
-
-
-
--- ****************
 
 function do_mainboard_setup()
 	enable_hook(io_hooks, filter_pci_io_cfg)
@@ -155,10 +121,7 @@ function do_mainboard_setup()
 
 	enable_hook_pc80()
 	enable_hook_superio(0x4e, 0x07)
-
 	enable_hooks_vx900()
-	pci_cfg16_hook(dev_power, 0x88, "PM", pm_io_bar)
-	pci_cfg16_hook(dev_power, 0xd0, "SMBus", smbus_bar_hook)
 
 	-- Apply mainboard hooks last, so they are the first ones to check
 	enable_hook(io_hooks, filter_mainboard)
