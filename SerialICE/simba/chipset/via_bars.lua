@@ -33,7 +33,7 @@ function sb_mmio_bar(f, action)
 	generic_mmio_bar(f.dev.mmio)
 end
 
-function northbridge_vx900()
+function enable_hooks_vx900()
 	pci_cfg8_hook(dev_nb_traf_ctl, 0x61, "PCI", vx900_pcie_bar)
 	pci_cfg32_hook(dev_sb, 0xbc, "SB_MMIO", sb_mmio_bar)
 end

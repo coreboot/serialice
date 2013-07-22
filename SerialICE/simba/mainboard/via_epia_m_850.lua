@@ -156,7 +156,7 @@ function do_mainboard_setup()
 	enable_hook_pc80()
 	enable_hook_superio(0x4e, 0x07)
 
-	northbridge_vx900()
+	enable_hooks_vx900()
 	pci_cfg16_hook(dev_power, 0x88, "PM", pm_io_bar)
 	pci_cfg16_hook(dev_power, 0xd0, "SMBus", smbus_bar_hook)
 
