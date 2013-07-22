@@ -15,19 +15,6 @@ dev_sb = {
 	mmio = { f = nil },
 }
 
-function nb_pcie_bar(dev, reg, base)
-	local size = 64*1024
-
-	pcie_mm_cfg_bar(base, size)
-end
-
-dev_nb = {
-	pci_dev = pci_bdf(0,0,0,0),
-	name = "nb",
-	bar = {},
-}
-
 function northbridge_vx900()
 	pci_cfg32_hook(dev_sb, 0xbc, "SB_MMIO", sb_mmio_bar)
-	pci_cfg32_hook(dev_nb, 0x0, "NB_PCI", nb_pcie_bar)
 end
