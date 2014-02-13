@@ -130,6 +130,10 @@ config BOARD_ASROCK_775I65G
 config BOARD_COMMELL_LV_672
 	bool "Commell LV-672"
 
+config BOARD_JETWAY_NF81_T56N_LF
+	bool "Jetway NF81-T56N-LF"
+	select BUILD_XMMSTACK
+
 endchoice
 
 config BOARD_INIT
@@ -163,15 +167,17 @@ config BOARD_INIT
 	default "intel_d845gbv2.c" if BOARD_INTEL_D845GBV2
 	default "asrock_775i65g.c" if BOARD_ASROCK_775I65G
 	default "commell_lv_672.c" if BOARD_COMMELL_LV_672
+	default "jetway_nf81_t56n_lf.c" if BOARD_JETWAY_NF81_T56N_LF
 
 config SOUTHBRIDGE_INIT
 	string
 	default "southbridge/intel-ich7.c" if BOARD_KONTRON_986LCD_M
-	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_F2A85_M
+	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_F2A85_M || BOARD_JETWAY_NF81_T56N_LF
 
 config SUPERIO_INIT
 	string
 	default "superio/winbond-w83627thg.c" if BOARD_KONTRON_986LCD_M
+	default "superio/fintek-f71869ad.c" if BOARD_JETWAY_NF81_T56N_LF
 
 choice
 	prompt "ROM size"
