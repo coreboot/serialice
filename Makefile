@@ -60,3 +60,37 @@ buildall:
 		mv build build-$$board; \
 	done
 
+#######################################################################
+# Development utilities
+lint lint-stable:
+	FAILED=0; LINTLOG=`mktemp .tmpconfig.lintXXXXX`; \
+	for script in util/lint/$@-*; do \
+		echo; echo `basename $$script`; \
+		grep "^# DESCR:" $$script | sed "s,.*DESCR: *,," ; \
+		echo ========; \
+		$$script > $$LINTLOG; \
+		if [ `cat $$LINTLOG | wc -l` -eq 0 ]; then \
+			printf "success\n\n"; \
+		else \
+			echo test failed: ; \
+			cat $$LINTLOG; \
+			rm -f $$LINTLOG; \
+			FAILED=$$(( $$FAILED + 1 )); \
+		fi; \
+		echo ========; \
+	done; \
+	test $$FAILED -eq 0 || { echo "ERROR: $$FAILED test(s) failed." &&  exit 1; }; \
+	rm -f $$LINTLOG
+
+gitconfig:
+	mkdir -p .git/hooks
+	for hook in commit-msg pre-commit ; do                       \
+		if [ util/gitconfig/$$hook -nt .git/hooks/$$hook -o  \
+		! -x .git/hooks/$$hook ]; then			     \
+			cp util/gitconfig/$$hook .git/hooks/$$hook;  \
+			chmod +x .git/hooks/$$hook;		     \
+		fi;						     \
+	done
+	git config remote.origin.push HEAD:refs/for/master
+	(git config --global user.name >/dev/null && git config --global user.email >/dev/null) || (printf 'Please configure your name and email in git:\n\n git config --global user.name "Your Name Comes Here"\n git config --global user.email your.email@example.com\n'; exit 1)
+
