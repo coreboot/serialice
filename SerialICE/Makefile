@@ -58,6 +58,7 @@ CROSS=i386-elf-
 endif
 AS=$(CROSS)as --32
 CC=$(CROSS)gcc -m32
+CPP=$(CROSS)cpp
 OBJCOPY=$(CROSS)objcopy
 NM=$(CROSS)nm
 
