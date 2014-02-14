@@ -1,5 +1,5 @@
 /*
- * SerialICE 
+ * SerialICE
  *
  * Copyright (C) 2009 coresystems GmbH
  *

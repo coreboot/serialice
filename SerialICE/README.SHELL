@@ -13,7 +13,7 @@ meant to be used together with a SerialICE capable Qemu (See README.QEMU)
 GETTING STARTED
 ---------------
 
-First, you have to compile the SerialICE shell for your mainboard. 
+First, you have to compile the SerialICE shell for your mainboard.
 
 Configure the SerialICE shell for your mainboard:
  $ make menuconfig
@@ -30,7 +30,7 @@ LICENSE AND COPYRIGHT
 ---------------------
 
 SerialICE mini shell is copyright (C) 2009 coresystems GmbH.
-It is released under the GNU General Public License version 2. 
+It is released under the GNU General Public License version 2.
 For questions contact <info@coresystems.de>
 
 PORTING THE SHELL TO NEW MAINBOARDS
@@ -145,4 +145,3 @@ character command code.
   SerialICE v1.5 (Nov 26 2009)
 
   >
-

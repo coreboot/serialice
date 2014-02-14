@@ -1,5 +1,5 @@
 /*
- * SerialICE 
+ * SerialICE
  *
  * Copyright (C) 2009 Joseph Smith <joe@settoplinux.org>
  *

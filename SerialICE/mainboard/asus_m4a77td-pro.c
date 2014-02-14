@@ -1,5 +1,5 @@
 /*
- * SerialICE 
+ * SerialICE
  *
  * Copyright (C) 2006 Uwe Hermann <uwe@hermann-uwe.de>
  * Copyright (C) 2010 Rudolf Marek <r.marek@assembler.cz>
@@ -44,8 +44,8 @@ static void superio_init(void)
 static void chipset_init(void)
 {
         /* stop the mainboard from rebooting */
-        /* inspired by coreboot, src/southbridge/amd/sb700/sb700_early_init.c, 
-         * sb700_lpc_init(), where the comment says: 
+        /* inspired by coreboot, src/southbridge/amd/sb700/sb700_early_init.c,
+         * sb700_lpc_init(), where the comment says:
          * NOTE: Set BootTimerDisable, otherwise it would keep rebooting!!
          * This bit has no meaning if debug strap is not enabled. So if the
          * board keeps rebooting and the code fails to reach here, we could

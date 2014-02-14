@@ -1,5 +1,5 @@
 /*
- * SerialICE 
+ * SerialICE
  *
  * Copyright (C) 2006 Uwe Hermann <uwe@hermann-uwe.de>
  * Copyright (C) 2009 Rudolf Marek <r.marek@assembler.cz>

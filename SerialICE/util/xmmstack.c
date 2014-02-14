@@ -109,7 +109,7 @@ int main(int argc,char **argv)
     int param;
     int inapp;
 
-    if (argc<2) 
+    if (argc<2)
     {
       printf("Usage: \n\txmmstack [-xmm] [-mmx] file.s\nThis program is for use with:\n"
              "\tgcc -fomit-frame-pointer -fno-stack-protector *.c\n"
@@ -552,7 +552,7 @@ getxmml:\n\
     );
 
     while(!feof(f))
-    {   
+    {
         *buf=0;
         fgets(buf,sizeof(buf)-1,f);
         chomp(buf);len=strlen(buf);
@@ -616,7 +616,7 @@ getxmml:\n\
                 case 2:fprintf(w,"jmp getxmmw\n");break;
                 case 4:fprintf(w,"jmp getxmml\n");break;
             }
-            if (!strcmp(find[2],"%eax")||!strcmp(find[2],"%ax")||!strcmp(find[2],"%al")) 
+            if (!strcmp(find[2],"%eax")||!strcmp(find[2],"%ax")||!strcmp(find[2],"%al"))
             {
                 fprintf(w,"movl %%edx,%%esp #NOSTACK\n");
                 fprintf(w,"movl %%dr0,%%edx #NOSTACK\n");
@@ -669,7 +669,7 @@ getxmml:\n\
                 case 2:fprintf(w,"%s %%ax,%s\n",find[1],find[3]);break;
                 case 4:fprintf(w,"%s %%eax,%s\n",find[1],find[3]);break;
             }
-            if (strcmp(find[3],"%eax")&&strcmp(find[3],"%ax")&&strcmp(find[3],"%al")) 
+            if (strcmp(find[3],"%eax")&&strcmp(find[3],"%ax")&&strcmp(find[3],"%al"))
                 //Nota, nomÃ©s pot ser un registre, (tot ha de ser const, ni malloc's ni res)
                 fprintf(w,"movl %%dr0,%%eax #NOSTACK\n");
             continue;
@@ -737,7 +737,7 @@ getxmml:\n\
             fprintf(w,"movl $.+10,%%esp\n");
             fprintf(w,"jmp docall\n");
             fprintf(w,"movl %%dr0,%%eax #NOSTACK\n");
-            fprintf(w,".byte 0xe9\n.long %s-4-. #NOSTACK\n",find[1]);//jmp, not works with .global??? gcc???            
+            fprintf(w,".byte 0xe9\n.long %s-4-. #NOSTACK\n",find[1]);//jmp, not works with .global??? gcc???
             continue;
         }
         if (regexp("^(rep\\s*;\\s*|)ret$",buf,len,find))
@@ -753,7 +753,7 @@ getxmml:\n\
             fprintf(w,"movl %%eax,%%esp\n");
             fprintf(w,"movl %%dr0,%%eax #NOSTACK\n");
             fprintf(w,"jmp *%%esp #NOSTACK\n");
-            
+
             continue;
         }
         fprintf(w,"%s\n",buf);
@@ -763,5 +763,3 @@ getxmml:\n\
 
     return 0;
 }
-
-

@@ -52,9 +52,9 @@ To disassemble code at the current position, you can do this:
 0xec23c:	loop   0xec226
 0xec23e:	mov    %bh,%al
 0xec240:	out    %al,$0x61
-0xec242:	ret    
+0xec242:	ret
 0xec243:	lcall  $0xe5db,$0x1ac0
-(gdb) 
+(gdb)
 
 
 Now for the fun part:
@@ -78,7 +78,7 @@ ds             0x1838	6200
 es             0x0	0
 fs             0xe5db	58843
 gs             0xe895	59541
-(gdb) 
+(gdb)
 
 Or, with a little bit of context:
 (gdb) x/20i ($cs*16)+$eip - 0x10
@@ -88,7 +88,7 @@ Of course you can also change registers:
 (gdb) set var $ecx=0x20
 (gdb) print $ecx
 $1 = 32
-(gdb) 
+(gdb)
 
 This is an excellent method to skip long loops.
 
@@ -101,12 +101,12 @@ Go back to the GDB shell at any time with CTRL-C
 ^C
 Program received signal SIGINT, Interrupt.
 0x000038d6 in ?? ()
-(gdb) 
+(gdb)
 
 
 (gdb) display /i ($cs * 16) + $pc
 
-That will output the current instruction each time you call nexti, stepi, etc. 
+That will output the current instruction each time you call nexti, stepi, etc.
 
 
 It's possible to trace execution with

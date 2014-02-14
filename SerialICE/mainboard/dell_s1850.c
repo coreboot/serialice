@@ -1,5 +1,5 @@
 /*
- * SerialICE 
+ * SerialICE
  *
  * Copyright (C) 2009 coresystems GmbH
  *
@@ -32,8 +32,8 @@ static void mainboard_set_ich5(void)
 	pci_write_config8(PCI_ADDR(0, 0x1f, 0, 0xe3), 0xc0);
 	pci_write_config8(PCI_ADDR(0, 0x1f, 0, 0xf0), 0x0);
 	/* disable certain devices -- see data sheet -- this is from
-	 * dell settings via lspci 
-	 * Note that they leave SMBUS disabled -- 8f6f. 
+	 * dell settings via lspci
+	 * Note that they leave SMBUS disabled -- 8f6f.
 	 * we leave it enabled and visible in config space -- 8f66
 	 */
 	pci_write_config16(PCI_ADDR(0, 0x1f, 0, 0xf2), 0x8f66);
@@ -54,7 +54,7 @@ static void mainboard_set_ich5(void)
 
 static inline void  ibfzero(void)
 {
-	while(inb(ipmicsr) &  IBF) 
+	while(inb(ipmicsr) &  IBF)
 		;
 }
 static inline void  clearobf(void)
@@ -64,7 +64,7 @@ static inline void  clearobf(void)
 
 static inline void  waitobf(void)
 {
-	while((inb(ipmicsr) &  OBF) == 0) 
+	while((inb(ipmicsr) &  OBF) == 0)
 		;
 }
 

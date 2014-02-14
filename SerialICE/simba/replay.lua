@@ -121,7 +121,7 @@ end
 function parse_cpuid(line)
 	local id_op = "CPUID%: eax%: (%x+)%; ecx%: (%x+) => (%x+).(%x+).(%x+).(%x+)"
 	local id_op_old = "CPU%: CPUID eax%: (%x+)%; ecx%: (%x+) => (%x+).(%x+).(%x+).(%x+)"
-	local found, idx0, idx1, eax, ebx, ecx, edx 
+	local found, idx0, idx1, eax, ebx, ecx, edx
 	found, _, idx0, idx1, eax, ebx, ecx, edx = string.find(line, id_op)
 	if not found then
 		found, _, idx0, idx1, eax, ebx, ecx, edx = string.find(line, id_op_old)
@@ -196,7 +196,7 @@ function parse_file()
 		end
 
 		if not iplog then
-			iplog, _, a, b, f, cs, eip, str = 
+			iplog, _, a, b, f, cs, eip, str =
 				string.find(line, "(%x+)[%.:](%x+)%s+([^ ]*)%s+%[(%x+):(%x+)%]...(.*)")
 			if iplog and not f then
 				f = "R###"

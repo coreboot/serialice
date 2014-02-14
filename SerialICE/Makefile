@@ -1,5 +1,5 @@
 ##
-## SerialICE 
+## SerialICE
 ##
 ## Copyright (C) 2009 coresystems GmbH
 ##
@@ -116,7 +116,7 @@ $(obj)/serialice.rom: $(obj)/serialice.elf
 
 $(obj)/serialice.elf: $(obj)/serialice.o $(obj)/start.o $(src)/serialice.ld
 	$(Q)printf "  LINK     $(subst $(shell pwd)/,,$(@))\n"
-	$(Q)$(CC) $(LDFLAGS) -o $@ $(obj)/serialice.o $(obj)/start.o 
+	$(Q)$(CC) $(LDFLAGS) -o $@ $(obj)/serialice.o $(obj)/start.o
 	$(Q)$(NM) $@ | sort -u > $(obj)/serialice.map
 
 $(obj)/serialice.S: $(SOURCES) $(obj)/romcc
@@ -143,7 +143,7 @@ $(obj)/serialice-gcc.rom: $(obj)/serialice-gcc.elf
 
 $(obj)/serialice-gcc.elf: $(obj)/serialice-gcc.o $(obj)/start.o serialice.ld
 	$(Q)printf "  LINK     $(subst $(shell pwd)/,,$(@))\n"
-	$(Q)$(CC) $(LDFLAGS) -o $@ $(obj)/serialice-gcc.o $(obj)/start.o 
+	$(Q)$(CC) $(LDFLAGS) -o $@ $(obj)/serialice-gcc.o $(obj)/start.o
 	$(Q)$(NM) $@ | sort -u > $(obj)/serialice-gcc.map
 
 $(obj)/serialice-pre.s: $(SOURCES) $(obj)/xmmstack

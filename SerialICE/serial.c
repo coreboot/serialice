@@ -1,5 +1,5 @@
 /*
- * SerialICE 
+ * SerialICE
  *
  * Copyright (C) 2009 coresystems GmbH
  *
@@ -104,7 +104,7 @@ static void sio_put8(u8 data)
 {
 	int i;
 	u8 c;
-		
+
 	c = (data >> 4) & 0xf;
 	sio_put_nibble(c);
 
@@ -193,5 +193,3 @@ static u32 sio_get32(void)
 
 	return data;
 }
-
-

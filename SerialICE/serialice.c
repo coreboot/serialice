@@ -1,5 +1,5 @@
 /*
- * SerialICE 
+ * SerialICE
  *
  * Copyright (C) 2009 coresystems GmbH
  *
@@ -168,7 +168,7 @@ static void serialice_cpuinfo(void)
 
 	/* This code looks quite crappy but this way we don't
  	 * have to worry about running out of registers if we
- 	 * occupy eax, ebx, ecx, edx at the same time 
+ 	 * occupy eax, ebx, ecx, edx at the same time
  	 */
 	reg32 = cpuid_eax(eax, ecx);
 	sio_put32(reg32);

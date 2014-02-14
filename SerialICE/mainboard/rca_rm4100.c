@@ -1,5 +1,5 @@
 /*
- * SerialICE 
+ * SerialICE
  *
  * Copyright (C) 2009 Joseph Smith <joe@settoplinux.org>
  *
@@ -18,7 +18,7 @@
  */
 
 /* This is a chipset init file for the RCA RM4100 mainboard */
- 
+
 const char boardname[33]="RCA RM4100                      ";
 
 /* Hardware specific functions */
