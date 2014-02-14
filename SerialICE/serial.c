@@ -82,7 +82,7 @@ static u8 sio_getc(void)
 
 /* SIO helpers */
 
-static void sio_putstring(char *string)
+static void sio_putstring(const char *string)
 {
 	/* Very simple, no %d, %x etc. */
 	while (*string) {
