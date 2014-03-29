@@ -33,6 +33,9 @@ config BOARD_QEMU_X86
 config BOARD_AMD_SERENGETI_CHEETAH
 	bool "AMD Serengeti Cheetah (SimNOW)"
 
+config BOARD_ASUS_P2_M3A3200
+	bool "ASUS Pundit P2-M3A3200"
+
 config BOARD_KONTRON_986LCD_M
 	bool "Kontron 986LCD-M/mITX"
 
@@ -140,6 +143,7 @@ config BOARD_INIT
 	string
 	default "qemu-x86.c" if BOARD_QEMU_X86
 	default "amd_serengeti-cheetah.c" if BOARD_AMD_SERENGETI_CHEETAH
+	default "asus_p2-m3a3200.c" if BOARD_ASUS_P2_M3A3200
 	default "kontron_986lcd-m.c" if BOARD_KONTRON_986LCD_M
 	default "roda_rk886ex.c" if BOARD_RODA_RK886EX
 	default "intel_d94x.c" if BOARD_INTEL_D945GCLF || BOARD_INTEL_D945GNT || BOARD_INTEL_D946GZIS
@@ -173,9 +177,11 @@ config SOUTHBRIDGE_INIT
 	string
 	default "southbridge/intel-ich7.c" if BOARD_KONTRON_986LCD_M
 	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_F2A85_M || BOARD_JETWAY_NF81_T56N_LF
+	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_P2_M3A3200
 
 config SUPERIO_INIT
 	string
+	default "superio/ite-it8718f.c" if BOARD_ASUS_P2_M3A3200
 	default "superio/winbond-w83627thg.c" if BOARD_KONTRON_986LCD_M
 	default "superio/fintek-f71869ad.c" if BOARD_JETWAY_NF81_T56N_LF
 
