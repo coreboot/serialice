@@ -339,6 +339,8 @@ die "No filename or title\n" unless defined $fn && defined $tl;
 $sects{NAME} = "$fn \- $tl\n";
 $sects{FOOTNOTES} .= "=back\n" if exists $sects{FOOTNOTES};
 
+print "=encoding utf8\n";
+
 for $sect (qw(NAME SYNOPSIS DESCRIPTION OPTIONS ENVIRONMENT FILES
 	      BUGS NOTES FOOTNOTES SEEALSO AUTHOR COPYRIGHT)) {
     if(exists $sects{$sect}) {
