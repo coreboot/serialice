@@ -33,14 +33,57 @@ config BOARD_QEMU_X86
 config BOARD_AMD_SERENGETI_CHEETAH
 	bool "AMD Serengeti Cheetah (SimNOW)"
 
+config BOARD_AOPEN_DXPL_PLUS
+	bool "AOpen DXPL Plus"
+
+config BOARD_ASROCK_775I65G
+	bool "ASRock 775i65G"
+
+config BOARD_ASROCK_939A785GMH
+	bool "ASRock 939A785GMH"
+	select BUILD_XMMSTACK
+
+config BOARD_ASROCK_P4I65GV
+	bool "ASRock P4i65GV"
+
+config BOARD_ASUS_F2A85_M
+	bool "ASUS F2A85-M"
+	select BUILD_XMMSTACK
+
+config BOARD_ASUS_K8V_X
+	bool "ASUS K8V-X"
+	select VIA_ROMSTRAP
+	select BUILD_XMMSTACK
+
+config BOARD_ASUS_M2V_MX_SE
+	bool "ASUS M2V-MX SE"
+	select VIA_ROMSTRAP
+	select BUILD_XMMSTACK
+
+config BOARD_ASUS_M4A77TD_PRO
+	bool "ASUS M4A77TD-PRO"
+	select BUILD_XMMSTACK
+
 config BOARD_ASUS_P2_M3A3200
 	bool "ASUS Pundit P2-M3A3200"
 
-config BOARD_KONTRON_986LCD_M
-	bool "Kontron 986LCD-M/mITX"
+config BOARD_ASUS_P2B
+	bool "ASUS P2B"
 
-config BOARD_RODA_RK886EX
-	bool "Roda RK886EX"
+config BOARD_ASUS_P4P800_VM
+	bool "ASUS P4P800-VM"
+
+config BOARD_COMMELL_LV_672
+	bool "Commell LV-672"
+
+config BOARD_DELL_S1850
+	bool "Dell PowerEdge S1850"
+
+config BOARD_HP_DL165_G6
+	bool "HP DL165 G6"
+
+config BOARD_INTEL_D845GBV2
+	bool "Intel D845GBV2"
 
 config BOARD_INTEL_D945GCLF
 	bool "Intel D945GCLF"
@@ -51,30 +94,12 @@ config BOARD_INTEL_D945GNT
 config BOARD_INTEL_D946GZIS
 	bool "Intel D946GZIS"
 
-config BOARD_DELL_S1850
-	bool "Dell PowerEdge S1850"
-
-config BOARD_ASUS_F2A85_M
-	bool "ASUS F2A85-M"
+config BOARD_JETWAY_NF81_T56N_LF
+	bool "Jetway NF81-T56N-LF"
 	select BUILD_XMMSTACK
 
-config BOARD_ASUS_M2V_MX_SE
-	bool "ASUS M2V-MX SE"
-	select VIA_ROMSTRAP
-	select BUILD_XMMSTACK
-
-config BOARD_ASUS_K8V_X
-	bool "ASUS K8V-X"
-	select VIA_ROMSTRAP
-	select BUILD_XMMSTACK
-
-config BOARD_ASUS_M4A77TD_PRO
-	bool "ASUS M4A77TD-PRO"
-	select BUILD_XMMSTACK
-
-config BOARD_ASROCK_939A785GMH
-	bool "ASRock 939A785GMH"
-	select BUILD_XMMSTACK
+config BOARD_KONTRON_986LCD_M
+	bool "Kontron 986LCD-M/mITX"
 
 config BOARD_MSI_MS6178
 	bool "MSI MS6178"
@@ -85,14 +110,14 @@ config BOARD_MSI_MS7133
 config BOARD_RCA_RM4100
 	bool "RCA RM4100"
 
-config BOARD_THOMSON_IP1000
-	bool "Thomson IP1000"
-
-config BOARD_ASUS_P2B
-	bool "ASUS P2B"
+config BOARD_RODA_RK886EX
+	bool "Roda RK886EX"
 
 config BOARD_TELEVIDEO_TC7010
 	bool "Televideo TC7010"
+
+config BOARD_THOMSON_IP1000
+	bool "Thomson IP1000"
 
 config BOARD_TYAN_S2892
 	bool "Tyan S2892"
@@ -106,36 +131,11 @@ config BOARD_TYAN_S2912
 	bool "Tyan S2912"
 	select MCP55_ROMSTRAP
 
-config BOARD_HP_DL165_G6
-	bool "HP DL165 G6"
-
-config BOARD_WYSE_S50
-	bool "WYSE S50"
-
-config BOARD_ASROCK_P4I65GV
-	bool "ASRock P4i65GV"
-
-config BOARD_ASUS_P4P800_VM
-	bool "ASUS P4P800-VM"
-
-config BOARD_AOPEN_DXPL_PLUS
-	bool "AOpen DXPL Plus"
-
 config BOARD_VIA_EPIA_M850
 	bool "VIA EPIA M850"
 
-config BOARD_INTEL_D845GBV2
-	bool "Intel D845GBV2"
-
-config BOARD_ASROCK_775I65G
-	bool "ASRock 775i65G"
-
-config BOARD_COMMELL_LV_672
-	bool "Commell LV-672"
-
-config BOARD_JETWAY_NF81_T56N_LF
-	bool "Jetway NF81-T56N-LF"
-	select BUILD_XMMSTACK
+config BOARD_WYSE_S50
+	bool "WYSE S50"
 
 endchoice
 
