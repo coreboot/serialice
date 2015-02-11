@@ -25,9 +25,9 @@ filter_debugport = {
 -- i8259 PIC
 
 function i8259_pre(f, action)
-	local master = (bit32.rshift(0x05, action.addr) == 0x1)
-	local slave = (bit32.rshift(0x05, action.addr) == 0x5)
-	local reg = bit32.band(0x03, action.addr)
+	local master = ((0x05 >> action.addr) == 0x1)
+	local slave = ((0x05 >> action.addr) == 0x5)
+	local reg = (0x03 & action.addr)
 	if reg == 0 or reg == 1 then
 		return handle_action(f, action)
 	end
@@ -35,7 +35,7 @@ function i8259_pre(f, action)
 end
 
 function i8259_post(f,action)
-	local reg = bit32.band(0x03, action.addr)
+	local reg = (0x03 & action.addr)
 	if reg == 0 or reg == 1 then
 		return true
 	end
@@ -133,37 +133,37 @@ function i8254_pre(f, action)
 		return handle_action(f, action)
 	end
 
-	local reg = bit32.band(0x03, action.addr)
+	local reg = (0x03 & action.addr)
 	if reg >= 0x0 and reg < 0x03 then
 		local counter_n = 0
 		local counter_p = 0
 		if f.counter[reg].lsb then
 			f.counter[reg].lsb = f.counter[reg].after_lsb
 			counter_n = action.data
-			counter_p = bit32.band(0xff00, f.counter[reg].init)
+			counter_p = (0xff00 & f.counter[reg].init)
 		else
-			counter_n = bit32.lshift(action.data, 8)
-			counter_p = bit32.band(0x00ff, f.counter[reg].init)
+			counter_n = (action.data << 8)
+			counter_p = (0x00ff & f.counter[reg].init)
 		end
-		f.counter[reg].init = bit32.bor(counter_n, counter_p)
+		f.counter[reg].init = (counter_n | counter_p)
 	elseif reg == 0x03 then
-		local reg2 = bit32.rshift(action.data, 6)
-		local rwsel = bit32.band(0x3, bit32.rshift(action.data, 4))
+		local reg2 = (action.data >> 6)
+		local rwsel = 0x3 & (action.data >> 4)
 		if reg2 == 0x3 then
-			if bit32.band(0x10, action.data) == 0 then
-				f.counter[0].readback = (bit32.band(0x2, action.data) ~= 0)
-				f.counter[1].readback = (bit32.band(0x4, action.data) ~= 0)
-				f.counter[2].readback = (bit32.band(0x8, action.data) ~= 0)
+			if (0x10 & action.data) == 0 then
+				f.counter[0].readback = ((0x2 & action.data) ~= 0)
+				f.counter[1].readback = ((0x4 & action.data) ~= 0)
+				f.counter[2].readback = ((0x8 & action.data) ~= 0)
 			end
-			if bit32.band(0x20, action.data) == 0 then
-				f.counter[0].latch = (bit32.band(0x2, action.data) ~= 0)
-				f.counter[1].latch = (bit32.band(0x4, action.data) ~= 0)
-				f.counter[2].latch = (bit32.band(0x8, action.data) ~= 0)
+			if (0x20 & action.data) == 0 then
+				f.counter[0].latch = ((0x2 & action.data) ~= 0)
+				f.counter[1].latch = ((0x4 & action.data) ~= 0)
+				f.counter[2].latch = ((0x8 & action.data) ~= 0)
 			end
 		elseif rwsel == 0x0 then
 			f.counter[reg2].latch = true
 		else
-			f.counter[reg2].mode = bit32.band(0xf, action.data)
+			f.counter[reg2].mode = (0xf & action.data)
 			if rwsel == 0x1 then
 				f.counter[reg2].lsb = true
 				f.counter[reg2].after_lsb = true
@@ -180,17 +180,17 @@ function i8254_pre(f, action)
 end
 
 function i8254_post(f, action)
-	local reg = bit32.band(0x03, action.addr)
+	local reg = (0x03 & action.addr)
 	if reg >= 0x0 and reg < 0x03 then
 		if action.write then
-			local mode = bit32.band(0x0f, f.counter[reg].mode);
+			local mode = (0x0f & f.counter[reg].mode);
 			local modestr = "Mode" .. mode
 			if mode == 0x4 then
 				modestr = "Square Wave"
 			elseif mode == 0x6 then
 				modestr = "Rate Generator"
 			end
-			if bit32.band(0x01, mode) ~= 0 then
+			if (0x01 & mode) ~= 0 then
 				modestr = modestr .. " (BCD)"
 			end
 
@@ -262,15 +262,15 @@ filter_i8254_b = {
 function i8042_write(f, action)
 	if action.addr == 0x60 then
 		f.reg.data = action.data
-		f.reg.sts = bit32.band(f.reg.sts, 0xf7)
+		f.reg.sts = (f.reg.sts & 0xf7)
 		if (f.reg.cmd == 0xd1) then
-			f.reg.A20 = (bit32.band(0x02, action.data) == 0x02)
+			f.reg.A20 = ((0x02 & action.data) == 0x02)
 		end
 		return handle_action(f, action)
 	end
 	if action.addr == 0x64 then
 		f.reg.cmd = action.data
-		f.reg.sts = bit32.bor(f.reg.sts, 0x0a)
+		f.reg.sts = (f.reg.sts | 0x0a)
 		return handle_action(f, action)
 	end
 	return skip_filter(f, action)
@@ -278,7 +278,7 @@ end
 
 function i8042_read(f, action)
 	if action.addr == 0x60 then
-		f.reg.sts = bit32.band(f.reg.sts, 0xfe)
+		f.reg.sts = (f.reg.sts & 0xfe)
 		return handle_action(f, action)
 	end
 	if action.addr == 0x64 then
@@ -330,11 +330,11 @@ filter_i8042 = {
 
 
 function nvram_bank(addr)
-	if bit32.band(0xfe, addr) == 0x70 then
+	if (0xfe & addr) == 0x70 then
 		return 1
-	elseif bit32.band(0xfe, addr) == 0x72 then
+	elseif (0xfe & addr) == 0x72 then
 		return 2
-	elseif bit32.band(0xfe, addr) == 0x74 then
+	elseif (0xfe & addr) == 0x74 then
 		return 2
 	else
 		return 0
@@ -344,12 +344,12 @@ end
 function nvram_write(f, action)
 	local val = action.data
 	local rtc = false
-	local is_index = (bit32.band(0x01, action.addr) == 0x0)
+	local is_index = ((0x01 & action.addr) == 0x0)
 	local bank = nvram_bank(action.addr)
 
 	if bank == 1 then
 		if is_index then
-			f.reg.p70 = bit32.band(0x7f, val)
+			f.reg.p70 = (0x7f & val)
 			if f.reg.p70 < 0x0E then
 				rtc = true
 			end
@@ -362,7 +362,7 @@ function nvram_write(f, action)
 		end
 	elseif bank == 2 then
 		if is_index then
-			f.reg.p72 = bit32.band(0x7f, val)
+			f.reg.p72 = (0x7f & val)
 		else
 			local index = 0x80 + f.reg.p72
 			f.nvram_data[index] = val
@@ -379,7 +379,7 @@ end
 function nvram_read(f, action)
 	local val = 0
 	local rtc = false
-	local is_index = (bit32.band(0x01, action.addr) == 0x0)
+	local is_index = ((0x01 & action.addr) == 0x0)
 	local bank = nvram_bank(action.addr)
 
 	if bank == 1 then
@@ -423,7 +423,7 @@ function nvram_pre(f, action)
 end
 
 function nvram_post(f, action)
-	if bit32.band(0x01, action.addr) == 0x0 then
+	if (0x01 & action.addr) == 0x0 then
 		return true
 	end
 
@@ -463,7 +463,7 @@ filter_nvram = {
 
 function sys_rst_pre(f, action)
 	if action.size == 1 then
-		if action.write and bit32.band(action.data, 0x04) == 0x04 then
+		if action.write and (action.data & 0x04) == 0x04 then
 			SerialICE_system_reset()
 		end
 		return handle_action(f, action)

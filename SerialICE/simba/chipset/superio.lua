@@ -59,7 +59,7 @@ function superio_try_enable_io(f, idx)
 
 	if ldn.set[0x30] and ldn.data[0x30] ~= 0x0 then
 		if idx == 0 and ldn.set[0x60] and ldn.set[0x61] then
-			local iobase = bit32.bor(bit32.lshift(ldn.data[0x60], 8), ldn.data[0x61])
+			local iobase = (ldn.data[0x60] << 8) | ldn.data[0x61]
 			if not ldn.bar0.size then
 				ldn.bar0.size = 1
 			end
@@ -73,7 +73,7 @@ function superio_try_enable_io(f, idx)
 			end
 		end
 		if idx == 1 and ldn.set[0x62] and ldn.set[0x63] then
-			local iobase = bit32.bor(bit32.lshift(ldn.data[0x62], 8), ldn.data[0x63])
+			local iobase = (ldn.data[0x62] << 8) | ldn.data[0x63]
 			if not ldn.bar1.size then
 				ldn.bar1.size = 1
 			end

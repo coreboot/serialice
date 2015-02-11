@@ -141,7 +141,7 @@ function generic_io_bar(bar)
 		f.size = bar.size
 		bar.f = f
 	end
-	bar.f.base = bit32.band(bar.val, bit32.bnot(bar.size-1))
+	bar.f.base = (bar.val & ~(bar.size-1))
 	if (bar.f.base ~= 0) then
 		enable_hook(io_hooks, bar.f)
 	else
@@ -160,7 +160,7 @@ function generic_mmio_bar(bar)
 		f.size = bar.size
 		bar.f = f
 	end
-	bar.f.base = bit32.band(bar.val, bit32.bnot(bar.size-1))
+	bar.f.base = (bar.val & ~(bar.size-1))
 	if bar.f.base ~= 0 then
 		enable_hook(mem_hooks, bar.f)
 	else
@@ -230,11 +230,11 @@ function pre_action(action, dir_wr, addr, size, data)
 	action.size = size
 	if action.write then
 		if size == 1 then
-			action.data = bit32.band(0xff, data)
+			action.data = (0xff & data)
 		elseif size == 2 then
-			action.data = bit32.band(0xffff, data)
+			action.data = (0xffff & data)
 		elseif size == 4 then
-			action.data = bit32.band(0xffffffff, data)
+			action.data = (0xffffffff & data)
 		end
 	end
 end

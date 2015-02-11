@@ -1743,44 +1743,28 @@ EOF
       got_lua=yes
     fi
   fi
-  if test "$got_lua" != "yes" && $pkg_config --atleast-version=5.2 lua ; then
+  if test "$got_lua" != "yes" && $pkg_config --atleast-version=5.3 lua ; then
     lua_cflags=`$pkg_config --cflags lua 2> /dev/null`
     lua_ldflags=`$pkg_config --libs lua 2> /dev/null`
     if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
       got_lua=yes
     fi
   fi
-  if test "$got_lua" != "yes" && $pkg_config --exists lua5.2 ; then
-    lua_cflags=`$pkg_config --cflags lua5.2 2> /dev/null`
-    lua_ldflags=`$pkg_config --libs lua5.2 2> /dev/null`
+  if test "$got_lua" != "yes" && $pkg_config --exists lua5.3 ; then
+    lua_cflags=`$pkg_config --cflags lua5.3 2> /dev/null`
+    lua_ldflags=`$pkg_config --libs lua5.3 2> /dev/null`
     if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
       got_lua=yes
     fi
   fi
   if test "$got_lua" != "yes" ; then
     echo
-    echo "Error Lua version >= 5.2 not found. Can't build QEMU with SerialICE support."
+    echo "Error Lua version >= 5.3 not found. Can't build QEMU with SerialICE support."
     echo
     exit 1
   fi
 
-# Test if lua-5.2.x-intsize.patch has been applied. On a 32bit host system
-# LUA_INTEGER is often a signed 32bit integer (ptrdiff_t) and not enough for our needs.
-  cat > $TMPC << EOF
-#include <lua.h>
-int main(void) { LUA_INTEGER a = (unsigned long int)1<<31; if (a<0) return 1; else return 0; }
-EOF
-
-  if compile_prog "$lua_cflags" "$lua_ldflags" && $TMPE > /dev/null 2> /dev/null ; then
-    serialice=yes
-  else
-    echo
-    echo "Error Found Lua but it needs a patch to handle 32bit unsigned integers"
-    echo "correctly. Can't build QEMU with SerialICE support."
-    echo
-    exit 1
-  fi
-
+  serialice=yes
   libs_softmmu="$lua_ldflags $libs_softmmu"
 fi # test "$serialice"
 

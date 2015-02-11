@@ -31,7 +31,7 @@ I801_PEC_EN		= 0x80
 
 
 local function intel_smbus_get_protocol(f)
-	local proto = bit32.band(f.reg.control, 0x1c)
+	local proto = (f.reg.control & 0x1c)
 
 	if proto == I801_QUICK then
 		return SMBUS_QUICK
@@ -73,7 +73,7 @@ local function intel_smbus_host_status(f, action)
 			if not smbus.passive(f) then
 				f.reg.status = 0x0
 			end
-			if bit32.band(f.reg.status, 0x40) ~= 0 then
+			if (f.reg.status & 0x40) ~= 0 then
 			       printk(f, action, "Host may be busy, ignoring.\n")
 			end
 			smbus.get_resource(f)
@@ -83,19 +83,19 @@ local function intel_smbus_host_status(f, action)
 
 		elseif smbus.state(f, HOST_STARTED) then
 			if not smbus.passive(f) then
-				f.reg.status = bit32.band(f.reg.status, 0xFE)
+				f.reg.status = (f.reg.status & 0xFE)
 				if f.reg.busy_count > 0 then
 					f.reg.busy_count = f.reg.busy_count - 1
-					f.reg.status = bit32.bor(f.reg.status, 0x01)
+					f.reg.status = (f.reg.status | 0x01)
 				end
-				if bit32.band(f.reg.status, 0x02) == 0 then
+				if (f.reg.status & 0x02) == 0 then
 					smbus_transaction(host)
 				end
 			end
 
-			local irq = bit32.band(f.reg.status, 0x02) ~= 0
-			local failures = bit32.band(f.reg.status, 0x1c) ~= 0
-			local host_busy = bit32.band(f.reg.status, 0x01) ~= 0
+			local irq = (f.reg.status & 0x02) ~= 0
+			local failures = (f.reg.status & 0x1c) ~= 0
+			local host_busy = (f.reg.status & 0x01) ~= 0
 
 			if irq and not host_busy then
 				smbus.done(f)
@@ -107,17 +107,17 @@ local function intel_smbus_host_status(f, action)
 
 		if not smbus.passive(f) then
 			action.data = f.reg.status;
-			f.reg.status = bit32.bor(f.reg.status, 0x40)
+			f.reg.status = (f.reg.status | 0x40)
 		end
 	else
 
 		if not smbus.passive(f) then
-			f.reg.status = bit32.band(f.reg.status, bit32.bnot(action.data))
+			f.reg.status = (f.reg.status & ~action.data)
 		end
 
-		local ack_irq = bit32.band(action.data, 0x02) ~= 0
-		local release_host = bit32.band(action.data, 0x40) ~= 0
-		local failures = bit32.band(action.data, 0x1c) ~= 0
+		local ack_irq = (action.data & 0x02) ~= 0
+		local release_host = (action.data & 0x40) ~= 0
+		local failures = (action.data & 0x1c) ~= 0
 		if release_host then
 			smbus.put_resource(f)
 		end
@@ -137,18 +137,18 @@ local function intel_smbus_host_control(f, action)
 	if not action.write then
 		f.reg.block_ptr=0;
 		if not smbus.passive(f) then
-			action.data = bit32.band(f.reg.control, bit32.bnot(0x40))
+			action.data = (f.reg.control & ~0x40)
 		end
 
 	else
 
 		f.reg.control = action.data;
-		if bit32.band(f.reg.control, 0x80) ~= 0 then
+		if (f.reg.control & 0x80) ~= 0 then
 			printk(f, action, "No PEC simulation\n")
 		end
 
-		local abort = bit32.band(f.reg.control, 0x02) ~= 0
-		local start = bit32.band(f.reg.control, 0x40) ~= 0
+		local abort = (f.reg.control & 0x02) ~= 0
+		local start = (f.reg.control & 0x40) ~= 0
 		if abort then
 			smbus.abort(f)
 		end
@@ -171,7 +171,7 @@ local function intel_smbus_block_data(f, action)
 end
 
 local function intel_smbus_host_access(f, action)
-	local reg = bit32.band(action.addr, (f.size-1))
+	local reg = action.addr & (f.size-1)
 
 	-- mirror hw register both ways
 	local data_write = 0
@@ -246,7 +246,7 @@ local intel_smbus_host = {
 
 function intel_smbus_setup(base, size)
 	local f = intel_smbus_host
-	f.base = bit32.band(base, bit32.bnot(size-1))
+	f.base = (base & ~(size-1))
 	f.size = size
 	if not f.reg then
 		f.reg = { control = 0, status = 0, busy_count = 0, block_ptr = 0, aux_ctl = 0, aux_sts = 0 }

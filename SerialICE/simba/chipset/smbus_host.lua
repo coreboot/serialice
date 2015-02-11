@@ -50,19 +50,19 @@ local function signal_reset(f)
 end
 
 local function signal_set(f, flag)
-	local mask = bit32.lshift(1, flag)
-	f.host.signals = bit32.bor(f.host.signals, mask)
+	local mask = (1 << flag)
+	f.host.signals = (f.host.signals | mask)
 end
 
 local function signal_clr(f, flag)
-	local mask = bit32.bnot(bit32.lshift(1, flag))
-	f.host.signals = bit32.band(f.host.signals, mask)
+	local mask = ~(1 << flag)
+	f.host.signals = (f.host.signals & mask)
 
 end
 
 local function signal_in(f, flag)
-	local mask = bit32.lshift(1, flag)
-	return bit32.band(f.host.signals, mask) ~= 0
+	local mask = (1 << flag)
+	return (f.host.signals & mask) ~= 0
 end
 
 -- *******************
@@ -119,7 +119,7 @@ local function host_proto(f, proto)
 end
 
 local function host_reading(f)
-	return bit32.band(f.host.slave, 0x01) == 0x01
+	return (f.host.slave & 0x01) == 0x01
 end
 
 

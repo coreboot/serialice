@@ -44,11 +44,11 @@ function pm_io_bar(f, action)
 end
 
 function lpc_io_bar(f, action)
-	local base = bit32.band(action.data, 0xffff)
-	local mask = bit32.bor(bit32.rshift(action.data, 16), 3)
+	local base = (action.data & 0xffff)
+	local mask = (action.data >> 16) | 3
 	local size = mask + 1
 
-	base = bit32.band(base, bit32.bnot(mask))
+	base = (base & ~mask)
 
 	add_bar(f.dev, f.reg, "LPC", size)
 	f.dev.bar[f.reg].val = base

@@ -58,9 +58,9 @@ function mem_post(f, action)
 		end
 	elseif f.decode == F_RANGE then
 		if (action.write) then
-			printk(f, action, "[%08x] <= %s\n", bit32.band(action.addr, (f.size - 1)), size)
+			printk(f, action, "[%08x] <= %s\n", action.addr & (f.size - 1), size)
 		else
-			printk(f, action, "[%08x] => %s\n", bit32.band(action.addr, (f.size - 1)), size)
+			printk(f, action, "[%08x] => %s\n", action.addr & (f.size - 1), size)
 		end
 	end
 	return true

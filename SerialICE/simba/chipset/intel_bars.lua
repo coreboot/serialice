@@ -35,7 +35,7 @@ dev_i915 = {
 }
 
 function i915_pcie_bar(f, action)
-	local baseaddr = bit32.band(action.data, 0xf0000000)
+	local baseaddr = (action.data & 0xf0000000)
 	local size = 256*1024*1024
 
 	-- enable is 0:00.0 [054] .31
@@ -58,26 +58,26 @@ end
 
 function i945_pcie_bar(f, action)
 	local base = action.data
-	local sizebits = bit32.band(bit32.rshift(base, 1), 0x3)
+	local sizebits = (base >> 1) & 0x3
 	local baseaddr = 0
 	local size = 0
 
 	if sizebits == 0 then
 		size = 256*1024*1024
-		baseaddr = bit32.band(base, 0xf0000000)
+		baseaddr = (base & 0xf0000000)
 	elseif sizebits == 1 then
 		size = 128*1024*1024
-		baseaddr = bit32.band(base, 0xf8000000)
+		baseaddr = (base & 0xf8000000)
 	elseif sizebits == 2 then
 		size = 64*1024*1024
-		baseaddr = bit32.band(base, 0xfc000000)
+		baseaddr = (base & 0xfc000000)
 	else
 		-- undefined, really
-		baseaddr = bit32.band(base, 0xfe000000)
+		baseaddr = (base & 0xfe000000)
 		size = 32*1024*1024
 	end
 
-	if bit32.band(base, 1) ~= 0 then
+	if (base & 1) ~= 0 then
 		pcie_mm_enable(f.dev, f.reg, baseaddr, size)
 	else
 		pcie_mm_disable(f.dev, f.reg, baseaddr, size)

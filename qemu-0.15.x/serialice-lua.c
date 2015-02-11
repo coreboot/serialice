@@ -106,7 +106,7 @@ static int serialice_system_reset(lua_State * luastate)
 static int register_set(lua_State * L)
 {
     const char *key = luaL_checkstring(L, 2);
-    int val = luaL_checkint(L, 3);
+    int val = luaL_checkinteger(L, 3);
     int ret = 1;
 
     if (strcmp(key, "eax") == 0) {

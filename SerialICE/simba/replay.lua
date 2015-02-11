@@ -153,8 +153,8 @@ function parse_pci(line)
 		return false
 	end
 
-	local nreg = bit32.band(0xfc, tonumber(reg,16))
-	local noff = bit32.band(0x03, tonumber(reg,16))
+	local nreg = 0xfc & tonumber(reg,16)
+	local noff = 0x03 & tonumber(reg,16)
 	local ndata = tonumber(data,16)
 	local nsize = string.len(data)/2
 

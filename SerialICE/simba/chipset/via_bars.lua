@@ -35,7 +35,7 @@ dev_nb_traf_ctl = {
 }
 
 function vx900_pcie_bar(f, action)
-	local baseaddr = bit32.lshift(action.data, 28)
+	local baseaddr = (action.data << 28)
 	local size = 256*1024*1024
 
 	-- enable is 0:00.5 [060] .10
@@ -57,7 +57,7 @@ dev_sb = {
 function sb_mmio_bar(f, action)
 	-- This MMIO space is used for SPI and CEC control
 	f.dev.mmio.name = "SB_MMIO"
-	f.dev.mmio.val = bit32.lshift(bit32.band(action.data, 0xfff0), 8)
+	f.dev.mmio.val = (action.data & 0xfff0) << 8
 	f.dev.mmio.size = 0x10000
 
 	generic_mmio_bar(f.dev.mmio)
@@ -65,13 +65,13 @@ end
 
 function pm_io_bar(f, action)
 	f.dev.acpi.name = "ACPI"
-	f.dev.acpi.val = bit32.band(action.data, 0xff80)
+	f.dev.acpi.val = (action.data & 0xff80)
 	f.dev.acpi.size = 0x80
 	generic_io_bar(f.dev.acpi)
 end
 
 function smbus_bar_hook(f, action)
-	local base = bit32.band(action.data, 0xfff0)
+	local base = (action.data & 0xfff0)
 	intel_smbus_setup(base, 0x10)
 end
 

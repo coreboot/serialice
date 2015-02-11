@@ -19,14 +19,14 @@ function var_mtrr_post(f, action)
 		elseif mt == 6 then memtype = "Write-Back"
 		else memtype = "Unknown"
 		end
-		printk(f, action, "Set MTRR %x base to %08x.%08x (%s)\n", (addr - 0x200) / 2, hi, bit32.band(lo, 0xffffff00), memtype)
+		printk(f, action, "Set MTRR %x base to %08x.%08x (%s)\n", (addr - 0x200) / 2, hi, (lo & 0xffffff00), memtype)
 	else
-		if bit32.band(lo, 0x800) == 0x800 then
+		if (lo & 0x800) == 0x800 then
 			valid = "valid"
 		else
 			valid = "disabled"
 		end
-		printk(f, action, "Set MTRR %x mask to %08x.%08x (%s)\n", (addr - 0x200) / 2, hi, bit32.band(lo, 0xfffff000), valid)
+		printk(f, action, "Set MTRR %x mask to %08x.%08x (%s)\n", (addr - 0x200) / 2, hi, (lo & 0xfffff000), valid)
 	end
 	return true
 end
@@ -114,8 +114,8 @@ function multicore_post(f, action)
 	-- Set number of cores to 1 on Core Duo and Atom to trick the
 	-- firmware into not trying to wake up non-BSP nodes.
 	if not action.write and rin.eax == 0x01 then
-		rout.ebx = bit32.band(0xff00ffff, rout.ebx);
-		rout.ebx = bit32.bor(0x00010000, rout.ebx);
+		rout.ebx = (0xff00ffff & rout.ebx);
+		rout.ebx = (0x00010000 | rout.ebx);
 		return fake_action(f, action, 0)
 	end
 	return skip_filter(f, action)

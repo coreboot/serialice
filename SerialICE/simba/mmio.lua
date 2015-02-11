@@ -7,9 +7,9 @@
 -- We should avoid that someone wakes up cores
 -- on the target system that go wild.
 function mem_lapic(f, action)
-	if bit32.band(action.addr, f.size-1) == 0x300 then
+	if (action.addr & f.size-1) == 0x300 then
 		-- replace Start-Up IPI with Init IPI
-		if action.write and bit32.band(action.data, 0xf0f00) == 0xc0600 then
+		if action.write and (action.data & 0xf0f00) == 0xc0600 then
 			return fake_action(f, action, 0xc0500)
 		end
 	end
