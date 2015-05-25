@@ -210,7 +210,7 @@ function i8254_post(f, action)
 			elseif reg == 2 then
 				if period ~= 0 then
 					local spktone = 1193000 / f.counter[reg].init
-					printk(f, action, "Speaker Tone (%s): %d kHz\n", modestr, spktone)
+					printk(f, action, "Speaker Tone (%s): %f kHz\n", modestr, spktone)
 				end
 			end
 		else
