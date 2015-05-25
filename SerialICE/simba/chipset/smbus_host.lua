@@ -152,7 +152,7 @@ local function dump_transaction(f, action)
 	end
 
 
-	local dump = string.format("%02x %s ", f.host.slave / 2, proto_name[f.host.proto])
+	local dump = string.format("%02x %s ", f.host.slave >> 1, proto_name[f.host.proto])
 
 	if host_proto(f, SMBUS_QUICK) then
 
