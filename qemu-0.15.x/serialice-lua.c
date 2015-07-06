@@ -32,6 +32,7 @@
 #include <string.h>
 
 /* LUA includes */
+#define LUA_COMPAT_5_2
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
