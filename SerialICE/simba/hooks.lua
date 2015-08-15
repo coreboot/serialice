@@ -235,6 +235,8 @@ function pre_action(action, dir_wr, addr, size, data)
 			action.data = (0xffff & data)
 		elseif size == 4 then
 			action.data = (0xffffffff & data)
+		elseif size == 8 then
+			action.data = (0xffffffffffffffff & data)
 		end
 	end
 end

@@ -112,8 +112,8 @@ function size_data(size, data)
 	if     size == 1 then return string.format("%02x", data)
 	elseif size == 2 then return string.format("%04x", data)
 	elseif size == 4 then return string.format("%08x", data)
-	elseif size == 8 then return string.format("%16x", data)
-	else return string.format("Error: size=%x", size)
+	elseif size == 8 then return string.format("%016x", data)
+	else return string.format("Error: size=%d", size)
 	end
 end
 
