@@ -360,9 +360,9 @@ static void msg_version(void)
     memset(s->buffer, 0, BUFFER_SIZE);
     serialice_read(s, s->buffer, 1);
     serialice_read(s, s->buffer, 1);
-    while (s->buffer[len++] != '\n') {
+    do {
         serialice_read(s, s->buffer + len, 1);
-    }
+    } while (s->buffer[len++] != '\n');
     s->buffer[len - 1] = '\0';
 
     printf("%s\n", s->buffer);
