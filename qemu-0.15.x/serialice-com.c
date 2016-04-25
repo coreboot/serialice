@@ -107,6 +107,7 @@ static int serialice_read(SerialICEState * state, void *buf, size_t nbyte)
     return bytes_read;
 }
 
+#ifdef ECHO_MODE
 static int serialice_write(SerialICEState * state, const void *buf,
                            size_t nbyte)
 {
@@ -115,6 +116,7 @@ static int serialice_write(SerialICEState * state, const void *buf,
     int i;
 
     for (i = 0; i < (int)nbyte; i++) {
+        c = 0;
 #ifdef WIN32
         int ret = 0;
         if (!WriteFile(state->fd, buffer + i, 1, &ret, NULL))
@@ -124,10 +126,22 @@ static int serialice_write(SerialICEState * state, const void *buf,
         if (!ReadFile(state->fd, &c, 1, &ret, NULL))
             return -1;
 #else
-        if (write(state->fd, buffer + i, 1) != 1)
-            return -1;
-        if (read(state->fd, &c, 1) != 1)
-            return -1;
+        while ((ret = write(state->fd, buffer + i, 1)) != 1) {
+            if (ret == -1 && errno == EINTR)
+                continue;
+
+            if (ret == -1) {
+                return -1;
+            }
+        }
+        while ((ret = read(state->fd, &c, 1)) != 1) {
+            if (ret == -1 && errno == EINTR)
+                continue;
+
+            if (ret == -1) {
+                return -1;
+            }
+        }
 #endif
         if (c != buffer[i] && !handshake_mode) {
             printf("Readback error! %x/%x\n", c, buffer[i]);
@@ -136,6 +150,35 @@ static int serialice_write(SerialICEState * state, const void *buf,
 
     return nbyte;
 }
+#else
+static int serialice_write(SerialICEState * state, const void *buf,
+                           size_t nbyte)
+{
+    char *buffer = (char *)buf;
+    int ret = 0;
+    int bytes_written = 0;
+
+    while (bytes_written < nbyte) {
+#ifdef WIN32
+        ret = 0;
+        if (!WriteFile(state->fd, buffer, nbyte - bytes_written, &ret, NULL))
+            return -1;
+#else
+        ret = write(state->fd, buffer, nbyte - bytes_written);
+        if (ret == -1 && errno == EINTR)
+            continue;
+        if (ret == -1)
+            return -1;
+#endif
+        if (ret > 0) {
+            bytes_written += ret;
+            buffer += ret;
+        }
+    }
+
+    return nbyte;
+}
+#endif
 
 static int serialice_wait_prompt(void)
 {
