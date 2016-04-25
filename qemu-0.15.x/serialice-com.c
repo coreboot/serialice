@@ -209,6 +209,10 @@ const SerialICE_target *serialice_serial_init(void)
 {
     s = mallocz(sizeof(SerialICEState));
 
+    if (!s) {
+        printf("Out of memory.\n");
+        exit(1);
+    }
     if (serialice_device == NULL) {
         printf("You need to specify a serial device to use SerialICE.\n");
         exit(1);
@@ -278,7 +282,10 @@ const SerialICE_target *serialice_serial_init(void)
 
     s->buffer = mallocz(BUFFER_SIZE);
     s->command = mallocz(BUFFER_SIZE);
-
+    if (!s->buffer || !s->command) {
+        printf("Out of memory.\n");
+        exit(1);
+    }
     printf("SerialICE: Waiting for handshake with target... ");
 
     handshake_mode = 1;         // Readback errors are to be expected in this phase.
