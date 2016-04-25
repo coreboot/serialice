@@ -79,7 +79,8 @@ static int serialice_read(SerialICEState * state, void *buf, size_t nbyte)
     while (1) {
 #ifdef WIN32
         int ret = 0;
-        ReadFile(state->fd, buf, nbyte - bytes_read, &ret, NULL);
+        if (!ReadFile(state->fd, buf, nbyte - bytes_read, &ret, NULL))
+            return -1;
         if (!ret) {
             break;
         }
@@ -91,7 +92,7 @@ static int serialice_read(SerialICEState * state, void *buf, size_t nbyte)
         }
 
         if (ret == -1) {
-            break;
+            return -1;
         }
 #endif
 
@@ -116,16 +117,17 @@ static int serialice_write(SerialICEState * state, const void *buf,
     for (i = 0; i < (int)nbyte; i++) {
 #ifdef WIN32
         int ret = 0;
-        while (ret == 0) {
-            WriteFile(state->fd, buffer + i, 1, &ret, NULL);
-        }
+        if (!WriteFile(state->fd, buffer + i, 1, &ret, NULL))
+            return -1;
+
         ret = 0;
-        while (ret == 0) {
-            ReadFile(state->fd, &c, 1, &ret, NULL);
-        }
+        if (!ReadFile(state->fd, &c, 1, &ret, NULL))
+            return -1;
 #else
-        while (write(state->fd, buffer + i, 1) != 1) ;
-        while (read(state->fd, &c, 1) != 1) ;
+        if (write(state->fd, buffer + i, 1) != 1)
+            return -1;
+        if (read(state->fd, &c, 1) != 1)
+            return -1;
 #endif
         if (c != buffer[i] && !handshake_mode) {
             printf("Readback error! %x/%x\n", c, buffer[i]);
