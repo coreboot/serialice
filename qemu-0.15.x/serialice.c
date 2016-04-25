@@ -35,6 +35,7 @@
 
 /* Local includes */
 #include "hw/hw.h"
+#include "cpu.h"
 #include "hw/loader.h"
 #include "hw/pc.h"
 #include "hw/boards.h"
