@@ -110,20 +110,18 @@ end
 
 function walk_post_hooks(list, action)
 	if list == nil or list.list == nil then
-		return false
+		return
 	end
-	local logged = false
 	local l = list.list
 	local f = nil
 
-	while l and not logged do
+	while l do
 		f = l.hook
 		if list.match_filter(f, action) then
 			if f.post and f.post(f, action) then
 				if not f.raw then
 					action.logged_post = f
 				end
-				logged = false
 			end
 		end
 		l = l.next
