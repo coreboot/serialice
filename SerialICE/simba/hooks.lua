@@ -80,20 +80,20 @@ prev_filter = nil
 
 function walk_pre_hooks(list, action)
 	if list == nil or list.list == nil then
-		return false
+		return
 	end
-	local logged = false
+	local found = false
 	local l = list.list
 	local f = nil
 
-	while l and not logged do
+	while l and not found do
 		f = l.hook
 		if list.match_filter(f, action) then
 			if f.pre and f.pre(f, action) then
 				if not f.raw then
 					action.logged_pre = f
 				end
-				logged = true
+				found = true
 			end
 		end
 		l = l.next
