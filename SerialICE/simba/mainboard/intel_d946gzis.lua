@@ -5,15 +5,17 @@ function mainboard_io_read(f, action)
 	-- IO slowdown
 	if action.addr == 0xed then
 		ignore_action(f, action)
-		return drop_action(f, action, 0)
+		drop_action(f, action, 0)
+		return true
 	end
 
 	if action.addr == 0xcfb then
 		ignore_action(f, action)
-		return drop_action(f, action, 0)
+		drop_action(f, action, 0)
+		return true
 	end
 
-	return skip_filter(f, action)
+	return false
 end
 
 
@@ -22,15 +24,17 @@ function mainboard_io_write(f, action)
 
 	if action.addr == 0xcfb then
 		ignore_action(f, action)
-		return drop_action(f, action, 0)
+		drop_action(f, action, 0)
+		return true
 	end
 
 	if action.addr == 0xe1 then
 		ignore_action(f, action)
-		return drop_action(f, action, action.data)
+		drop_action(f, action, action.data)
+		return true
 	end
 
-	return skip_filter(f, action)
+	return false
 end
 
 function mainboard_io_pre(f, action)

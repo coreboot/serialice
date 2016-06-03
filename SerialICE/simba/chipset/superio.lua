@@ -101,12 +101,14 @@ end
 
 function superio_pre(f, action)
 	if not action.write then
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 
 	if action.addr == f.base then
 		pnp_select_cfg(f, action.data)
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 
 	if action.addr == f.base + 0x01 then
@@ -119,18 +121,21 @@ function superio_pre(f, action)
 
 		-- Don't allow that our SIO power gets disabled.
 		if f.pnp.reg == 0x02 then
-			return drop_action(f, action, 0)
+			drop_action(f, action, 0)
+			return true
 		end
 
 		-- Don't mess with oscillator setup.
 		if f.pnp.reg == 0x24 then
-			return drop_action(f, action, 0)
+			drop_action(f, action, 0)
+			return true
 		end
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 
 	-- should not reach here
-	return skip_filter(f, action)
+	return false
 end
 
 function superio_post(f, action)
@@ -246,9 +251,11 @@ end
 
 function com_pre(f, action)
 	if (action.write) then
-		return drop_action(f, action, action.data)
+		drop_action(f, action, action.data)
+		return true
 	else
-		return drop_action(f, action, 0xff)
+		drop_action(f, action, 0xff)
+		return true
 	end
 end
 

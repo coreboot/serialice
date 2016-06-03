@@ -171,17 +171,15 @@ POST_HOOK = 2
 
 function handle_action(f, action)
 	action.to_hw = true
-	return true
 end
 
 function drop_action(f, action, data)
 	if action.stage == POST_HOOK then
 		printk(f, action, "ERROR: Cannot drop action in a post-hook.\n")
-		return true
+		return
 	end
 	action.dropped = true
 	action.data = data
-	return true
 end
 
 function ignore_action(f, action)
@@ -191,16 +189,10 @@ end
 function fake_action(f, action, data)
 	if action.stage == POST_HOOK and action.write then
 		printk(f, action, "ERROR: Cannot fake write in a post-hook.\n")
-		return true
+		return
 	end
 	action.faked = true
 	action.data = data
-	return true
-end
-
-
-function skip_filter(f, action)
-	return false
 end
 
 function pre_action(action, dir_wr, addr, size, data)

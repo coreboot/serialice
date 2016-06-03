@@ -34,7 +34,8 @@ end
 function mtrr_pre(f, action)
 	local addr = action.rin.ecx
 	if addr >= 0x200 and addr < 0x210 then
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 	return false
 end
@@ -55,7 +56,8 @@ filter_mtrr = {
 }
 
 function cpumsr_pre(f, action)
-	return handle_action(f, action)
+	handle_action(f, action)
+	return true
 end
 
 function cpumsr_post(f, action)
@@ -85,7 +87,8 @@ microcode_patchlevel_eax = 0
 microcode_patchlevel_edx = 0
 
 function cpuid_pre(f, action)
-	return handle_action(f, action)
+	handle_action(f, action)
+	return true
 end
 
 function cpuid_post(f, action)
@@ -105,7 +108,7 @@ filter_cpuid_fallback = {
 
 
 function multicore_pre(f, action)
-	return skip_filter(f, action)
+	return false
 end
 
 function multicore_post(f, action)
@@ -116,9 +119,10 @@ function multicore_post(f, action)
 	if not action.write and rin.eax == 0x01 then
 		rout.ebx = (0xff00ffff & rout.ebx);
 		rout.ebx = (0x00010000 | rout.ebx);
-		return fake_action(f, action, 0)
+		fake_action(f, action, 0)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 filter_multiprocessor = {
@@ -133,9 +137,10 @@ function intel_microcode_pre(f, action)
 		--action.dropped = true
 		--action.rout.edx = 0
 		--action.rout.eax = 0xffff0000
-		return drop_action(f, action)
+		drop_action(f, action)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 -- Intel CPU microcode revision check
@@ -144,9 +149,10 @@ function intel_microcode_post(f, action)
 	if action.rin.ecx == 0x8b then
 		action.rout.edx = microcode_patchlevel_edx
 		action.rout.eax = microcode_patchlevel_eax
-		return fake_action(f, action, 0)
+		fake_action(f, action, 0)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 filter_intel_microcode = {
@@ -161,9 +167,10 @@ function amd_microcode_pre(f, action)
 		--action.dropped = true
 		--action.rout.edx = 0
 		--action.rout.eax = 0xffff0000
-		return drop_action(f, action)
+		drop_action(f, action)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 -- AMD CPU microcode revision check
@@ -172,9 +179,10 @@ function amd_microcode_post(f, action)
 	if action.rin.ecx == 0x8b then
 		action.rout.eax = microcode_patchlevel_eax
 		action.rout.edx = microcode_patchlevel_edx
-		return fake_action(f, action, 0)
+		fake_action(f, action, 0)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 filter_amd_microcode = {

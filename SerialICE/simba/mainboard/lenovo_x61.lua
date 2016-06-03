@@ -7,7 +7,8 @@ function mainboard_io_pre(f, action)
 	-- disconnecting the dock we're connecting through
 	if action.write and action.addr == 0x1680 then
 		ignore_action(f, action)
-		return drop_action(f, action, 0)
+		drop_action(f, action, 0)
+		return true
 	end
 end
 

@@ -29,9 +29,10 @@ function i8259_pre(f, action)
 	local slave = ((0x05 >> action.addr) == 0x5)
 	local reg = (0x03 & action.addr)
 	if reg == 0 or reg == 1 then
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 function i8259_post(f,action)
@@ -43,7 +44,8 @@ function i8259_post(f,action)
 end
 
 function i8259_edge_pre(f, action)
-	return handle_action(f, action)
+	handle_action(f, action)
+	return true
 end
 
 function i8259_edge_post(f,action)
@@ -83,9 +85,10 @@ filter_i8259_edge = {
 
 function i8237_pre(f, action)
 	if action.addr == 0x80 then
-		return skip_filter(f, action)
+		return false
 	end
-	return handle_action(f, action)
+	handle_action(f, action)
+	return true
 end
 
 function i8237_post(f, action)
@@ -130,7 +133,8 @@ function i8254_pre(f, action)
 
 	-- nothing to do on reads
 	if not action.write then
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 
 	local reg = (0x03 & action.addr)
@@ -176,7 +180,8 @@ function i8254_pre(f, action)
 			end
 		end
 	end
-	return handle_action(f, action)
+	handle_action(f, action)
+	return true
 end
 
 function i8254_post(f, action)
@@ -266,25 +271,29 @@ function i8042_write(f, action)
 		if (f.reg.cmd == 0xd1) then
 			f.reg.A20 = ((0x02 & action.data) == 0x02)
 		end
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 	if action.addr == 0x64 then
 		f.reg.cmd = action.data
 		f.reg.sts = (f.reg.sts | 0x0a)
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 function i8042_read(f, action)
 	if action.addr == 0x60 then
 		f.reg.sts = (f.reg.sts & 0xfe)
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 	if action.addr == 0x64 then
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 function i8042_pre(f, action)
@@ -370,9 +379,11 @@ function nvram_write(f, action)
 		end
 	end
 	if cache_nvram and not rtc then
-		return fake_action(f, action, val)
+		fake_action(f, action, val)
+		return true
 	else
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 end
 
@@ -408,9 +419,11 @@ function nvram_read(f, action)
 		end
 	end
 	if cache_nvram and not rtc then
-		return fake_action(f, action, val)
+		fake_action(f, action, val)
+		return true
 	else
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 end
 
@@ -466,9 +479,10 @@ function sys_rst_pre(f, action)
 		if action.write and (action.data & 0x04) == 0x04 then
 			SerialICE_system_reset()
 		end
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 function sys_rst_post(f, action)
@@ -495,7 +509,7 @@ filter_reset = {
 -- VGA io
 
 function vga_io_pre(f, action)
-	return skip_filter(f, action)
+	return false
 end
 
 function vga_io_post(f, action)

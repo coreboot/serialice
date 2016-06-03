@@ -249,13 +249,15 @@ function pci_io_cfg_pre(f, action)
 			bdfr = bdfr | (action.data & 0xfc)
 			pci_cfg_select(f, bdfr)
 		end
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
 	if action.addr >= 0xcfc and action.addr <= 0xcff then
 		pci_cfg_access(f, action)
-		return handle_action(f, action)
+		handle_action(f, action)
+		return true
 	end
-	return skip_filter(f, action)
+	return false
 end
 
 function pci_io_cfg_post(f, action)
@@ -293,7 +295,8 @@ function pci_mm_cfg_pre(f, action)
 	pci_cfg_select(f, bdfr)
 	pci_cfg_access(f, action)
 
-	return handle_action(f, action)
+	handle_action(f, action)
+	return true
 end
 
 function pci_mm_cfg_post(f, action)

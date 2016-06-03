@@ -224,7 +224,8 @@ function intel_smbus_host_pre(f, action)
 	if action.write then
 		intel_smbus_host_access(f, action)
 	end
-	return handle_action(f, action)
+	handle_action(f, action)
+	return true
 end
 
 function intel_smbus_host_post(f, action)
