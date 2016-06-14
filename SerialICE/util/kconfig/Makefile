@@ -342,4 +342,3 @@ $(objk)/lxdialog/lxdialog: $(objk)/dochecklxdialog \
 		$(patsubst %,$(objk)/lxdialog/%,$(lxdialog)) -o $@
 $(objk)/lxdialog/%.o: $(srck)/lxdialog/%.c
 	$(Q)$(HOSTCC) $(HOSTCFLAGS) $(HOST_EXTRACFLAGS) $^ -c -o $@
-

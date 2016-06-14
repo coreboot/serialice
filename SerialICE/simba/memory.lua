@@ -171,4 +171,3 @@ function enable_ram()
 	SerialICE_register_physical(0x100000, top_of_qemu_ram - 0x100000)
 	ram_is_initialized = true
 end
-

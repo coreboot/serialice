@@ -158,4 +158,3 @@ function SerialICE_cpuid_log(eax, ebx, ecx, edx)
 	walk_post_hooks(cpuid_hooks, cpu_action)
 	return rout.eax, rout.ebx, rout.ecx, rout.edx
 end
-

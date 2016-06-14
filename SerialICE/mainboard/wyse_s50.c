@@ -117,4 +117,3 @@ cs5536_setup_extmsr();
 cs5536_setup_iobase();
 serial_init();
 }
-

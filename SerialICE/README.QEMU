@@ -75,5 +75,3 @@ SerialICE Qemu support is copyright 2009 coresystems GmbH.
 The SerialICE hardware interface is released under the BSD license. Patches to
 existing Qemu files are released under the pre-existing license of those files.
 For questions contact <info@coresystems.de>
-
-

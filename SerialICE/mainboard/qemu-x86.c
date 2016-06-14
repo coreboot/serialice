@@ -32,4 +32,3 @@ static void chipset_init(void)
 	southbridge_init();
 	superio_init();
 }
-

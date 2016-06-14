@@ -116,6 +116,3 @@ function size_data(size, data)
 	else return string.format("Error: size=%d", size)
 	end
 end
-
-
-

@@ -177,6 +177,3 @@ function enable_hook_i82801gx()
 	enable_gx_power_bars()
 	enable_gx_lpc_bars()
 end
-
-
-

@@ -38,5 +38,3 @@ filter_ioapic = {
 	base = 0xfec00000,
 	size = 0x00010000,
 }
-
-

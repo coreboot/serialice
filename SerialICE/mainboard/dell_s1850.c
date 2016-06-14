@@ -157,4 +157,3 @@ static void chipset_init(void)
 	bmc_foad();
 	superio_init();
 }
-

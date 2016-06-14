@@ -75,4 +75,3 @@ filter_mem_fallback = {
 	base = 0x0,
 	size = 0x100000000
 }
-

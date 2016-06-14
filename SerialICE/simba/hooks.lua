@@ -249,5 +249,3 @@ function load_regs(regs, eax, ebx, ecx, edx)
 	regs.ecx = ecx
 	regs.edx = edx
 end
-
-

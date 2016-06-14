@@ -133,4 +133,3 @@ static void pnp_exit_ext_func_mode_ite(u16 port)
 #endif
 #include CONFIG_SUPERIO_INIT
 #include MAINBOARD
-

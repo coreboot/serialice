@@ -91,4 +91,3 @@ static void superio_init(void)
 	/* (3) Exit the configuration state (MB PnP mode). */
 	it8718f_exit_conf();
 }
-

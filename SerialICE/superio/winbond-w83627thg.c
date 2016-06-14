@@ -55,4 +55,3 @@ static void superio_init(void)
 
 	pnp_exit_ext_func_mode(0x4e);
 }
-

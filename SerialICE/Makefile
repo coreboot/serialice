@@ -177,5 +177,3 @@ $(obj)/%.o: $(obj)/%.S
 
 dongle: $(TARGET-y)
 	dongle.py -v -c /dev/cu.usbserial-00* $(TARGET-y) EOF
-
-

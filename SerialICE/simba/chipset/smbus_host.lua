@@ -554,5 +554,3 @@ function smbus.init(f)
 	end
 	host_switch(f, HOST_IDLE)
 end
-
-

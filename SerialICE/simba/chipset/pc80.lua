@@ -545,4 +545,3 @@ function enable_hook_pc80()
 	enable_hook(io_hooks, filter_vga_io)
 	enable_hook(io_hooks, filter_debugport)
 end
-

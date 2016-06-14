@@ -106,5 +106,3 @@ function northbridge_i946()
 
 	pci_cfg32_hook(dev_i945, 0x60, "PCI", i945_pcie_bar)
 end
-
-

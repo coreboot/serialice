@@ -256,4 +256,3 @@ function intel_smbus_setup(base, size)
 
 	enable_hook(io_hooks, f)
 end
-

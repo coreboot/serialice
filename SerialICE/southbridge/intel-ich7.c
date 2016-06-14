@@ -71,5 +71,3 @@ static void southbridge_init(void)
 	outw(0x0008, TCOBASE + 0x04);
 	outw(0x0002, TCOBASE + 0x06);
 }
-
-

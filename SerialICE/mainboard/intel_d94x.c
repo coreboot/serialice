@@ -105,4 +105,3 @@ static void chipset_init(void)
 	superio_init(0x2e, 3, 0); // PC8374
 #endif
 }
-
