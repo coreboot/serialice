@@ -296,6 +296,7 @@ cocoa="no"
 softmmu="yes"
 linux_user="no"
 bsd_user="no"
+serialice="no"
 aix="no"
 blobs="yes"
 pkgversion=""
@@ -1008,6 +1009,8 @@ for opt do
   ;;
   --enable-fdt) fdt="yes"
   ;;
+  --enable-serialice) serialice="yes"
+  ;;
   --disable-linux-aio) linux_aio="no"
   ;;
   --enable-linux-aio) linux_aio="yes"
@@ -1355,6 +1358,7 @@ disabled with --disable-FEATURE, default is enabled if available:
   vnc-png         PNG compression for VNC server
   cocoa           Cocoa UI (Mac OS X only)
   virtfs          VirtFS
+  serialice       SerialICE debugger support
   xen             xen backend driver support
   xen-pci-passthrough
   brlapi          BrlAPI (Braile)
@@ -2865,6 +2869,54 @@ for drv in $audio_drv_list; do
     ;;
     esac
 done
+
+##########################################
+# LUA probe
+
+if test "$serialice" != "no" ; then
+  serialice=no
+  got_lua=no
+  cat > $TMPC << EOF
+#include <stdint.h>
+#include <lua.h>
+#include <lauxlib.h>
+#include <stdlib.h>
+#include <stdio.h>
+static lua_State *L;
+int main(void) { L=luaL_newstate(); return 0; }
+EOF
+
+  if test "$got_lua" != "yes" ; then
+    lua_cflags="-I/usr/local/include"
+    lua_ldflags="-L/usr/local/lib -llua"
+    if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
+      got_lua=yes
+    fi
+  fi
+  if test "$got_lua" != "yes" && $pkg_config --atleast-version=5.3 lua ; then
+    lua_cflags=`$pkg_config --cflags lua 2> /dev/null`
+    lua_ldflags=`$pkg_config --libs lua 2> /dev/null`
+    if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
+      got_lua=yes
+    fi
+  fi
+  if test "$got_lua" != "yes" && $pkg_config --exists lua5.3 ; then
+    lua_cflags=`$pkg_config --cflags lua5.3 2> /dev/null`
+    lua_ldflags=`$pkg_config --libs lua5.3 2> /dev/null`
+    if compile_prog "$lua_cflags" "$lua_ldflags" > /dev/null 2> /dev/null ; then
+      got_lua=yes
+    fi
+  fi
+  if test "$got_lua" != "yes" ; then
+    echo
+    echo "Error Lua version >= 5.3 not found. Can't build QEMU with SerialICE support."
+    echo
+    exit 1
+  fi
+
+  serialice=yes
+  libs_softmmu="$lua_ldflags $libs_softmmu"
+fi # test "$serialice"
 
 ##########################################
 # BrlAPI probe
@@ -4773,6 +4825,7 @@ echo "Audio drivers     $audio_drv_list"
 echo "Block whitelist (rw) $block_drv_rw_whitelist"
 echo "Block whitelist (ro) $block_drv_ro_whitelist"
 echo "VirtFS support    $virtfs"
+echo "SerialICE support $serialice"
 echo "VNC support       $vnc"
 if test "$vnc" = "yes" ; then
     echo "VNC SASL support  $vnc_sasl"
@@ -4982,6 +5035,10 @@ echo "CONFIG_BDRV_RW_WHITELIST=$block_drv_rw_whitelist" >> $config_host_mak
 echo "CONFIG_BDRV_RO_WHITELIST=$block_drv_ro_whitelist" >> $config_host_mak
 if test "$vnc" = "yes" ; then
   echo "CONFIG_VNC=y" >> $config_host_mak
+fi
+if test "$serialice" = "yes" ; then
+  echo "CONFIG_SERIALICE=y" >> $config_host_mak
+  echo "SERIALICE_CFLAGS=$lua_cflags" >> $config_host_mak
 fi
 if test "$vnc_sasl" = "yes" ; then
   echo "CONFIG_VNC_SASL=y" >> $config_host_mak

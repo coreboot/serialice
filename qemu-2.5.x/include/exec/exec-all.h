@@ -21,6 +21,7 @@
 #define _EXEC_ALL_H_
 
 #include "qemu-common.h"
+#include "serialice.h"
 
 /* allow to see translation results - the slowdown should be negligible, so we leave it */
 #define DEBUG_DISAS

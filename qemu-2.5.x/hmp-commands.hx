@@ -294,6 +294,21 @@ STEXI
 changes status of a trace event
 ETEXI
 
+#ifdef CONFIG_SERIALICE
+    {
+        .name       = "lua",
+        .args_type  = "",
+        .params     = "",
+        .help       = "go to lua shell",
+        .mhandler.cmd_lua = do_lua,
+    },
+#endif
+STEXI
+@item lua
+@findex lua
+go to lua shell.
+ETEXI
+
 #if defined(CONFIG_TRACE_SIMPLE)
     {
         .name       = "trace-file",

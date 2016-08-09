@@ -42,6 +42,7 @@
 #include "ui/input.h"
 #include "sysemu/blockdev.h"
 #include "audio/audio.h"
+#include "serialice.h"
 #include "disas/disas.h"
 #include "sysemu/balloon.h"
 #include "qemu/timer.h"
@@ -128,6 +129,7 @@ typedef struct mon_cmd_t {
     const char *help;
     union {
         void (*cmd)(Monitor *mon, const QDict *qdict);
+	void (*cmd_lua)(Monitor *mon);
         void (*cmd_new)(QDict *params, QObject **ret_data, Error **errp);
     } mhandler;
     /* @sub_table is a list of 2nd level of commands. If it do not exist,
@@ -1517,6 +1519,39 @@ static void hmp_info_profile(Monitor *mon, const QDict *qdict)
 static void hmp_info_profile(Monitor *mon, const QDict *qdict)
 {
     monitor_printf(mon, "Internal profiler not compiled\n");
+}
+#endif
+
+#if defined(CONFIG_SERIALICE)
+static void monitor_command_lua(void *opaque, const char *cmdline,
+		void *readline_opaque)
+{
+    char *errmsg;
+    Monitor *mon = opaque;
+
+    if (!strncasecmp("quit", cmdline, 5)) {
+        monitor_printf(mon, "Exited LUA shell.\n");
+    	readline_start(mon->rs, "(qemu) ", 0, monitor_command_cb, NULL);
+        readline_show_prompt(mon->rs);
+        return;
+    }
+
+    errmsg = (char *)serialice_lua_execute(cmdline);
+    if(errmsg) {
+        monitor_printf(mon, "Lua error: %s\n", errmsg);
+        free (errmsg);
+    }
+
+    readline_show_prompt(mon->rs);
+}
+
+static void do_lua(Monitor *mon)
+{
+    if (serialice_active) {
+        readline_start(mon->rs, "(lua) ", 0, monitor_command_lua, NULL);
+    } else {
+        monitor_printf(mon, "SerialICE is not active.\n");
+    }
 }
 #endif
 

@@ -1343,4 +1343,8 @@ void enable_compat_apic_id_mode(void);
 void x86_cpu_dump_local_apic_state(CPUState *cs, FILE *f,
                                    fprintf_function cpu_fprintf, int flags);
 
+void cpu_wrmsr(CPUX86State *env, uint64_t val, uint32_t addr);
+uint64_t cpu_rdmsr(CPUX86State *env, uint32_t addr);
+cpuid_regs_t cpu_cpuid(CPUX86State *env, uint32_t in_eax, uint32_t in_ecx);
+
 #endif /* CPU_I386_H */

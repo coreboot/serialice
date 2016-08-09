@@ -3682,6 +3682,15 @@ or Wireshark.
 
 ETEXI
 
+#ifdef CONFIG_SERIALICE
+DEF("serialice", HAS_ARG, QEMU_OPTION_serialice,
+    "-serialice dev  Enable SerialICE debugging on serial device 'dev'\n",
+    QEMU_ARCH_ALL)
+#endif
+STEXI
+@item -serialice @var{dev}
+Enable SerialICE debugging on serial device @var{dev}.
+ETEXI
 
 HXCOMM This is the last statement. Insert new options before this line!
 STEXI

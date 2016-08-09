@@ -21,9 +21,17 @@
 #include "exec/helper-proto.h"
 #include "exec/cpu_ldst.h"
 #include "exec/address-spaces.h"
+#include "serialice.h"
 
 void helper_outb(CPUX86State *env, uint32_t port, uint32_t data)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+	serialice_io_write(port, 1, data);
+	return;
+    }
+#endif
+
 #ifdef CONFIG_USER_ONLY
     fprintf(stderr, "outb: port=0x%04x, data=%02x\n", port, data);
 #else
@@ -34,6 +42,12 @@ void helper_outb(CPUX86State *env, uint32_t port, uint32_t data)
 
 target_ulong helper_inb(CPUX86State *env, uint32_t port)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        return (target_ulong) serialice_io_read(port, 1);
+    }
+#endif
+
 #ifdef CONFIG_USER_ONLY
     fprintf(stderr, "inb: port=0x%04x\n", port);
     return 0;
@@ -45,6 +59,13 @@ target_ulong helper_inb(CPUX86State *env, uint32_t port)
 
 void helper_outw(CPUX86State *env, uint32_t port, uint32_t data)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        serialice_io_write(port, 2, data);
+        return;
+    }
+#endif
+
 #ifdef CONFIG_USER_ONLY
     fprintf(stderr, "outw: port=0x%04x, data=%04x\n", port, data);
 #else
@@ -55,6 +76,12 @@ void helper_outw(CPUX86State *env, uint32_t port, uint32_t data)
 
 target_ulong helper_inw(CPUX86State *env, uint32_t port)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        return (target_ulong) serialice_io_read(port, 2);
+    }
+#endif
+
 #ifdef CONFIG_USER_ONLY
     fprintf(stderr, "inw: port=0x%04x\n", port);
     return 0;
@@ -66,6 +93,13 @@ target_ulong helper_inw(CPUX86State *env, uint32_t port)
 
 void helper_outl(CPUX86State *env, uint32_t port, uint32_t data)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        serialice_io_write(port, 4, data);
+        return;
+    }
+#endif
+
 #ifdef CONFIG_USER_ONLY
     fprintf(stderr, "outw: port=0x%04x, data=%08x\n", port, data);
 #else
@@ -76,6 +110,12 @@ void helper_outl(CPUX86State *env, uint32_t port, uint32_t data)
 
 target_ulong helper_inl(CPUX86State *env, uint32_t port)
 {
+#ifdef CONFIG_SERIALICE
+    if (serialice_active) {
+        return (target_ulong) serialice_io_read(port, 4);
+    }
+#endif
+
 #ifdef CONFIG_USER_ONLY
     fprintf(stderr, "inl: port=0x%04x\n", port);
     return 0;
@@ -95,18 +135,35 @@ void helper_into(CPUX86State *env, int next_eip_addend)
     }
 }
 
+cpuid_regs_t cpu_cpuid(CPUX86State *env, uint32_t in_eax, uint32_t in_ecx)
+{
+    cpuid_regs_t ret;
+
+    cpu_x86_cpuid(env, in_eax, in_ecx, &ret.eax, &ret.ebx, &ret.ecx, &ret.edx);
+
+    return ret;
+}
+
 void helper_cpuid(CPUX86State *env)
 {
-    uint32_t eax, ebx, ecx, edx;
+    cpuid_regs_t ret;
 
     cpu_svm_check_intercept_param(env, SVM_EXIT_CPUID, 0);
 
+#ifdef CONFIG_SERIALICE
+    if (serialice_active)
+        ret = serialice_cpuid(env, (uint32_t)env->regs[R_EAX], (uint32_t)env->regs[R_EAX]);
+    else
+        ret = cpu_cpuid(env, (uint32_t)env->regs[R_EAX], (uint32_t)env->regs[R_ECX]);
+#else
     cpu_x86_cpuid(env, (uint32_t)env->regs[R_EAX], (uint32_t)env->regs[R_ECX],
-                  &eax, &ebx, &ecx, &edx);
-    env->regs[R_EAX] = eax;
-    env->regs[R_EBX] = ebx;
-    env->regs[R_ECX] = ecx;
-    env->regs[R_EDX] = edx;
+                  &ret.eax, &ret.ebx, &ret.ecx, &ret.edx);
+#endif
+
+    env->regs[R_EAX] = ret.eax;
+    env->regs[R_EBX] = ret.ebx;
+    env->regs[R_ECX] = ret.ecx;
+    env->regs[R_EDX] = ret.edx;
 }
 
 #if defined(CONFIG_USER_ONLY)
@@ -222,16 +279,9 @@ void helper_rdmsr(CPUX86State *env)
 {
 }
 #else
-void helper_wrmsr(CPUX86State *env)
+void cpu_wrmsr(CPUX86State *env, uint64_t val, uint32_t addr)
 {
-    uint64_t val;
-
-    cpu_svm_check_intercept_param(env, SVM_EXIT_MSR, 1);
-
-    val = ((uint32_t)env->regs[R_EAX]) |
-        ((uint64_t)((uint32_t)env->regs[R_EDX]) << 32);
-
-    switch ((uint32_t)env->regs[R_ECX]) {
+    switch (addr) {
     case MSR_IA32_SYSENTER_CS:
         env->sysenter_cs = val & 0xffff;
         break;
@@ -308,8 +358,7 @@ void helper_wrmsr(CPUX86State *env)
     case MSR_MTRRphysBase(5):
     case MSR_MTRRphysBase(6):
     case MSR_MTRRphysBase(7):
-        env->mtrr_var[((uint32_t)env->regs[R_ECX] -
-                       MSR_MTRRphysBase(0)) / 2].base = val;
+        env->mtrr_var[(addr - MSR_MTRRphysBase(0)) / 2].base = val;
         break;
     case MSR_MTRRphysMask(0):
     case MSR_MTRRphysMask(1):
@@ -319,17 +368,14 @@ void helper_wrmsr(CPUX86State *env)
     case MSR_MTRRphysMask(5):
     case MSR_MTRRphysMask(6):
     case MSR_MTRRphysMask(7):
-        env->mtrr_var[((uint32_t)env->regs[R_ECX] -
-                       MSR_MTRRphysMask(0)) / 2].mask = val;
+        env->mtrr_var[(addr - MSR_MTRRphysMask(0)) / 2].mask = val;
         break;
     case MSR_MTRRfix64K_00000:
-        env->mtrr_fixed[(uint32_t)env->regs[R_ECX] -
-                        MSR_MTRRfix64K_00000] = val;
+        env->mtrr_fixed[addr - MSR_MTRRfix64K_00000] = val;
         break;
     case MSR_MTRRfix16K_80000:
     case MSR_MTRRfix16K_A0000:
-        env->mtrr_fixed[(uint32_t)env->regs[R_ECX] -
-                        MSR_MTRRfix16K_80000 + 1] = val;
+        env->mtrr_fixed[addr - MSR_MTRRfix16K_80000 + 1] = val;
         break;
     case MSR_MTRRfix4K_C0000:
     case MSR_MTRRfix4K_C8000:
@@ -339,8 +385,7 @@ void helper_wrmsr(CPUX86State *env)
     case MSR_MTRRfix4K_E8000:
     case MSR_MTRRfix4K_F0000:
     case MSR_MTRRfix4K_F8000:
-        env->mtrr_fixed[(uint32_t)env->regs[R_ECX] -
-                        MSR_MTRRfix4K_C0000 + 3] = val;
+        env->mtrr_fixed[addr - MSR_MTRRfix4K_C0000 + 3] = val;
         break;
     case MSR_MTRRdefType:
         env->mtrr_deftype = val;
@@ -361,10 +406,10 @@ void helper_wrmsr(CPUX86State *env)
         env->msr_ia32_misc_enable = val;
         break;
     default:
-        if ((uint32_t)env->regs[R_ECX] >= MSR_MC0_CTL
-            && (uint32_t)env->regs[R_ECX] < MSR_MC0_CTL +
+        if (addr >= MSR_MC0_CTL
+            && addr < MSR_MC0_CTL +
             (4 * env->mcg_cap & 0xff)) {
-            uint32_t offset = (uint32_t)env->regs[R_ECX] - MSR_MC0_CTL;
+            uint32_t offset = addr - MSR_MC0_CTL;
             if ((offset & 0x3) != 0
                 || (val == 0 || val == ~(uint64_t)0)) {
                 env->mce_banks[offset] = val;
@@ -376,13 +421,11 @@ void helper_wrmsr(CPUX86State *env)
     }
 }
 
-void helper_rdmsr(CPUX86State *env)
+uint64_t cpu_rdmsr(CPUX86State *env, uint32_t addr)
 {
     uint64_t val;
 
-    cpu_svm_check_intercept_param(env, SVM_EXIT_MSR, 0);
-
-    switch ((uint32_t)env->regs[R_ECX]) {
+    switch (addr) {
     case MSR_IA32_SYSENTER_CS:
         val = env->sysenter_cs;
         break;
@@ -444,8 +487,7 @@ void helper_rdmsr(CPUX86State *env)
     case MSR_MTRRphysBase(5):
     case MSR_MTRRphysBase(6):
     case MSR_MTRRphysBase(7):
-        val = env->mtrr_var[((uint32_t)env->regs[R_ECX] -
-                             MSR_MTRRphysBase(0)) / 2].base;
+        val = env->mtrr_var[(addr - MSR_MTRRphysBase(0)) / 2].base;
         break;
     case MSR_MTRRphysMask(0):
     case MSR_MTRRphysMask(1):
@@ -455,16 +497,14 @@ void helper_rdmsr(CPUX86State *env)
     case MSR_MTRRphysMask(5):
     case MSR_MTRRphysMask(6):
     case MSR_MTRRphysMask(7):
-        val = env->mtrr_var[((uint32_t)env->regs[R_ECX] -
-                             MSR_MTRRphysMask(0)) / 2].mask;
+        val = env->mtrr_var[(addr - MSR_MTRRphysMask(0)) / 2].mask;
         break;
     case MSR_MTRRfix64K_00000:
         val = env->mtrr_fixed[0];
         break;
     case MSR_MTRRfix16K_80000:
     case MSR_MTRRfix16K_A0000:
-        val = env->mtrr_fixed[(uint32_t)env->regs[R_ECX] -
-                              MSR_MTRRfix16K_80000 + 1];
+        val = env->mtrr_fixed[addr - MSR_MTRRfix16K_80000 + 1];
         break;
     case MSR_MTRRfix4K_C0000:
     case MSR_MTRRfix4K_C8000:
@@ -474,8 +514,7 @@ void helper_rdmsr(CPUX86State *env)
     case MSR_MTRRfix4K_E8000:
     case MSR_MTRRfix4K_F0000:
     case MSR_MTRRfix4K_F8000:
-        val = env->mtrr_fixed[(uint32_t)env->regs[R_ECX] -
-                              MSR_MTRRfix4K_C0000 + 3];
+        val = env->mtrr_fixed[addr - MSR_MTRRfix4K_C0000 + 3];
         break;
     case MSR_MTRRdefType:
         val = env->mtrr_deftype;
@@ -506,10 +545,10 @@ void helper_rdmsr(CPUX86State *env)
         val = env->msr_ia32_misc_enable;
         break;
     default:
-        if ((uint32_t)env->regs[R_ECX] >= MSR_MC0_CTL
-            && (uint32_t)env->regs[R_ECX] < MSR_MC0_CTL +
+        if (addr >= MSR_MC0_CTL
+            && addr < MSR_MC0_CTL +
             (4 * env->mcg_cap & 0xff)) {
-            uint32_t offset = (uint32_t)env->regs[R_ECX] - MSR_MC0_CTL;
+            uint32_t offset = addr - MSR_MC0_CTL;
             val = env->mce_banks[offset];
             break;
         }
@@ -519,8 +558,44 @@ void helper_rdmsr(CPUX86State *env)
     }
     env->regs[R_EAX] = (uint32_t)(val);
     env->regs[R_EDX] = (uint32_t)(val >> 32);
+
+    return val;
 }
+
+void helper_wrmsr(CPUX86State *env)
+{
+    uint64_t val;
+
+    cpu_svm_check_intercept_param(env, SVM_EXIT_MSR, 1);
+    val = ((uint32_t)env->regs[R_EAX]) |
+        ((uint64_t)((uint32_t)env->regs[R_EDX]) << 32);
+#ifdef CONFIG_SERIALICE
+    if (serialice_active)
+        serialice_wrmsr(env, val, (uint32_t)env->regs[R_ECX], (uint32_t)env->regs[R_EDI]);
+    else
+        cpu_wrmsr(env, val, (uint32_t)env->regs[R_ECX]);
+#else
+    cpu_wrmsr(env, val, (uint32_t)env->regs[R_ECX]);
 #endif
+}
+
+void helper_rdmsr(CPUX86State *env)
+{
+    uint64_t val;
+
+    cpu_svm_check_intercept_param(env, SVM_EXIT_MSR, 0);
+#ifdef CONFIG_SERIALICE
+    if (serialice_active)
+        val = serialice_rdmsr(env, (uint32_t)env->regs[R_ECX], (uint32_t)env->regs[R_EDI]);
+    else
+        val = cpu_rdmsr(env, (uint32_t)env->regs[R_ECX]);
+#else
+    val = cpu_rdmsr(env, (uint32_t)env->regs[R_ECX]);
+#endif
+    env->regs[R_EAX] = (uint32_t)(val);
+    env->regs[R_EDX] = (uint32_t)(val >> 32);
+}
+#endif /* CONFIG_USER_ONLY */
 
 static void do_pause(X86CPU *cpu)
 {

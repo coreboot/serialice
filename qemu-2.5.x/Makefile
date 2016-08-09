@@ -217,6 +217,16 @@ $(BUILD_DIR)/version.o: $(SRC_PATH)/version.rc config-host.h | $(BUILD_DIR)/vers
 $(BUILD_DIR)/version.lo: $(SRC_PATH)/version.rc config-host.h
 	$(call quiet-command,$(WINDRES) -I$(BUILD_DIR) -o $@ $<,"  RC    version.lo")
 
+ifdef CONFIG_SERIALICE
+serialice.o: serialice.c serialice.h
+serialice-com.o: serialice-com.c serialice.h
+serialice-lua.o: serialice-lua.c serialice.h
+endif
+
+serialice.o: QEMU_CFLAGS += $(SERIALICE_CFLAGS)
+serialice-com.o: QEMU_CFLAGS += $(SERIALICE_CFLAGS)
+serialice-lua.o: QEMU_CFLAGS += $(SERIALICE_CFLAGS)
+
 Makefile: $(version-obj-y) $(version-lobj-y)
 
 ######################################################################

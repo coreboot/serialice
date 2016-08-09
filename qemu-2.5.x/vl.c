@@ -159,6 +159,9 @@ CharDriverState *parallel_hds[MAX_PARALLEL_PORTS];
 CharDriverState *virtcon_hds[MAX_VIRTIO_CONSOLES];
 CharDriverState *sclp_hds[MAX_SCLP_CONSOLES];
 int win2k_install_hack = 0;
+#ifdef CONFIG_SERIALICE
+const char *serialice_device = NULL;
+#endif
 int singlestep = 0;
 int smp_cpus = 1;
 int max_cpus = 0;
@@ -3273,6 +3276,11 @@ int main(int argc, char **argv, char **envp)
                 exit(1);
 #endif
                 break;
+#ifdef CONFIG_SERIALICE
+	   case QEMU_OPTION_serialice:
+		serialice_device = optarg;
+		break;
+#endif
             case QEMU_OPTION_portrait:
                 graphic_rotate = 90;
                 break;

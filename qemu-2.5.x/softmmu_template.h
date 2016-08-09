@@ -24,6 +24,7 @@
 #include "qemu/timer.h"
 #include "exec/address-spaces.h"
 #include "exec/memory.h"
+#include "serialice.h"
 
 #define DATA_SIZE (1 << SHIFT)
 
@@ -173,6 +174,17 @@ WORD_TYPE helper_le_ld_name(CPUArchState *env, target_ulong addr,
     target_ulong tlb_addr = env->tlb_table[mmu_idx][index].ADDR_READ;
     uintptr_t haddr;
     DATA_TYPE res;
+
+#ifdef CONFIG_SERIALICE
+    uint32_t result;
+    int caught = 0;
+    if (serialice_active && serialice_handle_load((uint32_t)addr, &result, (unsigned int) DATA_SIZE)) {
+	res = (DATA_TYPE)result;
+	caught=1;
+	serialice_log_load(caught, addr, (uint32_t)res, (unsigned int)DATA_SIZE);
+	return res;
+    }
+#endif
 
     /* Adjust the given return address.  */
     retaddr -= GETPC_ADJ;
@@ -377,6 +389,20 @@ void helper_le_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
     int index = (addr >> TARGET_PAGE_BITS) & (CPU_TLB_SIZE - 1);
     target_ulong tlb_addr = env->tlb_table[mmu_idx][index].addr_write;
     uintptr_t haddr;
+
+#ifdef CONFIG_SERIALICE
+    if (serialice_active && serialice_handle_store((uint32_t)addr, 
+        		    (uint32_t)val, (unsigned int) DATA_SIZE)) {
+        /* The memory catch mechanism does not work particularly well
+         * because of the softmmu is optimizing all accesses to Qemu
+         * "memory". Because of this we need to leave RAM "unassigned"
+         * until RAM init is done, and can't freely switch around.
+         *
+         * It's the right thing, however, to return here.
+         */
+        return;
+    }
+#endif
 
     /* Adjust the given return address.  */
     retaddr -= GETPC_ADJ;
