@@ -2,6 +2,7 @@
 # This file is part of the coreboot project.
 #
 # Copyright (C) 2010 coresystems GmbH
+# Copyright (C) 2016 Google Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,24 +13,88 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
-#
-# DESCR: Check that all files in src/ and util/ have valid license headers
+# DESCR: Check that files in have valid license headers
+# $1 is an optional command line parameter containing directories to check
+
+# regex list of files and directories to exclude from the search
+HEADER_EXCLUDED="\
+^src/vendorcode/|\
+^util/kconfig/|\
+^util/romcc/tests|\
+^util/romcc/results|\
+^util/gitconfig|\
+Kconfig|\
+\<COPYING\>|\
+\<LICENSE\>|\
+\<README\>|\
+Changelog|\
+TODO|\
+EXAMPLE|\
+\.txt$|\
+\.jpg$|\
+\.cksum$|\
+\.bin$|\
+\.hex$|\
+\.patch$|\
+_shipped$|\
+/microcode-[^/]*.h$|\
+/sdram-.*\.inc$|\
+Makefile\.inc|\
+\.fmd|\
+devicetree.cb|\
+\.cfg$|\
+\.spd|\
+config|\
+cmos\.layout|\
+cmos\.default\
+"
+
+#space separated list of directories to test
+if [ "$1" = "" ]; then
+	HEADER_DIRS="src util"
+else
+	HEADER_DIRS="$1"
+fi
 
 LC_ALL=C export LC_ALL
-find SerialICE util -name .git -type d -prune -o \
-	-name README -prune -o \
-	-name LICENSE -prune -o \
-	-name TODO -prune -o \
-	-name COPYING -prune -o \
-	-name microcode-\*.h -prune -o \
-	-name \*.[18] -prune -o \
-	-name romcc -type d -prune -o \
-	-name crossgcc -type d -prune -o \
-	-name vendorcode -type d -prune -o \
-	-type f -exec \
-		grep -L "51 Franklin St, Fifth Floor, Boston" {} + | \
-	sed -e "s,^.*$,File & has no valid GPL header.,"
+
+#get initial list from git, removing HEADER_EXCLUDED files.
+#make a copy to check for the old style header later.
+headerlist=$(git ls-files $HEADER_DIRS | egrep -v "($HEADER_EXCLUDED)")
+
+#update headerlist by removing files that match the license string
+check_for_license() {
+	if [ -n "$headerlist" ] && [ -z "$2" ]; then
+		headerlist="$(grep -iL "$1" $headerlist 2>/dev/null)"
+	elif [ -n "$headerlist" ]; then
+		p1list="$(grep -il "$1" $headerlist 2>/dev/null)"
+		p2list="$(grep -il "$2" $headerlist 2>/dev/null)"
+
+		# Make list of files that were in both previous lists
+		pbothlist="$(echo $p1list $p2list | tr ' ' "\n" | \
+			sort | uniq -d)"
+
+		# Remove all files that were in both of the previous lists
+		# Note that this is unstable if we ever get any filenames
+		# with spaces.
+		headerlist="$(echo $headerlist $pbothlist | tr ' ' "\n" | \
+			sort | uniq -u)"
+	fi
+}
+
+#search the files for license headers
+check_for_license "under the terms of the GNU General Public License" \
+		"WITHOUT ANY WARRANTY"
+check_for_license 'IS PROVIDED .*"AS IS"'
+check_for_license 'IS DISTRIBUTED .*"AS IS"'
+check_for_license "IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE"
+check_for_license '"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES'
+check_for_license 'No license required'
+
+for file in $headerlist; do
+	#verify the file exists, and has content that requires a header
+	if [ -f "$file" ] && [ "$(wc -l < "$file")" -ne 0 ]; then
+		echo "$file has no recognized license header."
+	fi
+done
