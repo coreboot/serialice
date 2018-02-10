@@ -152,7 +152,7 @@ void helper_cpuid(CPUX86State *env)
 
 #ifdef CONFIG_SERIALICE
     if (serialice_active)
-        ret = serialice_cpuid(env, (uint32_t)env->regs[R_EAX], (uint32_t)env->regs[R_EAX]);
+        ret = serialice_cpuid(env, (uint32_t)env->regs[R_EAX], (uint32_t)env->regs[R_ECX]);
     else
         ret = cpu_cpuid(env, (uint32_t)env->regs[R_EAX], (uint32_t)env->regs[R_ECX]);
 #else
