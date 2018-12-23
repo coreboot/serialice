@@ -80,6 +80,9 @@ config BOARD_ASUS_P2B
 config BOARD_ASUS_P4P800_VM
 	bool "ASUS P4P800-VM"
 
+config BOARD_ASUS_P5QC
+       bool "ASUS P5QC"
+
 config BOARD_COMMELL_LV_672
 	bool "Commell LV-672"
 
@@ -182,6 +185,7 @@ config BOARD_INIT
 	default "wyse_s50.c" if BOARD_WYSE_S50
 	default "asrock_p4i65gv.c" if BOARD_ASROCK_P4I65GV
 	default "asus_p4p800-vm.c" if BOARD_ASUS_P4P800_VM
+	default "asus_p5qc.c" if BOARD_ASUS_P5QC
 	default "aopen_dxpl-plus.c" if BOARD_AOPEN_DXPL_PLUS
 	default "via_epia_m850.c" if BOARD_VIA_EPIA_M850
 	default "intel_d845gbv2.c" if BOARD_INTEL_D845GBV2
