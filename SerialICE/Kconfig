@@ -140,6 +140,9 @@ config BOARD_WYSE_S50
 config BOARD_LENOVO_X60
 	bool "Lenovo X60"
 
+config BOARD_ZIDA_TX98_3D
+	bool "Zida TX98-3D"
+
 endchoice
 
 config BOARD_INIT
@@ -176,6 +179,7 @@ config BOARD_INIT
 	default "commell_lv_672.c" if BOARD_COMMELL_LV_672
 	default "jetway_nf81_t56n_lf.c" if BOARD_JETWAY_NF81_T56N_LF
 	default "lenovo_x60.c" if BOARD_LENOVO_X60
+	default "zida_tx98-3d.c" if BOARD_ZIDA_TX98_3D
 
 config SOUTHBRIDGE_INIT
 	string
