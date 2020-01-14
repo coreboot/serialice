@@ -17,7 +17,7 @@
 ## Foundation, Inc.
 ##
 
-VERSION="1.5"
+VERSION="1.6"
 
 # romcc requires lots of stack space, and win32 seems to have a fixed size
 # stack. Give romcc some room on mingw and cygwin.
