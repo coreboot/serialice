@@ -43,6 +43,9 @@ config BOARD_ASROCK_939A785GMH
 	bool "ASRock 939A785GMH"
 	select BUILD_XMMSTACK
 
+config BOARD_ASROCK_H81M_HDS
+	bool "ASRock H81M-HDS"
+
 config BOARD_ASROCK_P4I65GV
 	bool "ASRock P4i65GV"
 
@@ -180,10 +183,11 @@ config BOARD_INIT
 	default "jetway_nf81_t56n_lf.c" if BOARD_JETWAY_NF81_T56N_LF
 	default "lenovo_x60.c" if BOARD_LENOVO_X60
 	default "zida_tx98-3d.c" if BOARD_ZIDA_TX98_3D
+	default "asrock_h81m-hds.c" if BOARD_ASROCK_H81M_HDS
 
 config SOUTHBRIDGE_INIT
 	string
-	default "southbridge/intel-ich7.c" if BOARD_KONTRON_986LCD_M
+	default "southbridge/intel-ich7.c" if BOARD_KONTRON_986LCD_M || BOARD_ASROCK_H81M_HDS
 	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_F2A85_M || BOARD_JETWAY_NF81_T56N_LF
 	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_P2_M3A3200
 
@@ -192,6 +196,7 @@ config SUPERIO_INIT
 	default "superio/ite-it8718f.c" if BOARD_ASUS_P2_M3A3200
 	default "superio/winbond-w83627thg.c" if BOARD_KONTRON_986LCD_M
 	default "superio/fintek-f71869ad.c" if BOARD_JETWAY_NF81_T56N_LF
+	default "superio/nuvoton-nct6776.c" if BOARD_ASROCK_H81M_HDS
 
 choice
 	prompt "ROM size"
