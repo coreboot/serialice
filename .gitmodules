@@ -1,0 +1,8 @@
+[submodule "qemu-2.5.x"]
+	path = qemu-2.5.x
+	url = ../serialice-qemu
+	branch = v2.5.x
+[submodule "qemu-0.15.x"]
+	path = qemu-0.15.x
+	url = ../serialice-qemu
+	branch = v0.15.x
