@@ -116,6 +116,9 @@ config BOARD_RCA_RM4100
 config BOARD_RODA_RK886EX
 	bool "Roda RK886EX"
 
+config BOARD_SUPERMICRO_X11SSM_F
+	bool "Supermicro X11SSM-F"
+
 config BOARD_TELEVIDEO_TC7010
 	bool "Televideo TC7010"
 
@@ -184,10 +187,12 @@ config BOARD_INIT
 	default "lenovo_x60.c" if BOARD_LENOVO_X60
 	default "zida_tx98-3d.c" if BOARD_ZIDA_TX98_3D
 	default "asrock_h81m-hds.c" if BOARD_ASROCK_H81M_HDS
+	default "supermicro_x11ssm-f.c" if BOARD_SUPERMICRO_X11SSM_F
 
 config SOUTHBRIDGE_INIT
 	string
 	default "southbridge/intel-ich7.c" if BOARD_KONTRON_986LCD_M || BOARD_ASROCK_H81M_HDS
+	default "southbridge/intel-sunrise.c" if BOARD_SUPERMICRO_X11SSM_F
 	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_F2A85_M || BOARD_JETWAY_NF81_T56N_LF
 	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_P2_M3A3200
 
@@ -197,6 +202,7 @@ config SUPERIO_INIT
 	default "superio/winbond-w83627thg.c" if BOARD_KONTRON_986LCD_M
 	default "superio/fintek-f71869ad.c" if BOARD_JETWAY_NF81_T56N_LF
 	default "superio/nuvoton-nct6776.c" if BOARD_ASROCK_H81M_HDS
+	default "superio/aspeed-ast.c" if BOARD_SUPERMICRO_X11SSM_F
 
 choice
 	prompt "ROM size"
