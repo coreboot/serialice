@@ -3,6 +3,7 @@
 /* This initializes Intel's PCH that
  * o the watchdog is turned off,
  * o the Super IO is accessible,
+ * o LPSS UART is configured if enabled,
  * o legacy serial port I/O ports are decoded if enabled
  */
 
@@ -13,6 +14,10 @@
 #define TCO_BASE_ADDR	0x400
 #define PCIE_BASE_ADDR	0xe0000000
 #define P2SB_BASE_ADDR	0xfd000000
+#define DEV_UART0	PCI_ADDR(0, 0x1e, 0, 0)
+#define DEV_UART1	PCI_ADDR(0, 0x1e, 1, 0)
+#define DEV_UART2	PCI_ADDR(0, 0x19, 0, 0)
+#define DEV_UART(x)	DEV_UART##x
 
 /* Host bridge PCI cfg registers */
 #define PCIEXBAR	0x60
@@ -60,6 +65,16 @@
 /* P2SB */
 #define P2SB(pid, reg) (P2SB_BASE_ADDR + ((pid) << 16) + (reg))
 
+/* LPSS UART MEM registers */
+#define LPSS_CLK_CTL	0x200
+#define  CLK_UPDATE	(1 << 31)
+#define  CLK_EN		(1 << 0)
+#define LPSS_RST_CTL	0x204
+#define  RST_RELEASE	0x03
+
+#define LPSS_CLOCK_DIV_M(m)	(((m) & 0x7fff) << 1)
+#define LPSS_CLOCK_DIV_N(n)	(((n) & 0x7fff) << 16)
+
 static void southbridge_init(void)
 {
 	u16 reg16;
@@ -87,7 +102,18 @@ static void southbridge_init(void)
 	/* Enable KBD/SuperIO/EC 2e/2f, 4e/4f */
 	u16 ioe = 0x3c00;
 
-#if CONFIG_SERIAL
+#if CONFIG_SERIAL && CONFIG_LPSS_UART
+	/* Configure LPSS UART */
+	pci_write_config32(DEV_UART(CONFIG_LPSS_UART_INDEX) + PCIBAR0, CONFIG_SERIAL_BASE_ADDRESS);
+	pci_write_config32(DEV_UART(CONFIG_LPSS_UART_INDEX) + PCICMD, CMD_BAR0_EN);
+
+	/* Release reset */
+	write32(CONFIG_SERIAL_BASE_ADDRESS + LPSS_RST_CTL, RST_RELEASE);
+
+	/* Configure clock */
+	write32(CONFIG_SERIAL_BASE_ADDRESS + LPSS_CLK_CTL,
+		LPSS_CLOCK_DIV_N(0xc35) | LPSS_CLOCK_DIV_M(0x30) | CLK_UPDATE | CLK_EN);
+#elif CONFIG_SERIAL
 	/* Enable Serial IRQ */
 	pci_write_config8(PCI_ADDR(0, 0x1f, 0, LPC_SCNT), IRQEN | CONTINUOUS);
 

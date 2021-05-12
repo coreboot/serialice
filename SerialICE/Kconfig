@@ -302,6 +302,13 @@ endchoice
 config SERIAL_BASE_ADDRESS
 	hex
 
+config LPSS_UART
+	bool
+
+config LPSS_UART_INDEX
+	int
+	default 2
+
 config SERIAL_PORT
 	hex
 	default 0x3f8 if SERIAL_COM1
