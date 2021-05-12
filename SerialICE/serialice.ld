@@ -22,7 +22,7 @@ OUTPUT_ARCH(i386)
 
 ALIGNED_ROMBASE = 0x100000000 - (ALIGNED_ROMSIZE);
 
-_ROMSIZE = (1024 * 64);
+_ROMSIZE = 512;
 _ROMBASE = 0x100000000 - (_ROMSIZE);
 
 SECTIONS {
@@ -30,13 +30,22 @@ SECTIONS {
 	. = ALIGNED_ROMBASE;
 
 	.rom : {
-		. = ALIGNED_ROMSIZE - _ROMSIZE;
+		/* dynamically align down the code section */
+		. = ALIGNED_ROMSIZE - _ROMSIZE - (_rom_bottom - _rom_top);
+		_rom_top = .;
 		*(.rom.text);
 		*(.text);
 		*(.rom.data);
 		*(.data);
 		*(.rodata);
 		*(.rodata.*);
+		. = ALIGN(64);
+		_rom_bottom = .;
+	} =0xff
+
+	. = _ROMBASE;
+	.start . : {
+		*(.start)
 	} =0xff
 
 	. = 0xffffff40;

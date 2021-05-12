@@ -19,6 +19,7 @@
 
 #include "serialice.h"
 
+	.section ".start", "a"
 	.code32
 
 _c_main:
