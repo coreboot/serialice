@@ -223,6 +223,9 @@ config ROM_2048K
 config ROM_4096K
 	boolean "4096 KB"
 
+config ROM_8192K
+	boolean "8192 KB"
+
 endchoice
 
 config ROMSIZE
@@ -234,6 +237,7 @@ config ROMSIZE
 	default 0x100000 if ROM_1024K
 	default 0x200000 if ROM_2048K
 	default 0x400000 if ROM_4096K
+	default 0x800000 if ROM_8192K
 
 choice
 	prompt "Target communication"
