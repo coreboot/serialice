@@ -299,6 +299,8 @@ config SERIAL_COM2
 
 endchoice
 
+config SERIAL_BASE_ADDRESS
+	hex
 
 config SERIAL_PORT
 	hex

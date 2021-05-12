@@ -17,6 +17,8 @@
  * Foundation, Inc.
  */
 
+#include "config.h"
+
 /* Data */
 #define UART_RBR 0x00
 #define UART_TBR 0x00
@@ -35,6 +37,14 @@
 #define UART_MSR 0x06
 #define UART_SCR 0x07
 
+#if CONFIG_SERIAL_BASE_ADDRESS
+#define sio_reg_read(reg)        read8(CONFIG_SERIAL_BASE_ADDRESS + 4 * (reg))
+#define sio_reg_write(reg, val) write8(CONFIG_SERIAL_BASE_ADDRESS + 4 * (reg), val)
+#else
+#define sio_reg_read(reg)        inb(CONFIG_SERIAL_PORT + (reg))
+#define sio_reg_write(reg, val) outb(val, CONFIG_SERIAL_PORT + (reg))
+#endif
+
 /* Serial functions */
 
 static void serial_init(void)
@@ -51,28 +61,28 @@ static void serial_init(void)
 	int divisor = 115200 / CONFIG_SERIAL_BAUDRATE;
 #endif
 	int lcs = 3;
-	outb(0x00, CONFIG_SERIAL_PORT + UART_IER);
-	outb(0x01, CONFIG_SERIAL_PORT + UART_FCR);
-	outb(0x03, CONFIG_SERIAL_PORT + UART_MCR);
-	outb(0x80 | lcs, CONFIG_SERIAL_PORT + UART_LCR);
-	outb(divisor & 0xff, CONFIG_SERIAL_PORT + UART_DLL);
-	outb((divisor >> 8) & 0xff, CONFIG_SERIAL_PORT + UART_DLM);
-	outb(lcs, CONFIG_SERIAL_PORT + UART_LCR);
+	sio_reg_write(UART_IER, 0x00);
+	sio_reg_write(UART_FCR, 0x01);
+	sio_reg_write(UART_MCR, 0x03);
+	sio_reg_write(UART_LCR, 0x80 | lcs);
+	sio_reg_write(UART_DLL, divisor & 0xff);
+	sio_reg_write(UART_DLM, (divisor >> 8) & 0xff);
+	sio_reg_write(UART_LCR, lcs);
 }
 
 static void serial_putc(u8 data)
 {
-	while (!(inb(CONFIG_SERIAL_PORT + UART_LSR) & 0x20)) ;
-	outb(data, CONFIG_SERIAL_PORT + UART_TBR);
-	while (!(inb(CONFIG_SERIAL_PORT + UART_LSR) & 0x40)) ;
+	while (!(sio_reg_read(UART_LSR) & 0x20)) ;
+	sio_reg_write(UART_TBR, data);
+	while (!(sio_reg_read(UART_LSR) & 0x40)) ;
 }
 
 static u8 serial_getc(void)
 {
 	u8 val;
-	while (!(inb(CONFIG_SERIAL_PORT + UART_LSR) & 0x01)) ;
+	while (!(sio_reg_read(UART_LSR) & 0x01)) ;
 
-	val = inb(CONFIG_SERIAL_PORT + UART_RBR);
+	val = sio_reg_read(UART_RBR);
 
 #if ECHO_MODE
 	serial_putc(val);
