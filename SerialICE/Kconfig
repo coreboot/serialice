@@ -30,6 +30,10 @@ choice
 config BOARD_QEMU_X86
 	bool "Qemu"
 
+config BOARD_ACER_ES1_572
+	bool "Acer ES1-572"
+	select LPSS_UART
+
 config BOARD_AMD_SERENGETI_CHEETAH
 	bool "AMD Serengeti Cheetah (SimNOW)"
 
@@ -187,12 +191,13 @@ config BOARD_INIT
 	default "lenovo_x60.c" if BOARD_LENOVO_X60
 	default "zida_tx98-3d.c" if BOARD_ZIDA_TX98_3D
 	default "asrock_h81m-hds.c" if BOARD_ASROCK_H81M_HDS
+	default "acer_es1-572.c" if BOARD_ACER_ES1_572
 	default "supermicro_x11ssm-f.c" if BOARD_SUPERMICRO_X11SSM_F
 
 config SOUTHBRIDGE_INIT
 	string
 	default "southbridge/intel-ich7.c" if BOARD_KONTRON_986LCD_M || BOARD_ASROCK_H81M_HDS
-	default "southbridge/intel-sunrise.c" if BOARD_SUPERMICRO_X11SSM_F
+	default "southbridge/intel-sunrise.c" if BOARD_SUPERMICRO_X11SSM_F || BOARD_ACER_ES1_572
 	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_F2A85_M || BOARD_JETWAY_NF81_T56N_LF
 	default "southbridge/amd-sbxxx.c" if BOARD_ASUS_P2_M3A3200
 
@@ -307,6 +312,7 @@ endchoice
 
 config SERIAL_BASE_ADDRESS
 	hex
+	default 0xfe034000 if BOARD_ACER_ES1_572
 
 config LPSS_UART
 	bool
