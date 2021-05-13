@@ -42,8 +42,6 @@ SECTIONS {
 	. = 0xffffff40;
 	.messages . : {
 		*(.messages)
-		. = 111;
-		BYTE(0x00);
 	}
 
 	. = 0xffffffd0;
@@ -51,12 +49,10 @@ SECTIONS {
 		*(.romstrap)
 	}
 
-
 	. = 0xfffffff0;
 	.reset . : {
 		*(.reset)
-		. = 15;
-		BYTE(0x00);
+		. = ALIGN(16);
 	}
 
 	/DISCARD/ : {

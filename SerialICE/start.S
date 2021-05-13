@@ -99,7 +99,7 @@ gdt:
 gdt_size = (. - gdt - 1)
 
 	/* Messages */
-	.section ".messages"
+	.section ".messages", "a", @progbits
 	.globl	program_name
 program_name:
 	.ascii "SerialICE v" VERSION " (" __DATE__ ")"
@@ -109,7 +109,7 @@ program_copyright:
 	.string "Copyright (C) 2009 coresystems GmbH."
 
 	/* Reset Vector */
-	.section ".reset"
+	.section ".reset", "a"
 	.globl	reset_vector
 reset_vector:
 	.code16
