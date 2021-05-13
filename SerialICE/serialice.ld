@@ -31,7 +31,6 @@ SECTIONS {
 
 	.rom : {
 		. = ALIGNED_ROMSIZE - _ROMSIZE;
-		_main = . ;
 		*(.rom.text);
 		*(.text);
 		*(.rom.data);
