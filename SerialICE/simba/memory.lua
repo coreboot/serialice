@@ -29,8 +29,8 @@ filter_rom_high = {
 	pre = mem_qemu_rom_pre,
 	post = mem_rom_post,
 	hide = hide_rom_access,
-	base = rom_base,
-	size = rom_size,
+	base = 0x100000000 - SerialICE_rom_size,
+	size = SerialICE_rom_size,
 }
 
 -- **********************************************************

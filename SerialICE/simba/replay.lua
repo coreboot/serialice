@@ -9,6 +9,9 @@ end
 
 SerialICE_mainboard = "undetected"
 
+-- keep the previous default for backward compatibility of old dumps
+SerialICE_rom_size  = 4 * 1024 * 1024
+
 regs = { eax, ebc, ecx, edx, cs=0, eip=0, ds, es, ss, gs, fs, }
 ids = { parent, this, flags}
 
@@ -168,14 +171,22 @@ function parse_pci(line)
 end
 
 function parse_headers()
+	local found_mb   = false
+	local found_size = false
 	while true do
-		local found = false
 		line = io.read("*line")
-		if not found then
+		if not found_mb then
 			local board
-			found, _, board = string.find(line, "SerialICE: Mainboard...:%s+(.+)")
-			if found then
+			found_mb, _, board = string.find(line, "SerialICE: Mainboard...:%s+(.+)")
+			if found_mb then
 				SerialICE_mainboard = board
+			end
+		end
+		if not found_size then
+			local board
+			found_size, _, size = string.find(line, "SerialICE: ROM size....:%s+0x(.+)")
+			if found_size then
+				SerialICE_rom_size = tonumber(size, 16)
 			end
 		end
 		if string.find(line, "LUA script initialized.") then

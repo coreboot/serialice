@@ -25,10 +25,6 @@ cache_nvram = false
 -- SMSC 0x07, Winbond 0x06 ?
 DEFAULT_SUPERIO_LDN_REGISTER = 0x07
 
--- FIXME: Use bios file image size here.
-rom_size = 4 * 1024 * 1024
-rom_base = 0x100000000 - rom_size
-
 -- We refrain from backing up most of memory in Qemu because Qemu would
 -- need lots of ram on the host and firmware usually does not intensively
 -- use high memory anyways.

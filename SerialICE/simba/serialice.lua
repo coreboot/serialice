@@ -70,6 +70,7 @@ function do_default_setup()
 	end
 end
 
+root_info("ROM size: 0x%x\n", SerialICE_rom_size)
 root_info("Mainboard %s connected.\n", SerialICE_mainboard)
 local mainboard_file = string.format("mainboard/%s.lua", string.lower(string.gsub(SerialICE_mainboard, "[ -]", "_")))
 local mainboard_lua, ferr = loadfile(mainboard_file)
