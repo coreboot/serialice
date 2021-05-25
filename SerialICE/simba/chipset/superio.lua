@@ -267,3 +267,30 @@ filter_com1 = {
 	size = 8,
 	hide = false,
 }
+
+filter_com2 = {
+	name = "COM2",
+	pre = com_pre,
+	post = io_post,
+	base = 0x2f8,
+	size = 8,
+	hide = false,
+}
+
+filter_com3 = {
+	name = "COM3",
+	pre = com_pre,
+	post = io_post,
+	base = 0x3e8,
+	size = 8,
+	hide = false,
+}
+
+filter_com4 = {
+	name = "COM4",
+	pre = com_pre,
+	post = io_post,
+	base = 0x2e8,
+	size = 8,
+	hide = false,
+}

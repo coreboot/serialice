@@ -65,6 +65,9 @@ function do_default_setup()
 	enable_hook_superio(0x2e, DEFAULT_SUPERIO_LDN_REGISTER)
 	enable_hook_superio(0x4e, DEFAULT_SUPERIO_LDN_REGISTER)
 	enable_hook(io_hooks, filter_com1)
+	enable_hook(io_hooks, filter_com2)
+	enable_hook(io_hooks, filter_com3)
+	enable_hook(io_hooks, filter_com4)
 	if superio_initialization then
 		superio_initialization()
 	end
