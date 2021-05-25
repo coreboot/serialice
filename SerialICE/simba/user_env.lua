@@ -16,6 +16,7 @@ hide_i8254_io = true
 hide_i8259_io = true
 hide_superio_cfg = true
 hide_smbus_io = true
+hide_com = false
 hide_mainboard_io = true
 hide_mainboard_mem = true
 

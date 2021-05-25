@@ -265,7 +265,7 @@ filter_com1 = {
 	post = io_post,
 	base = 0x3f8,
 	size = 8,
-	hide = false,
+	hide = hide_com,
 }
 
 filter_com2 = {
@@ -274,7 +274,7 @@ filter_com2 = {
 	post = io_post,
 	base = 0x2f8,
 	size = 8,
-	hide = false,
+	hide = hide_com,
 }
 
 filter_com3 = {
@@ -283,7 +283,7 @@ filter_com3 = {
 	post = io_post,
 	base = 0x3e8,
 	size = 8,
-	hide = false,
+	hide = hide_com,
 }
 
 filter_com4 = {
@@ -292,5 +292,5 @@ filter_com4 = {
 	post = io_post,
 	base = 0x2e8,
 	size = 8,
-	hide = false,
+	hide = hide_com,
 }
