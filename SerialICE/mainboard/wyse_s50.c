@@ -70,7 +70,7 @@ static void cs5536_setup_iobase(void)
 	wrmsr(MDD_LBAR_GPIO, msr, 0x9c5a203a);
 }
 
-static void serial_init(void)
+static void wyse_s50_serial_init(void)
 {
 	msr_t msr;
 	/* COM1 */
@@ -115,5 +115,5 @@ static void chipset_init(void)
 {
 cs5536_setup_extmsr();
 cs5536_setup_iobase();
-serial_init();
+wyse_s50_serial_init();
 }

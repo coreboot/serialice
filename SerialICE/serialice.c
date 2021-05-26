@@ -25,7 +25,7 @@
 
 #include "chipset.c"
 
-/* SIO functions */
+/* Serial functions */
 #include "serial.c"
 
 /* Accessor functions */
@@ -37,16 +37,16 @@ static void serialice_read_memory(void)
 
 	// Format:
 	// *rm00000000.w
-	addr = sio_get32();
-	sio_getc();	// skip .
-	width = sio_getc();
+	addr = serial_get32();
+	serial_getc();	// skip .
+	width = serial_getc();
 
-	sio_putc('\r'); sio_putc('\n');
+	serial_putc('\r'); serial_putc('\n');
 
 	switch (width) {
-	case 'b': sio_put8(read8(addr)); break;
-	case 'w': sio_put16(read16(addr)); break;
-	case 'l': sio_put32(read32(addr)); break;
+	case 'b': serial_put8(read8(addr)); break;
+	case 'w': serial_put16(read16(addr)); break;
+	case 'l': serial_put32(read32(addr)); break;
 	}
 }
 
@@ -58,15 +58,15 @@ static void serialice_write_memory(void)
 
 	// Format:
 	// *wm00000000.w=0000
-	addr = sio_get32();
-	sio_getc();	// skip .
-	width = sio_getc();
-	sio_getc();	// skip =
+	addr = serial_get32();
+	serial_getc();	// skip .
+	width = serial_getc();
+	serial_getc();	// skip =
 
 	switch (width) {
-	case 'b': data = sio_get8(); write8(addr, (u8)data); break;
-	case 'w': data = sio_get16(); write16(addr, (u16)data); break;
-	case 'l': data = sio_get32(); write32(addr, (u32)data); break;
+	case 'b': data = serial_get8(); write8(addr, (u8)data); break;
+	case 'w': data = serial_get16(); write16(addr, (u16)data); break;
+	case 'l': data = serial_get32(); write32(addr, (u32)data); break;
 	}
 }
 
@@ -77,16 +77,16 @@ static void serialice_read_io(void)
 
 	// Format:
 	// *ri0000.w
-	port = sio_get16();
-	sio_getc();	// skip .
-	width = sio_getc();
+	port = serial_get16();
+	serial_getc();	// skip .
+	width = serial_getc();
 
-	sio_putc('\r'); sio_putc('\n');
+	serial_putc('\r'); serial_putc('\n');
 
 	switch (width) {
-	case 'b': sio_put8(inb(port)); break;
-	case 'w': sio_put16(inw(port)); break;
-	case 'l': sio_put32(inl(port)); break;
+	case 'b': serial_put8(inb(port)); break;
+	case 'w': serial_put16(inw(port)); break;
+	case 'l': serial_put32(inl(port)); break;
 	}
 }
 
@@ -98,15 +98,15 @@ static void serialice_write_io(void)
 
 	// Format:
 	// *wi0000.w=0000
-	port = sio_get16();
-	sio_getc();	// skip .
-	width = sio_getc();
-	sio_getc();	// skip =
+	port = serial_get16();
+	serial_getc();	// skip .
+	width = serial_getc();
+	serial_getc();	// skip =
 
 	switch (width) {
-	case 'b': data = sio_get8(); outb((u8)data, port); break;
-	case 'w': data = sio_get16(); outw((u16)data, port); break;
-	case 'l': data = sio_get32(); outl((u32)data, port); break;
+	case 'b': data = serial_get8(); outb((u8)data, port); break;
+	case 'w': data = serial_get16(); outw((u16)data, port); break;
+	case 'l': data = serial_get32(); outl((u32)data, port); break;
 	}
 }
 
@@ -117,16 +117,16 @@ static void serialice_read_msr(void)
 
 	// Format:
 	// *rc00000000.9c5a203a
-	addr = sio_get32();
-	sio_getc();	   // skip .
-	key = sio_get32(); // key in %edi
+	addr = serial_get32();
+	serial_getc();	   // skip .
+	key = serial_get32(); // key in %edi
 
-	sio_putc('\r'); sio_putc('\n');
+	serial_putc('\r'); serial_putc('\n');
 
 	msr = rdmsr(addr, key);
-	sio_put32(msr.hi);
-	sio_putc('.');
-	sio_put32(msr.lo);
+	serial_put32(msr.hi);
+	serial_putc('.');
+	serial_put32(msr.lo);
 }
 
 static void serialice_write_msr(void)
@@ -136,13 +136,13 @@ static void serialice_write_msr(void)
 
 	// Format:
 	// *wc00000000.9c5a203a=00000000.00000000
-	addr = sio_get32();
-	sio_getc();	// skip .
-	key = sio_get32(); // read key in %edi
-	sio_getc();	// skip =
-	msr.hi = sio_get32();
-	sio_getc();	// skip .
-	msr.lo = sio_get32();
+	addr = serial_get32();
+	serial_getc();	// skip .
+	key = serial_get32(); // read key in %edi
+	serial_getc();	// skip =
+	msr.hi = serial_get32();
+	serial_getc();	// skip .
+	msr.lo = serial_get32();
 
 #ifdef __ROMCC__
 	/* Cheat to avoid register outage */
@@ -160,63 +160,63 @@ static void serialice_cpuinfo(void)
 	// Format:
 	//    --EAX--- --ECX---
 	// *ci00000000.00000000
-	eax = sio_get32();
-	sio_getc(); // skip .
-	ecx = sio_get32();
+	eax = serial_get32();
+	serial_getc(); // skip .
+	ecx = serial_get32();
 
-	sio_putc('\r'); sio_putc('\n');
+	serial_putc('\r'); serial_putc('\n');
 
 	/* This code looks quite crappy but this way we don't
  	 * have to worry about running out of registers if we
  	 * occupy eax, ebx, ecx, edx at the same time
  	 */
 	reg32 = cpuid_eax(eax, ecx);
-	sio_put32(reg32);
-	sio_putc('.');
+	serial_put32(reg32);
+	serial_putc('.');
 
 	reg32 = cpuid_ebx(eax, ecx);
-	sio_put32(reg32);
-	sio_putc('.');
+	serial_put32(reg32);
+	serial_putc('.');
 
 	reg32 = cpuid_ecx(eax, ecx);
-	sio_put32(reg32);
-	sio_putc('.');
+	serial_put32(reg32);
+	serial_putc('.');
 
 	reg32 = cpuid_edx(eax, ecx);
-	sio_put32(reg32);
+	serial_put32(reg32);
 }
 
 static void serialice_mainboard(void)
 {
-	sio_putc('\r'); sio_putc('\n');
+	serial_putc('\r'); serial_putc('\n');
 
 	/* must be defined in mainboard/<boardname>.c */
-	sio_putstring(boardname);
+	serial_putstring(boardname);
 }
 
 static void serialice_version(void)
 {
-	sio_putstring("\nSerialICE v" VERSION " (" __DATE__ ")\n");
+	serial_putstring("\nSerialICE v" VERSION " (" __DATE__ ")\n");
 }
 
 int main(void)
 {
 	chipset_init();
 
-	sio_init();
+	serial_init();
 
 	serialice_version();
 
 	while(1) {
 		u16 c;
-		sio_putstring("\n> ");
+		serial_putstring("\n> ");
 
-		c = sio_getc();
+		c = serial_getc();
 		if (c != '*')
 			continue;
 
-		c = sio_getc() << 8;
-		c |= sio_getc();
+		c = serial_getc() << 8;
+		c |= serial_getc();
 
 		switch(c) {
 		case (('r' << 8)|'m'): // Read Memory *rm
@@ -247,7 +247,7 @@ int main(void)
 			serialice_version();
 			break;
 		default:
-			sio_putstring("ERROR\n");
+			serial_putstring("ERROR\n");
 			break;
 		}
 	}
