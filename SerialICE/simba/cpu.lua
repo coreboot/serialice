@@ -105,7 +105,26 @@ filter_cpuid_fallback = {
 	post = cpuid_post,
 }
 
+function feature_smx_pre(f, action)
+	return false
+end
 
+function feature_smx_post(f, action)
+	local rout = action.rout
+	local rin = action.rin
+	if not action.write and rin.eax == 0x01 then
+		rout.ecx = rout.ecx & ~(1<<6)  -- SMX
+		fake_action(f, action, 0)
+		return true
+	end
+	return false
+end
+
+filter_feature_smx = {
+	name = "CPU feature SMX",
+	pre = feature_smx_pre,
+	post = feature_smx_post,
+}
 
 function multicore_pre(f, action)
 	return false
