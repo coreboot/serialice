@@ -37,6 +37,25 @@ static inline u32 read32(unsigned long addr)
 	return *((volatile u32 *)(addr));
 }
 
+#ifdef CONFIG_SUPPORT_64_BIT_ACCESS
+static inline u64_t read64(unsigned long addr)
+{
+	u64_t value;
+
+	__asm__ __volatile__ (
+		"movq    (%%ecx), %%mm0 \n\t"
+		"movd    %%mm0,   %%eax \n\t"
+		"psrlq   $32,     %%mm0 \n\t"
+		"movd    %%mm0,   %%edx \n\t"
+		"emms                   \n\t"
+		: "=a" (value.lo), "=d" (value.hi)
+		: "c" (addr)
+	);
+
+	return value;
+}
+#endif
+
 static inline void write8(unsigned long addr, u8 value)
 {
 	*((volatile u8 *)(addr)) = value;
@@ -51,6 +70,22 @@ static inline void write32(unsigned long addr, u32 value)
 {
 	*((volatile u32 *)(addr)) = value;
 }
+
+#ifdef CONFIG_SUPPORT_64_BIT_ACCESS
+static inline void write64(unsigned long addr, u64_t value)
+{
+	__asm__ __volatile__ (
+		"movd    %%eax, %%mm0   \n\t"
+    "movd    %%edx, %%mm1   \n\t"
+		"psllq   $32,   %%mm1   \n\t"
+		"por     %%mm1, %%mm0   \n\t"
+		"movq    %%mm0, (%%ecx) \n\t"
+		"emms                   \n\t"
+		: /* No outputs */
+		: "c" (addr), "a" (value.lo), "d" (value.hi)
+	);
+}
+#endif
 
 /* IO functions */
 

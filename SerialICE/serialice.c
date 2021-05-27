@@ -47,6 +47,9 @@ static void serialice_read_memory(void)
 	case 'b': serial_put8(read8(addr)); break;
 	case 'w': serial_put16(read16(addr)); break;
 	case 'l': serial_put32(read32(addr)); break;
+#ifdef CONFIG_SUPPORT_64_BIT_ACCESS
+	case 'q': serial_put64(read64(addr)); break;
+#endif
 	}
 }
 
@@ -55,6 +58,9 @@ static void serialice_write_memory(void)
 	u8 width;
 	u32 addr;
 	u32 data;
+#ifdef CONFIG_SUPPORT_64_BIT_ACCESS
+	u64_t data64;
+#endif
 
 	// Format:
 	// *wm00000000.w=0000
@@ -67,6 +73,9 @@ static void serialice_write_memory(void)
 	case 'b': data = serial_get8(); write8(addr, (u8)data); break;
 	case 'w': data = serial_get16(); write16(addr, (u16)data); break;
 	case 'l': data = serial_get32(); write32(addr, (u32)data); break;
+#ifdef CONFIG_SUPPORT_64_BIT_ACCESS
+	case 'q': data64 = serial_get64(); write64(addr, data64); break;
+#endif
 	}
 }
 

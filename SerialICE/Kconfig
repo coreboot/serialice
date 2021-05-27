@@ -439,6 +439,10 @@ config BUILD_XMMSTACK
 
 endchoice
 
+config SUPPORT_64_BIT_ACCESS
+	bool "Support for 64-bit access"
+	depends on EXPERT
+
 endmenu
 
 # blind default options in case CONFIG_EXPERT is not enabled.
@@ -467,4 +471,9 @@ config BUILD_ROMCC
 config BUILD_XMMSTACK
 	bool
 	select HAVE_SSE
+	depends on !EXPERT
+
+config SUPPORT_64_BIT_ACCESS
+	bool
+	default n
 	depends on !EXPERT

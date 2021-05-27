@@ -24,4 +24,8 @@ typedef unsigned char      u8;
 typedef unsigned short     u16;
 typedef unsigned int       u32;
 
+#ifdef CONFIG_SUPPORT_64_BIT_ACCESS
+typedef struct { u32 lo, hi; } u64_t;
+#endif
+
 #endif

@@ -140,6 +140,14 @@ static void serial_put32(u32 data)
 	}
 }
 
+#ifdef CONFIG_SUPPORT_64_BIT_ACCESS
+static void serial_put64(u64_t data)
+{
+	serial_put32(data.hi);
+	serial_put32(data.lo);
+}
+#endif
+
 static u8 serial_get_nibble(void)
 {
 	u8 ret = 0;
@@ -203,3 +211,15 @@ static u32 serial_get32(void)
 
 	return data;
 }
+
+#ifdef CONFIG_SUPPORT_64_BIT_ACCESS
+static u64_t serial_get64(void)
+{
+	u64_t data;
+
+	data.hi = serial_get32();
+	data.lo = serial_get32();
+
+	return data;
+}
+#endif
