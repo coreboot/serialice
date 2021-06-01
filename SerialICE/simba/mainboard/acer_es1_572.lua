@@ -112,5 +112,5 @@ function do_mainboard_setup()
 	-- Apply mainboard hooks last, so they are the first ones to check
 	enable_hook(mem_hooks, filter_uart)
 	enable_hook(mem_hooks, filter_ec_mem)
-	enable_hook(mem_hooks, filter_mainboard_io)
+	enable_hook(io_hooks, filter_mainboard_io)
 end
