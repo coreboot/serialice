@@ -13,13 +13,12 @@ I/O".
 
 Here is some simple example:
 
-    
     /* Hardware specific functions */
-    
+
     #define PMBASE 0x100
     #define TCOBASE 0x60
     #define TCO1_CNT 0x08
-    
+
     static void southbridge_init(void)
     {
             /* Prevent the TCO timer from rebooting */
@@ -31,23 +30,23 @@ Here is some simple example:
             outw(inw(PMBASE + TCOBASE + TCO1_CNT) | (1 << 11),
                  PMBASE + TCOBASE + TCO1_CNT);
     }
-    
+
     static void superio_init(void)
     {
             /* Enter the configuration state. */
             pnp_enter_ext_func_mode_alt(0x2e);
-    
+
             /* COM A */
             pnp_set_logical_device(0x2e, 4);
             pnp_set_enable(0x2e, 0);
             pnp_set_iobase0(0x2e, 0x3f8);
             pnp_set_irq0(0x2e, 4);
             pnp_set_enable(0x2e, 1);
-    
+
             /* Exit the configuration state. */
             pnp_exit_ext_func_mode(0x2e);
     }
-    
+
     static void chipset_init(void)
     {
             southbridge_init();
