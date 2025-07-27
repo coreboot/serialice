@@ -7,7 +7,7 @@ entries:
 - file: Debugging
 - file: Scripting
 - file: Make_SerialICE_work_on_new_hardware
-- url: http://www.serialice.com/mailman/listinfo/serialice
+- url: https://mail.coreboot.org/mailman3/lists/serialice.serialice.com/
   title: Discussing SerialICE
 - file: Related_Projects
   entries:
